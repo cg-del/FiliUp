@@ -1,5 +1,5 @@
 # 🌟 FiliUp - Learn Filipino Culture Through Stories
-![FiliUp Banner](https://via.placeholder.com/800x200?text=FiliUp+-+Learn+Filipino+Culture)
+![FiliUp Banner]([https://via.placeholder.com/800x200?text=FiliUp+-+Learn+Filipino+Culture](https://www.google.com/url?sa=i&url=https%3A%2F%2Fmovieweb.com%2Fmost-popular-anime-right-now%2F&psig=AOvVaw0Sm7yabQlaXOypAfsazuG2&ust=1744183266317000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICwp47zx4wDFQAAAAAdAAAAABAE))
 
 ## 📖 About FiliUp
 FiliUp is an innovative educational platform designed to make learning Filipino culture and language engaging and accessible. Through interactive stories, quizzes, and cultural narratives, we bring the rich heritage of the Philippines to learners worldwide.
