@@ -4,8 +4,12 @@ import {
   MenuBook as BookIcon,
   Facebook as FacebookIcon,
   GitHub as GitHubIcon,
+  LocalLibrary as LibraryIcon,
   People as PeopleIcon,
+  Psychology as PsychologyIcon,
   School as SchoolIcon,
+  AutoStories as StoriesIcon,
+  Translate as TranslateIcon,
   Twitter as TwitterIcon,
 } from "@mui/icons-material";
 import {
@@ -28,7 +32,6 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from 'react-router-dom';
 import filiupLogo from '../../assets/filiup-logo-svg.svg';
-import './LandingPage.css';
 
 // Logo components remain the same
 const JavaLogo = () => (
@@ -62,7 +65,7 @@ export default function LandingPage() {
   const theme = useTheme();
   
   return (
-    <Box className="landing-page" sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", bgcolor: "background.default" }}>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh", bgcolor: "background.default" }}>
       {/* Header */}
       <AppBar 
         position="static" 
@@ -73,7 +76,7 @@ export default function LandingPage() {
           borderBottom: `1px solid ${alpha(theme.palette.common.white, 0.1)}`
         }}
       >
-        <Toolbar sx={{ justifyContent: "space-between", py: 0.5 }}>
+        <Toolbar sx={{ justifyContent: "space-between" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box
               sx={{
@@ -112,13 +115,13 @@ export default function LandingPage() {
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
             <Link component={RouterLink} to="#features" color="inherit" underline="hover" sx={{ fontWeight: 500 }}>
-              Features
+              Mga Tampok
             </Link>
             <Link component={RouterLink} to="#courses" color="inherit" underline="hover" sx={{ fontWeight: 500 }}>
-              Courses
+              Mga Kwento
             </Link>
             <Link component={RouterLink} to="#about" color="inherit" underline="hover" sx={{ fontWeight: 500 }}>
-              About
+              Tungkol Sa Amin
             </Link>
             <Button 
               component={RouterLink} 
@@ -136,15 +139,15 @@ export default function LandingPage() {
                 }
               }}
             >
-              Sign In
+              Mag-sign In
             </Button>
           </Box>
         </Toolbar>
       </AppBar>
 
       {/* Hero Section */}
-      <Container sx={{ py: 6 }}>
-        <Grid container spacing={4} alignItems="center">
+      <Container sx={{ py: 10 }}>
+        <Grid container spacing={6} alignItems="center">
           <Grid item xs={12} md={6}>
             <Box sx={{ maxWidth: 600 }}>
               <Typography 
@@ -155,16 +158,16 @@ export default function LandingPage() {
                 sx={{ 
                   fontSize: { xs: '2.5rem', md: '3.5rem' },
                   lineHeight: 1.2,
-                  mb: 1,
+                  mb: 2,
                   background: `linear-gradient(90deg, ${theme.palette.text.primary}, ${theme.palette.primary.main})`,
                   backgroundClip: 'text',
                   WebkitBackgroundClip: 'text',
                   color: 'transparent',
                 }}
               >
-                Learn Programming{" "}
+                Matuto sa Pamamagitan ng{" "}
                 <Box component="span" color="primary.main">
-                  Effectively
+                  Mga Kwentong Pilipino
                 </Box>
               </Typography>
               <Typography 
@@ -173,17 +176,17 @@ export default function LandingPage() {
                 paragraph
                 sx={{ 
                   fontSize: { xs: '1rem', md: '1.25rem' },
-                  mb: 3,
+                  mb: 4,
                   lineHeight: 1.6,
                 }}
               >
-                Master coding skills with interactive lessons, real-time feedback, and certification exams that prepare
-                you for the industry.
+                Tuklasin ang yaman ng ating kultura sa pamamagitan ng mga kwentong-bayan, alamat, at pabula. 
+                Matuto ng mga aral habang nag-e-enjoy sa mga interactive na kuwento at pagsusulit.
               </Typography>
-              <Box sx={{ display: "flex", gap: 2 }}>
+              <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
                 <Button 
                   component={RouterLink} 
-                  to="/sign-up" 
+                  to="/sign-in" 
                   variant="contained" 
                   size="large"
                   sx={{ 
@@ -197,7 +200,7 @@ export default function LandingPage() {
                     }
                   }}
                 >
-                  Get Started
+                  Simulan
                 </Button>
                 <Button 
                   variant="outlined" 
@@ -213,7 +216,7 @@ export default function LandingPage() {
                     }
                   }}
                 >
-                  Explore Courses
+                  Tingnan ang Mga Kwento
                 </Button>
               </Box>
             </Box>
@@ -256,7 +259,7 @@ export default function LandingPage() {
       <Box 
         sx={{ 
           bgcolor: alpha(theme.palette.background.paper, 0.8), 
-          py: 6,
+          py: 10,
           position: 'relative',
           '&::before': {
             content: '""',
@@ -285,7 +288,7 @@ export default function LandingPage() {
                 color: 'transparent',
               }}
             >
-              Why Choose filiUp?
+              Bakit Piliin ang filiUp?
             </Typography>
             <Typography 
               variant="h6" 
@@ -293,164 +296,217 @@ export default function LandingPage() {
               sx={{ 
                 maxWidth: 700, 
                 mx: "auto",
-                lineHeight: 1.6,
+                lineHeight: 1.4,
+                mb: 2,
               }}
             >
-              Our platform offers everything you need to succeed in your programming journey
+              Ang aming platform ay nag-aalok ng lahat ng kailangan mo para matuto sa pamamagitan ng mga kwentong Pilipino
             </Typography>
           </Box>
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Box 
-                sx={{ 
-                  textAlign: "center", 
-                  p: 3, 
-                  bgcolor: alpha(theme.palette.secondary.main, 0.05),
-                  borderRadius: 4,
-                  transition: 'all 0.3s ease',
-                  boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
-                  '&:hover': {
-                    transform: 'translateY(-8px)',
-                    boxShadow: `0 12px 30px ${alpha(theme.palette.common.black, 0.1)}`,
-                  }
-                }}
-              >
+          <Grid 
+            container 
+            spacing={3} 
+            justifyContent="center"
+            alignItems="stretch"
+            sx={{ 
+              width: '100%',
+              maxWidth: '900px',
+              mx: 'auto',
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+              },
+              gap: 3,
+              '& > *': {
+                minHeight: '200px',
+                height: '100%'
+              }
+            }}
+          >
+            <Box 
+              sx={{ 
+                textAlign: "left", 
+                p: 3, 
+                height: '100%',
+                width: '100%',
+                bgcolor: 'background.paper',
+                borderRadius: 3,
+                transition: 'all 0.3s ease',
+                boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.15)}`,
+                  borderColor: alpha(theme.palette.primary.main, 0.3),
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexShrink: 0 }}>
                 <Avatar
                   sx={{
-                    width: 80,
-                    height: 80,
+                    width: 50,
+                    height: 50,
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
-                    mb: 2,
+                    mr: 2,
                     boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    flexShrink: 0
                   }}
                 >
-                  <SchoolIcon fontSize="large" />
+                  <StoriesIcon fontSize="small" />
                 </Avatar>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Certification Exams
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                  Earn industry-recognized certifications to boost your career
+                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '1.2rem' }}>
+                  Mga Kuwentong Pilipino
                 </Typography>
               </Box>
-            </Grid>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, flex: 1 }}>
+                Maglakbay sa mundo ng mga tradisyunal na kuwento, alamat, at mitolohiyang Pilipino. Tuklasin ang mayamang kultura at kasaysayan ng ating bansa.
+              </Typography>
+            </Box>
 
-            <Grid item xs={12} sm={6} md={3}>
-              <Box 
-                sx={{ 
-                  textAlign: "center", 
-                  p: 3, 
-                  bgcolor: alpha(theme.palette.secondary.main, 0.05),
-                  borderRadius: 4,
-                  transition: 'all 0.3s ease',
-                  boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
-                  '&:hover': {
-                    transform: 'translateY(-8px)',
-                    boxShadow: `0 12px 30px ${alpha(theme.palette.common.black, 0.1)}`,
-                  }
-                }}
-              >
+            <Box 
+              sx={{ 
+                textAlign: "left", 
+                p: 3, 
+                height: '100%',
+                width: '100%',
+                bgcolor: 'background.paper',
+                borderRadius: 3,
+                transition: 'all 0.3s ease',
+                boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.15)}`,
+                  borderColor: alpha(theme.palette.primary.main, 0.3),
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexShrink: 0 }}>
                 <Avatar
                   sx={{
-                    width: 80,
-                    height: 80,
+                    width: 50,
+                    height: 50,
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
-                    mb: 2,
+                    mr: 2,
                     boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    flexShrink: 0
                   }}
                 >
-                  <BookIcon fontSize="large" />
+                  <PsychologyIcon fontSize="small" />
                 </Avatar>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Interactive Learning
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                  Learn by doing with our hands-on coding exercises
+                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '1.2rem' }}>
+                  Interactive na Pag-aaral
                 </Typography>
               </Box>
-            </Grid>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, flex: 1 }}>
+                Mag-enjoy sa mga interactive na pagsusulit, mga gawain, at mga hamon na magpapalalim ng iyong pag-unawa sa bawat kuwento.
+              </Typography>
+            </Box>
 
-            <Grid item xs={12} sm={6} md={3}>
-              <Box 
-                sx={{ 
-                  textAlign: "center", 
-                  p: 3, 
-                  bgcolor: alpha(theme.palette.secondary.main, 0.05),
-                  borderRadius: 4,
-                  transition: 'all 0.3s ease',
-                  boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
-                  '&:hover': {
-                    transform: 'translateY(-8px)',
-                    boxShadow: `0 12px 30px ${alpha(theme.palette.common.black, 0.1)}`,
-                  }
-                }}
-              >
+            <Box 
+              sx={{ 
+                textAlign: "left", 
+                p: 3, 
+                height: '100%',
+                width: '100%',
+                bgcolor: 'background.paper',
+                borderRadius: 3,
+                transition: 'all 0.3s ease',
+                boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.15)}`,
+                  borderColor: alpha(theme.palette.primary.main, 0.3),
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexShrink: 0 }}>
                 <Avatar
                   sx={{
-                    width: 80,
-                    height: 80,
+                    width: 50,
+                    height: 50,
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
-                    mb: 2,
+                    mr: 2,
                     boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    flexShrink: 0
                   }}
                 >
-                  <AwardIcon fontSize="large" />
+                  <TranslateIcon fontSize="small" />
                 </Avatar>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Expert Instructors
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                  Learn from industry professionals with years of experience
+                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '1.2rem' }}>
+                  Dalawang Wika
                 </Typography>
               </Box>
-            </Grid>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, flex: 1 }}>
+                Magbasa ng mga kuwento sa Filipino at Ingles. Palawakin ang iyong bokabularyo at pagkaunawa sa dalawang wika.
+              </Typography>
+            </Box>
 
-            <Grid item xs={12} sm={6} md={3}>
-              <Box 
-                sx={{ 
-                  textAlign: "center", 
-                  p: 3, 
-                  bgcolor: alpha(theme.palette.secondary.main, 0.05),
-                  borderRadius: 4,
-                  transition: 'all 0.3s ease',
-                  boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
-                  '&:hover': {
-                    transform: 'translateY(-8px)',
-                    boxShadow: `0 12px 30px ${alpha(theme.palette.common.black, 0.1)}`,
-                  }
-                }}
-              >
+            <Box 
+              sx={{ 
+                textAlign: "left", 
+                p: 3, 
+                height: '100%',
+                width: '100%',
+                bgcolor: 'background.paper',
+                borderRadius: 3,
+                transition: 'all 0.3s ease',
+                boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.05)}`,
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.15)}`,
+                  borderColor: alpha(theme.palette.primary.main, 0.3),
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexShrink: 0 }}>
                 <Avatar
                   sx={{
-                    width: 80,
-                    height: 80,
+                    width: 50,
+                    height: 50,
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
-                    mb: 2,
+                    mr: 2,
                     boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    flexShrink: 0
                   }}
                 >
-                  <PeopleIcon fontSize="large" />
+                  <LibraryIcon fontSize="small" />
                 </Avatar>
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Community Support
-                </Typography>
-                <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                  Connect with peers and mentors for guidance and collaboration
+                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '1.2rem' }}>
+                  Araw-araw na Pagbabasa
                 </Typography>
               </Box>
-            </Grid>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, flex: 1 }}>
+                Subaybayan ang iyong pag-unlad at makakuha ng mga badge para sa bawat kuwentong natapos. Gawing kasanayan ang pagbabasa.
+              </Typography>
+            </Box>
           </Grid>
         </Container>
       </Box>
 
       {/* Popular Courses Section */}
-      <Container sx={{ py: 6 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+      <Container sx={{ py: 10 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 6 }}>
           <Typography 
             variant="h3" 
             component="h2" 
@@ -462,7 +518,7 @@ export default function LandingPage() {
               color: 'transparent',
             }}
           >
-            Popular Courses
+            Mga Sikat na Kwento
           </Typography>
           <Link
             component={RouterLink}
@@ -478,12 +534,12 @@ export default function LandingPage() {
               }
             }}
           >
-            View All <ArrowForwardIcon sx={{ ml: 0.5, fontSize: 18 }} />
+            Tingnan Lahat <ArrowForwardIcon sx={{ ml: 0.5, fontSize: 18 }} />
           </Link>
         </Box>
 
-        <Grid container spacing={3}>
-          {/* Java Course Card */}
+        <Grid container spacing={4}>
+          {/* Si Malakas at si Maganda */}
           <Grid item xs={12} sm={6} md={4}>
             <Card 
               sx={{ 
@@ -497,15 +553,15 @@ export default function LandingPage() {
                 }
               }}
             >
-              <CardMedia sx={{ bgcolor: "#ffcdd2", p: 3, display: "flex", justifyContent: "center" }}>
+              <CardMedia sx={{ bgcolor: "#ffcdd2", p: 4, display: "flex", justifyContent: "center" }}>
                 <JavaLogo />
               </CardMedia>
-              <CardContent sx={{ p: 2 }}>
+              <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Java Certification Exam
+                  Si Malakas at si Maganda
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  filiUp Java Programming 1
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Alamat ng Pinagmulan ng mga Tao
                 </Typography>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <Typography variant="body2" color="primary.main" fontWeight="bold">
@@ -522,14 +578,14 @@ export default function LandingPage() {
                       fontWeight: 600,
                     }}
                   >
-                    Enroll
+                    Basahin
                   </Button>
                 </Box>
               </CardContent>
             </Card>
           </Grid>
 
-          {/* Python Course Card */}
+          {/* Ang Alamat ng Pinya */}
           <Grid item xs={12} sm={6} md={4}>
             <Card 
               sx={{ 
@@ -543,15 +599,15 @@ export default function LandingPage() {
                 }
               }}
             >
-              <CardMedia sx={{ bgcolor: "#e3f2fd", p: 3, display: "flex", justifyContent: "center" }}>
+              <CardMedia sx={{ bgcolor: "#e3f2fd", p: 4, display: "flex", justifyContent: "center" }}>
                 <PythonLogo />
               </CardMedia>
-              <CardContent sx={{ p: 2 }}>
+              <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Python for Data Science
+                  Ang Alamat ng Pinya
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  filiUp Python Fundamentals
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Kwento ng isang masipag na anak
                 </Typography>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <Typography variant="body2" color="primary.main" fontWeight="bold">
@@ -568,14 +624,14 @@ export default function LandingPage() {
                       fontWeight: 600,
                     }}
                   >
-                    Enroll
+                    Basahin
                   </Button>
                 </Box>
               </CardContent>
             </Card>
           </Grid>
 
-          {/* Web Dev Course Card */}
+          {/* Ang Matsing at ang Pagong */}
           <Grid item xs={12} sm={6} md={4}>
             <Card 
               sx={{ 
@@ -589,7 +645,7 @@ export default function LandingPage() {
                 }
               }}
             >
-              <CardMedia sx={{ bgcolor: "#fff3e0", p: 3, display: "flex", justifyContent: "center" }}>
+              <CardMedia sx={{ bgcolor: "#fff3e0", p: 4, display: "flex", justifyContent: "center" }}>
                 <Avatar 
                   sx={{ 
                     width: 80, 
@@ -599,15 +655,15 @@ export default function LandingPage() {
                     boxShadow: `0 4px 20px ${alpha("#ff9800", 0.3)}`,
                   }}
                 >
-                  JS
+                  MP
                 </Avatar>
               </CardMedia>
-              <CardContent sx={{ p: 2 }}>
+              <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  Web Development
+                  Ang Matsing at ang Pagong
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  filiUp JavaScript & React
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Pabula tungkol sa talino at kasipagan
                 </Typography>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <Typography variant="body2" color="primary.main" fontWeight="bold">
@@ -624,7 +680,7 @@ export default function LandingPage() {
                       fontWeight: 600,
                     }}
                   >
-                    Enroll
+                    Basahin
                   </Button>
                 </Box>
               </CardContent>
@@ -636,7 +692,7 @@ export default function LandingPage() {
       {/* CTA Section */}
       <Box
         sx={{
-          py: 6,
+          py: 10,
           background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
           color: "white",
           position: 'relative',
@@ -660,23 +716,23 @@ export default function LandingPage() {
             fontWeight="bold" 
             gutterBottom
             sx={{ 
-              mb: 2,
+              mb: 3,
               fontSize: { xs: '2rem', md: '3rem' },
             }}
           >
-            Ready to Start Your Learning Journey?
+            Handa ka na bang Matuto?
           </Typography>
           <Typography 
             variant="h6" 
             sx={{ 
-              mb: 4, 
+              mb: 6, 
               opacity: 0.9,
               maxWidth: 700,
               mx: 'auto',
               lineHeight: 1.6,
             }}
           >
-            Join thousands of students who are already mastering programming with filiUp
+            Sumali sa libu-libong mag-aaral na natututo sa pamamagitan ng mga kwentong Pilipino sa filiUp
           </Typography>
           <Box sx={{ display: "flex", gap: 3, justifyContent: "center" }}>
             <Button
@@ -698,7 +754,7 @@ export default function LandingPage() {
                 },
               }}
             >
-              Sign Up Now
+              Mag-sign Up Ngayon
             </Button>
             <Button
               variant="outlined"
@@ -717,7 +773,7 @@ export default function LandingPage() {
                 },
               }}
             >
-              Learn More
+              Matuto Pa
             </Button>
           </Box>
         </Container>
@@ -729,7 +785,7 @@ export default function LandingPage() {
         sx={{ 
           bgcolor: "#1e293b", 
           color: "white", 
-          py: 4,
+          py: 8,
           position: 'relative',
           '&::before': {
             content: '""',
@@ -744,9 +800,9 @@ export default function LandingPage() {
         }}
       >
         <Container sx={{ position: 'relative', zIndex: 1 }}>
-          <Grid container spacing={3}>
+          <Grid container spacing={5}>
             <Grid item xs={12} md={3}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
                 <Box
                   sx={{
                     bgcolor: "white",
@@ -782,33 +838,33 @@ export default function LandingPage() {
                 </Typography>
               </Box>
               <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>
-                The complete platform for learning programming and preparing for certification exams.
+                Ang kumpletong platform para sa pag-aaral ng mga kwentong Pilipino at pagsusulit.
               </Typography>
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Courses
+                Mga Kwento
               </Typography>
               <Box component="ul" sx={{ listStyle: "none", p: 0, m: 0 }}>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Java
+                    Mga Alamat
                   </Link>
                 </Box>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Python
+                    Mga Pabula
                   </Link>
                 </Box>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    JavaScript
+                    Mga Kwentong-Bayan
                   </Link>
                 </Box>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    C++
+                    Mga Epiko
                   </Link>
                 </Box>
               </Box>
@@ -816,27 +872,27 @@ export default function LandingPage() {
 
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Resources
+                Mga Mapagkukunan
               </Typography>
               <Box component="ul" sx={{ listStyle: "none", p: 0, m: 0 }}>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
                     Blog
                   </Link>
                 </Box>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Documentation
+                    Mga Pagsusulit
                   </Link>
                 </Box>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Community
+                    Komunidad
                   </Link>
                 </Box>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Help Center
+                    Tulong
                   </Link>
                 </Box>
               </Box>
@@ -844,34 +900,34 @@ export default function LandingPage() {
 
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Company
+                Kompanya
               </Typography>
               <Box component="ul" sx={{ listStyle: "none", p: 0, m: 0 }}>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    About Us
+                    Tungkol Sa Amin
                   </Link>
                 </Box>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Careers
+                    Mga Trabaho
                   </Link>
                 </Box>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
                     Contact
                   </Link>
                 </Box>
-                <Box component="li" sx={{ mb: 1 }}>
+                <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Privacy Policy
+                    Patakaran sa Privacy
                   </Link>
                 </Box>
               </Box>
             </Grid>
           </Grid>
 
-          <Divider sx={{ my: 3, borderColor: "rgba(255,255,255,0.1)" }} />
+          <Divider sx={{ my: 6, borderColor: "rgba(255,255,255,0.1)" }} />
 
           <Box
             sx={{
@@ -881,7 +937,7 @@ export default function LandingPage() {
             }}
           >
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)" }}>
-              © {new Date().getFullYear()} filiUp. All rights reserved.
+              © {new Date().getFullYear()} filiUp. Lahat ng karapatan ay nakalaan.
             </Typography>
             <Box sx={{ display: "flex", gap: 2 }}>
               <IconButton 
@@ -926,4 +982,4 @@ export default function LandingPage() {
       </Box>
     </Box>
   );
-}
+} 
