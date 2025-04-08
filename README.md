@@ -1,5 +1,5 @@
 # 🌟 FiliUp - Learn Filipino Culture Through Stories
-![FiliUp Banner]([https://via.placeholder.com/800x200?text=FiliUp+-+Learn+Filipino+Culture](https://www.google.com/url?sa=i&url=https%3A%2F%2Fmovieweb.com%2Fmost-popular-anime-right-now%2F&psig=AOvVaw0Sm7yabQlaXOypAfsazuG2&ust=1744183266317000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCICwp47zx4wDFQAAAAAdAAAAABAE))
+![FiliUp Banner](https://i.imgur.com/ZQDl2cC.png)
 
 ## 📖 About FiliUp
 FiliUp is an innovative educational platform designed to make learning Filipino culture and language engaging and accessible. Through interactive stories, quizzes, and cultural narratives, we bring the rich heritage of the Philippines to learners worldwide.
@@ -55,19 +55,7 @@ npm run dev
 ```
 The frontend application will be available at `http://localhost:5173`
 
-## 🌐 Deployment
 
-### Frontend Deployment (Vercel)
-Live site: https://fili-up-eqhh.vercel.app/
-
-1. Install Vercel CLI:
-```bash
-npm install -g vercel
-```
-2. Deploy to Vercel:
-```bash
-vercel
-```
 
 ### Backend Deployment
 The backend can be deployed to any Java-compatible hosting service (e.g., AWS, DigitalOcean, etc.)
@@ -101,7 +89,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 We welcome contributions! Please feel free to submit a Pull Request.
 
 ## 📞 Support
-If you have any questions or need support, please email us at [your-email@example.com]
+If you have any questions or need support, please email us at [cg.fernandez@cit.edu]
 
 <div align="center">
   Made with ❤️ by the FiliUp Team
