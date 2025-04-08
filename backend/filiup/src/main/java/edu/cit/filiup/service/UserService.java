@@ -44,6 +44,7 @@ public class UserService {
             user.setUserName(newUserDetails.getUserName());
             user.setUserEmail(newUserDetails.getUserEmail());
             user.setUserPassword(newUserDetails.getUserPassword());
+            user.setUserRole(newUserDetails.getUserRole());
 
         } catch (NoSuchElementException nex) {
             throw new NameNotFoundException("User " + userId + " not found!");
@@ -68,7 +69,14 @@ public class UserService {
         if (urepo.findByUserEmail(user.getUserEmail()) != null) {
             throw new IllegalArgumentException("User already exists with this email.");
         }
-        return urepo.save(user); // Save user without encoding the password
+        
+        // Validate role
+        String role = user.getUserRole();
+        if (role == null || (!role.equals("STUDENT") && !role.equals("TEACHER"))) {
+            throw new IllegalArgumentException("Invalid user role. Must be either STUDENT or TEACHER.");
+        }
+        
+        return urepo.save(user);
     }
 
     // Login Method

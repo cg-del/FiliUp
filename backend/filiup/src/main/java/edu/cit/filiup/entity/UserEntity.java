@@ -17,15 +17,18 @@ public class UserEntity {
     @Column(name = "user_email", length = 255, nullable = false, unique = true)
     private String userEmail;
 
+    @Column(name = "user_role", length = 20, nullable = false)
+    private String userRole; // "STUDENT" or "TEACHER"
 
     public UserEntity() {
     }
 
-    public UserEntity(int userId, String userName, String userPassword, String userEmail) {
+    public UserEntity(int userId, String userName, String userPassword, String userEmail, String userRole) {
         this.userId = userId;
         this.userName = userName;
         this.userPassword = userPassword;
         this.userEmail = userEmail;
+        this.userRole = userRole;
     }
 
     public int getUserId() {
@@ -58,5 +61,13 @@ public class UserEntity {
 
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
+    }
+
+    public String getUserRole() {
+        return userRole;
+    }
+
+    public void setUserRole(String userRole) {
+        this.userRole = userRole;
     }
 }

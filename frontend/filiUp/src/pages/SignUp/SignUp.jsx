@@ -11,10 +11,15 @@ import {
     Button,
     CircularProgress,
     Container,
+    FormControl,
+    FormControlLabel,
+    FormLabel,
     IconButton,
     InputAdornment,
     Link,
     Paper,
+    Radio,
+    RadioGroup,
     Snackbar,
     TextField,
     Typography,
@@ -38,6 +43,7 @@ export default function SignUp() {
     email: '',
     password: '',
     confirmPassword: '',
+    role: 'STUDENT', // default to student
   });
 
   const handleChange = (event) => {
@@ -61,7 +67,7 @@ export default function SignUp() {
     }
 
     // Validate required fields
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.role) {
       setError('Mangyaring punan ang lahat ng kinakailangang field.');
       return;
     }
@@ -84,11 +90,10 @@ export default function SignUp() {
       
       // Prepare user data according to backend expectations
       const userData = {
-        userFirstName: formData.firstName,
-        userLastName: formData.lastName,
         userName: `${formData.firstName} ${formData.lastName}`,
         userEmail: formData.email,
         userPassword: formData.password,
+        userRole: formData.role,
       };
 
       // Make API call to register user
@@ -323,6 +328,35 @@ export default function SignUp() {
                 },
               }}
             />
+
+            <FormControl component="fieldset" sx={{ width: '100%', mb: 3 }}>
+              <FormLabel component="legend" sx={{ mb: 1, color: 'text.primary' }}>
+                Ikaw ay isang:
+              </FormLabel>
+              <RadioGroup
+                row
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                sx={{
+                  justifyContent: 'center',
+                  '& .MuiFormControlLabel-root': {
+                    mx: 2,
+                  }
+                }}
+              >
+                <FormControlLabel 
+                  value="STUDENT" 
+                  control={<Radio />} 
+                  label="Mag-aaral" 
+                />
+                <FormControlLabel 
+                  value="TEACHER" 
+                  control={<Radio />} 
+                  label="Guro" 
+                />
+              </RadioGroup>
+            </FormControl>
 
             <Button
               type="submit"

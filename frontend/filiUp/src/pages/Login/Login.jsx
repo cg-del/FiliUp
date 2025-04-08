@@ -40,7 +40,12 @@ export default function Login() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/home', { replace: true });
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user?.userRole === 'TEACHER') {
+        navigate('/teacher', { replace: true });
+      } else {
+        navigate('/home', { replace: true });
+      }
     }
   }, [isAuthenticated, navigate]);
 
@@ -75,6 +80,11 @@ export default function Login() {
       const response = await axios.post('http://localhost:8080/api/user/login', loginData);
 
       if (response.data) {
+        // Check if response has the required fields
+        if (!response.data.userName || !response.data.userRole) {
+          throw new Error('Invalid response data');
+        }
+
         // Use the login function from context
         login(response.data);
       }
@@ -83,6 +93,8 @@ export default function Login() {
       setError(
         err.response?.status === 401
           ? 'Hindi tamang email o password.'
+          : err.message === 'Invalid response data'
+          ? 'May problema sa server response. Pakisubukang muli.'
           : 'May error sa pag-sign in. Pakisubukang muli.'
       );
     } finally {
