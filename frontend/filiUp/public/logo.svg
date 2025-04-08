@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
+  <!-- Explicitly transparent background -->
+  <rect width="100%" height="100%" fill="none"/>
+  
+  <!-- Letter F -->
+  <path d="M40,20 L40,80 M40,20 L90,20 M40,45 L80,45" 
+        stroke="#0066cc" 
+        stroke-width="16" 
+        stroke-linecap="round" 
+        fill="none" />
+  
+  <!-- Letter U -->
+  <path d="M110,20 L110,70 Q110,80 120,80 L140,80 Q150,80 150,70 L150,20" 
+        stroke="#0066cc" 
+        stroke-width="16" 
+        stroke-linecap="round" 
+        fill="none" />
+</svg>

@@ -31,7 +31,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { Link as RouterLink } from 'react-router-dom';
-import filiupLogo from '../../assets/filiup-logo-svg.svg';
+import filiupLogo from '../../assets/banner.svg';
 
 // Logo components remain the same
 const JavaLogo = () => (

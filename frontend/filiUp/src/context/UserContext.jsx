@@ -12,6 +12,11 @@ export function UserProvider({ children }) {
   // Check authentication status on mount
   useEffect(() => {
     const checkAuth = () => {
+      if (typeof window === 'undefined') {
+        setLoading(false);
+        return;
+      }
+
       try {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
@@ -19,15 +24,7 @@ export function UserProvider({ children }) {
           if (parsedUser && parsedUser.userName) {
             setUser(parsedUser);
             setIsAuthenticated(true);
-            // Only redirect if we're not already on the correct page
-            const currentPath = window.location.pathname;
-            if (parsedUser.userRole === 'TEACHER' && currentPath !== '/teacher') {
-              navigate('/teacher', { replace: true });
-            } else if (parsedUser.userRole !== 'TEACHER' && currentPath !== '/home') {
-              navigate('/home', { replace: true });
-            }
           } else {
-            // Invalid user data
             localStorage.removeItem('user');
             setUser(null);
             setIsAuthenticated(false);
@@ -46,13 +43,16 @@ export function UserProvider({ children }) {
     };
 
     checkAuth();
-  }, [navigate]);
+  }, []);
 
   const login = (userData) => {
+    if (typeof window === 'undefined') return;
+    
     if (!userData || !userData.userName) {
       console.error('Invalid user data');
       return;
     }
+    
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userData));
@@ -65,6 +65,8 @@ export function UserProvider({ children }) {
   };
 
   const logout = () => {
+    if (typeof window === 'undefined') return;
+    
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('user');
