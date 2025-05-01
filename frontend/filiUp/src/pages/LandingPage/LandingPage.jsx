@@ -1,37 +1,40 @@
 import {
-  ArrowForward as ArrowForwardIcon,
-  EmojiEvents as AwardIcon,
-  MenuBook as BookIcon,
-  Facebook as FacebookIcon,
-  GitHub as GitHubIcon,
-  LocalLibrary as LibraryIcon,
-  People as PeopleIcon,
-  Psychology as PsychologyIcon,
-  School as SchoolIcon,
-  AutoStories as StoriesIcon,
-  Translate as TranslateIcon,
-  Twitter as TwitterIcon,
+    ArrowForward as ArrowForwardIcon,
+    EmojiEvents as AwardIcon,
+    MenuBook as BookIcon,
+    Facebook as FacebookIcon,
+    GitHub as GitHubIcon,
+    LocalLibrary as LibraryIcon,
+    People as PeopleIcon,
+    Psychology as PsychologyIcon,
+    School as SchoolIcon,
+    AutoStories as StoriesIcon,
+    Translate as TranslateIcon,
+    Twitter as TwitterIcon,
 } from "@mui/icons-material";
 import {
-  alpha,
-  AppBar,
-  Avatar,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CardMedia,
-  Container,
-  Divider,
-  Grid,
-  IconButton,
-  Link,
-  Toolbar,
-  Typography,
-  useTheme,
+    alpha,
+    AppBar,
+    Avatar,
+    Box,
+    Button,
+    Card,
+    CardContent,
+    CardMedia,
+    Container,
+    Divider,
+    Grid,
+    IconButton,
+    Link,
+    Toolbar,
+    Typography,
+    useTheme,
 } from "@mui/material";
 import { Link as RouterLink } from 'react-router-dom';
+import alamatngpinya from '../../assets/alamatngpinya.jpg';
 import filiupLogo from '../../assets/banner.svg';
+import malakasmaganda from '../../assets/malakas at maganda.jpg';
+import pagongatmatsing from '../../assets/pagongatmatsing.jpg';
 
 // Logo components remain the same
 const JavaLogo = () => (
@@ -553,9 +556,15 @@ export default function LandingPage() {
                 }
               }}
             >
-              <CardMedia sx={{ bgcolor: "#ffcdd2", p: 4, display: "flex", justifyContent: "center" }}>
-                <JavaLogo />
-              </CardMedia>
+              <CardMedia
+                component="img"
+                sx={{ 
+                  height: 200,
+                  objectFit: 'cover',
+                }}
+                image={malakasmaganda}
+                alt="Si Malakas at si Maganda"
+              />
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight="bold" gutterBottom>
                   Si Malakas at si Maganda
@@ -599,9 +608,15 @@ export default function LandingPage() {
                 }
               }}
             >
-              <CardMedia sx={{ bgcolor: "#e3f2fd", p: 4, display: "flex", justifyContent: "center" }}>
-                <PythonLogo />
-              </CardMedia>
+              <CardMedia
+                component="img"
+                sx={{ 
+                  height: 200,
+                  objectFit: 'cover',
+                }}
+                image={alamatngpinya}
+                alt="Ang Alamat ng Pinya"
+              />
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight="bold" gutterBottom>
                   Ang Alamat ng Pinya
@@ -645,19 +660,15 @@ export default function LandingPage() {
                 }
               }}
             >
-              <CardMedia sx={{ bgcolor: "#fff3e0", p: 4, display: "flex", justifyContent: "center" }}>
-                <Avatar 
-                  sx={{ 
-                    width: 80, 
-                    height: 80, 
-                    bgcolor: "#ff9800", 
-                    fontSize: "1.5rem",
-                    boxShadow: `0 4px 20px ${alpha("#ff9800", 0.3)}`,
-                  }}
-                >
-                  MP
-                </Avatar>
-              </CardMedia>
+              <CardMedia
+                component="img"
+                sx={{ 
+                  height: 200,
+                  objectFit: 'cover',
+                }}
+                image={pagongatmatsing}
+                alt="Ang Matsing at ang Pagong"
+              />
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" fontWeight="bold" gutterBottom>
                   Ang Matsing at ang Pagong
