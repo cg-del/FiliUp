@@ -80,13 +80,15 @@ export default function Login() {
       const response = await axios.post('http://localhost:8080/api/user/login', loginData);
 
       if (response.data) {
+        const { token, ...userData } = response.data;
+        
         // Check if response has the required fields
-        if (!response.data.userName || !response.data.userRole) {
+        if (!userData.userName || !userData.userRole || !token) {
           throw new Error('Invalid response data');
         }
 
-        // Use the login function from context
-        login(response.data);
+        // Use the login function from context with token
+        login(userData, token);
       }
     } catch (err) {
       console.error('Login error:', err);

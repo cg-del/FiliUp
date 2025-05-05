@@ -87,4 +87,8 @@ public class UserService {
         }
         return null; // Login failed
     }
+
+    public UserEntity getUserByEmail(String email) {
+        return urepo.findByUserEmail(email);
+    }
 }

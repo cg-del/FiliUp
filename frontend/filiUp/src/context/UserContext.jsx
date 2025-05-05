@@ -18,25 +18,23 @@ export function UserProvider({ children }) {
       }
 
       try {
+        const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
-        if (storedUser) {
+        
+        if (token && storedUser) {
           const parsedUser = JSON.parse(storedUser);
           if (parsedUser && parsedUser.userName) {
             setUser(parsedUser);
             setIsAuthenticated(true);
           } else {
-            localStorage.removeItem('user');
-            setUser(null);
-            setIsAuthenticated(false);
+            clearAuthData();
           }
         } else {
-          setUser(null);
-          setIsAuthenticated(false);
+          clearAuthData();
         }
       } catch (error) {
         console.error('Error checking auth:', error);
-        setUser(null);
-        setIsAuthenticated(false);
+        clearAuthData();
       } finally {
         setLoading(false);
       }
@@ -45,17 +43,25 @@ export function UserProvider({ children }) {
     checkAuth();
   }, []);
 
-  const login = (userData) => {
+  const clearAuthData = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  const login = (userData, token) => {
     if (typeof window === 'undefined') return;
     
-    if (!userData || !userData.userName) {
-      console.error('Invalid user data');
+    if (!userData || !userData.userName || !token) {
+      console.error('Invalid user data or token');
       return;
     }
     
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('token', token);
     
     if (userData.userRole === 'TEACHER') {
       navigate('/teacher', { replace: true });
@@ -67,9 +73,7 @@ export function UserProvider({ children }) {
   const logout = () => {
     if (typeof window === 'undefined') return;
     
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('user');
+    clearAuthData();
     navigate('/sign-in', { replace: true });
   };
 
