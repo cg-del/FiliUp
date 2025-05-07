@@ -5,6 +5,7 @@ import edu.cit.filiup.service.UserService;
 import edu.cit.filiup.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,8 +40,14 @@ public class UserController {
     public ResponseEntity<?> signup(@RequestBody UserEntity user) {
         UserEntity newUser = userv.registerUser(user);
         if (newUser != null) {
-            String token = JwtUtil.generateToken(newUser.getUserEmail());
-            return ResponseEntity.ok(Map.of("token", token));
+            Map<String, String> tokens = JwtUtil.generateTokens(newUser.getUserEmail());
+            Map<String, Object> response = new HashMap<>();
+            response.put("accessToken", tokens.get("accessToken"));
+            response.put("refreshToken", tokens.get("refreshToken"));
+            response.put("userName", newUser.getUserName());
+            response.put("userRole", newUser.getUserRole());
+            response.put("userEmail", newUser.getUserEmail());
+            return ResponseEntity.ok(response);
         }
         return ResponseEntity.badRequest().body("Registration failed");
     }
@@ -50,9 +57,10 @@ public class UserController {
         UserEntity loggedInUser = userv.loginUser(user.getUserEmail(), user.getUserPassword());
         
         if (loggedInUser != null) {
-            String token = JwtUtil.generateToken(loggedInUser.getUserEmail());
+            Map<String, String> tokens = JwtUtil.generateTokens(loggedInUser.getUserEmail());
             Map<String, Object> response = new HashMap<>();
-            response.put("token", token);
+            response.put("accessToken", tokens.get("accessToken"));
+            response.put("refreshToken", tokens.get("refreshToken"));
             response.put("userName", loggedInUser.getUserName());
             response.put("userRole", loggedInUser.getUserRole());
             response.put("userEmail", loggedInUser.getUserEmail());
@@ -62,6 +70,28 @@ public class UserController {
         }
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
+        String refreshToken = request.get("refreshToken");
+        if (refreshToken == null) {
+            return ResponseEntity.status(401).body("No refresh token provided");
+        }
+
+        try {
+            if (JwtUtil.validateToken(refreshToken) && !JwtUtil.isTokenExpired(refreshToken)) {
+                String userEmail = JwtUtil.extractUsername(refreshToken);
+                UserEntity user = userv.getUserByEmail(userEmail);
+                
+                if (user != null) {
+                    Map<String, String> tokens = JwtUtil.generateTokens(user.getUserEmail());
+                    return ResponseEntity.ok(tokens);
+                }
+            }
+            return ResponseEntity.status(401).body("Invalid refresh token");
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body("Token refresh failed");
+        }
+    }
 
     @PostMapping("/verify")
     public ResponseEntity<?> verifyToken(@RequestBody Map<String, String> request) {
@@ -91,9 +121,30 @@ public class UserController {
         }
     }
 
-    @PostMapping("/Hello")
-    public String Hello(){
-        return "Hello";
+    @GetMapping("/hello")
+    public ResponseEntity<?> hello(JwtAuthenticationToken jwtAuthToken) {
+        try {
+            String email = jwtAuthToken.getToken().getClaim("sub");
+            UserEntity user = userv.getUserByEmail(email);
+            
+            if (user != null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Hello, " + user.getUserName() + "!");
+                response.put("userName", user.getUserName());
+                response.put("userRole", user.getUserRole());
+                response.put("userEmail", user.getUserEmail());
+                return ResponseEntity.ok(response);
+            }
+            
+            return ResponseEntity.status(404)
+                .body(Map.of("error", "User not found", "email", email));
+                
+        } catch (Exception e) {
+            System.err.println("Error in hello endpoint: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(401)
+                .body(Map.of("error", "Authentication failed", "message", e.getMessage()));
+        }
     }
     
 }

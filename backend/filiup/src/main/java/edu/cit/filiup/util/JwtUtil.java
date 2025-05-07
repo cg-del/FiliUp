@@ -4,29 +4,34 @@ import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.SignatureException;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import java.nio.file.Paths;
 
 public class JwtUtil {
     private static final Dotenv dotenv;
     private static final String SECRET_KEY;
-    private static final long EXPIRATION_TIME = 86400000L; // 1 day
+    private static final long EXPIRATION_TIME = 3600000L; // 1 hour
+    private static final long REFRESH_EXPIRATION_TIME = 604800000L; // 7 days
     private static final SecretKey key;
+    private static final SignatureAlgorithm ALGORITHM = SignatureAlgorithm.HS256;
 
     static {
         System.out.println("Initializing JwtUtil...");
         try {
             dotenv = Dotenv.load();
             System.out.println("Dotenv loaded successfully");
-            System.out.println("Current working directory: " + System.getProperty("user.dir"));
             
             SECRET_KEY = dotenv.get("JWT_SECRET_KEY");
-            System.out.println("JWT_SECRET_KEY from .env: " + (SECRET_KEY != null ? "***" : "null"));
-            System.out.println("All environment variables: " + dotenv.entries());
-            
-            if (SECRET_KEY == null || SECRET_KEY.isEmpty()) {
-                throw new RuntimeException("JWT_SECRET_KEY is null or empty");
+            if (SECRET_KEY == null || SECRET_KEY.isEmpty() || SECRET_KEY.length() < 32) {
+                throw new RuntimeException("JWT_SECRET_KEY must be at least 32 characters long");
             }
             
             try {
@@ -45,19 +50,39 @@ public class JwtUtil {
         }
     }
 
-    public static String generateToken(String subject) {
+    public static Map<String, String> generateTokens(String subject) {
         try {
-            System.out.println("Generating token for subject: " + subject);
-            String token = Jwts.builder()
+            String jti = UUID.randomUUID().toString();
+            Date now = new Date();
+            Date accessExpiration = new Date(now.getTime() + EXPIRATION_TIME);
+            Date refreshExpiration = new Date(now.getTime() + REFRESH_EXPIRATION_TIME);
+
+            // Generate access token
+            String accessToken = Jwts.builder()
                     .subject(subject)
-                    .issuedAt(new Date())
-                    .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                    .signWith(key)
+                    .issuedAt(now)
+                    .expiration(accessExpiration)
+                    .claim("type", "access")
+                    .claim("jti", jti)
+                    .signWith(key, ALGORITHM)
                     .compact();
-            System.out.println("Token generated successfully");
-            return token;
+
+            // Generate refresh token
+            String refreshToken = Jwts.builder()
+                    .subject(subject)
+                    .issuedAt(now)
+                    .expiration(refreshExpiration)
+                    .claim("type", "refresh")
+                    .claim("jti", jti)
+                    .signWith(key, ALGORITHM)
+                    .compact();
+
+            Map<String, String> tokens = new HashMap<>();
+            tokens.put("accessToken", accessToken);
+            tokens.put("refreshToken", refreshToken);
+            return tokens;
         } catch (Exception e) {
-            System.err.println("Error generating token: " + e.getMessage());
+            System.err.println("Error generating tokens: " + e.getMessage());
             e.printStackTrace();
             throw e;
         }
@@ -65,11 +90,28 @@ public class JwtUtil {
 
     public static boolean validateToken(String token) {
         try {
-            Jwts.parser()
+            Claims claims = Jwts.parser()
                 .verifyWith(key)
                 .build()
-                .parseSignedClaims(token);
+                .parseSignedClaims(token)
+                .getPayload();
+
+            // Validate token type
+            String type = claims.get("type", String.class);
+            if (type == null || (!type.equals("access") && !type.equals("refresh"))) {
+                return false;
+            }
+
             return true;
+        } catch (ExpiredJwtException e) {
+            System.err.println("Token expired: " + e.getMessage());
+            return false;
+        } catch (SignatureException e) {
+            System.err.println("Invalid signature: " + e.getMessage());
+            return false;
+        } catch (MalformedJwtException e) {
+            System.err.println("Malformed token: " + e.getMessage());
+            return false;
         } catch (Exception e) {
             System.err.println("Error validating token: " + e.getMessage());
             return false;
@@ -87,6 +129,19 @@ public class JwtUtil {
         } catch (Exception e) {
             System.err.println("Error extracting username from token: " + e.getMessage());
             return null;
+        }
+    }
+
+    public static boolean isTokenExpired(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+            return claims.getExpiration().before(new Date());
+        } catch (Exception e) {
+            return true;
         }
     }
 }

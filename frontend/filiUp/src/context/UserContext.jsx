@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,10 +19,10 @@ export function UserProvider({ children }) {
       }
 
       try {
-        const token = localStorage.getItem('token');
+        const accessToken = localStorage.getItem('accessToken');
         const storedUser = localStorage.getItem('user');
         
-        if (token && storedUser) {
+        if (accessToken && storedUser) {
           const parsedUser = JSON.parse(storedUser);
           if (parsedUser && parsedUser.userName) {
             setUser(parsedUser);
@@ -44,24 +45,24 @@ export function UserProvider({ children }) {
   }, []);
 
   const clearAuthData = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
   };
 
-  const login = (userData, token) => {
+  const login = (userData) => {
     if (typeof window === 'undefined') return;
     
-    if (!userData || !userData.userName || !token) {
-      console.error('Invalid user data or token');
+    if (!userData || !userData.userName) {
+      console.error('Invalid user data');
       return;
     }
     
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('token', token);
     
     if (userData.userRole === 'TEACHER') {
       navigate('/teacher', { replace: true });
@@ -76,6 +77,57 @@ export function UserProvider({ children }) {
     clearAuthData();
     navigate('/sign-in', { replace: true });
   };
+
+  // Add axios interceptor for token refresh
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+
+        // If the error is 401 and we haven't tried to refresh the token yet
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+
+          try {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) {
+              throw new Error('No refresh token available');
+            }
+
+            // Call refresh token endpoint
+            const response = await axios.post('http://localhost:8080/api/user/refresh', {
+              refreshToken
+            });
+
+            const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+            // Update tokens in localStorage
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', newRefreshToken);
+
+            // Update the original request with new token
+            originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+
+            // Retry the original request
+            return axios(originalRequest);
+          } catch (refreshError) {
+            // If refresh token fails, logout the user
+            clearAuthData();
+            navigate('/sign-in', { replace: true });
+            return Promise.reject(refreshError);
+          }
+        }
+
+        return Promise.reject(error);
+      }
+    );
+
+    // Cleanup interceptor on unmount
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [navigate]);
 
   const value = {
     user,
