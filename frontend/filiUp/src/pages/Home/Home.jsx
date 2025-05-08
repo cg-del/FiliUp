@@ -1,350 +1,737 @@
+"use client"
+import { useState, useRef, useEffect } from "react"
 import {
-    Assessment as AssessmentIcon,
-    Book as BookIcon,
-    MenuBook as LessonIcon,
-    Logout as LogoutIcon,
-    Person as PersonIcon,
-    Timeline as ProgressIcon,
-    PlayCircle as StartIcon,
-    EmojiEvents as TrophyIcon,
-} from '@mui/icons-material';
-import {
-    Avatar,
-    Box,
-    Button,
-    Card,
-    CardContent,
-    CircularProgress,
-    Container,
-    Grid,
-    LinearProgress,
-    Paper,
-    Typography,
-    alpha,
-    useTheme,
-} from '@mui/material';
-import React from 'react';
-import { useUser } from '../../context/UserContext';
+  Menu,
+  Settings,
+  Moon,
+  Bell,
+  GraduationCap,
+  FileText,
+  Code,
+  MessageSquare,
+  Plus,
+  User,
+  LogOut,
+  BookOpen,
+  Award,
+  X,
+} from "lucide-react"
+import { useUser } from "../../context/UserContext"
 
-const featuredLessons = [
-  {
-    title: 'Mga Pangunahing Salita',
-    description: 'Matutunan ang mga basic na salita sa Filipino',
-    progress: 0,
-    icon: <BookIcon />,
-  },
-  {
-    title: 'Mga Pangungusap',
-    description: 'Paano bumuo ng mga simpleng pangungusap',
-    progress: 0,
-    icon: <LessonIcon />,
-  },
-  {
-    title: 'Mga Kwentong Bayan',
-    description: 'Mga tradisyunal na kwento ng Pilipinas',
-    progress: 0,
-    icon: <BookIcon />,
-  },
-];
+export default function StudentDashboard() {
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [sidebarExpanded, setSidebarExpanded] = useState(false)
+  const [joinClassModalOpen, setJoinClassModalOpen] = useState(false)
+  const [classCode, setClassCode] = useState("")
+  const dropdownRef = useRef(null)
+  const modalRef = useRef(null)
+  const { user, isAuthenticated, loading, logout } = useUser()
 
-const achievements = [
-  {
-    title: 'Baguhan',
-    description: 'Nakumpleto ang unang aralin',
-    icon: <TrophyIcon />,
-    unlocked: false,
-  },
-  {
-    title: 'Masigasig',
-    description: '7 araw sunod-sunod na pag-aaral',
-    icon: <AssessmentIcon />,
-    unlocked: false,
-  },
-  {
-    title: 'Matalino',
-    description: 'Perpektong marka sa pagsusulit',
-    icon: <TrophyIcon />,
-    unlocked: false,
-  },
-];
+  // Handle clicking outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false)
+      }
 
-export default function Home() {
-  const theme = useTheme();
-  const { user, isAuthenticated, loading, logout } = useUser();
+      if (modalRef.current && !modalRef.current.contains(event.target) && joinClassModalOpen) {
+        // Only close if clicking outside the modal and not on the join class card
+        const joinClassCard = document.getElementById("join-class-card")
+        if (!joinClassCard.contains(event.target)) {
+          setJoinClassModalOpen(false)
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [joinClassModalOpen])
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    function handleEscKey(event) {
+      if (event.key === "Escape" && joinClassModalOpen) {
+        setJoinClassModalOpen(false)
+      }
+    }
+
+    document.addEventListener("keydown", handleEscKey)
+    return () => {
+      document.removeEventListener("keydown", handleEscKey)
+    }
+  }, [joinClassModalOpen])
 
   // Safely get the user's initials
   const getInitials = () => {
-    if (!user?.userName) return 'U';
+    if (!user?.userName) return "U"
     try {
-      return user.userName.charAt(0) || 'U';
+      return user.userName.charAt(0) || "U"
     } catch {
-      return 'U';
+      return "U"
     }
-  };
-
-  // Safely get the user's full name
-  const getFullName = () => {
-    if (!user) return 'User';
-    try {
-      return user.userName || 'User';
-    } catch {
-      return 'User';
-    }
-  };
-
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
   }
 
-  if (!isAuthenticated) {
-    return null;
+  const handleLogout = () => {
+    logout()
+    setDropdownOpen(false)
+  }
+
+  const toggleSidebar = () => {
+    setSidebarExpanded(!sidebarExpanded)
+  }
+
+  const openJoinClassModal = () => {
+    setJoinClassModalOpen(true)
+    setClassCode("")
+  }
+
+  const closeJoinClassModal = () => {
+    setJoinClassModalOpen(false)
+  }
+
+  const handleJoinClass = () => {
+    // Here you would implement the logic to join a class with the provided code
+    console.log("Joining class with code:", classCode)
+    // After successful join, close the modal
+    setJoinClassModalOpen(false)
+    setClassCode("")
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        bgcolor: alpha(theme.palette.primary.main, 0.02),
-        pt: 8,
-        pb: 12,
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        fontFamily: "Inter, system-ui, sans-serif",
+        backgroundColor: "rgba(33, 150, 243, 0.02)",
       }}
     >
-      <Container maxWidth="lg">
-        {/* Welcome Section */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 4,
-            mb: 4,
-            borderRadius: 4,
-            background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-            color: 'white',
-            position: 'relative',
-            overflow: 'hidden',
+      {/* Left Sidebar */}
+      <div
+        style={{
+          width: sidebarExpanded ? "240px" : "54px",
+          backgroundColor: "white",
+          borderRight: "1px solid #e5e7eb",
+          display: "flex",
+          flexDirection: "column",
+          transition: "width 0.3s ease",
+          overflow: "hidden",
+          zIndex: 10,
+        }}
+      >
+        {/* Sidebar Header */}
+        <div
+          style={{
+            background: "linear-gradient(90deg, #2196f3 0%, #1976d2 100%)",
+            padding: "1rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: sidebarExpanded ? "space-between" : "center",
+            height: "60px",
           }}
         >
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
-            <Grid container spacing={4} alignItems="center">
-              <Grid item xs={12} md={8}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                  <Avatar
-                    sx={{
-                      width: 64,
-                      height: 64,
-                      bgcolor: 'white',
-                      color: theme.palette.primary.main,
+          <div
+            style={{
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(255, 255, 255, 0.2)",
+            }}
+            onClick={toggleSidebar}
+          >
+            <Menu size={20} color="white" />
+          </div>
+
+          
+        </div>
+
+        {/* Sidebar Content */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            flex: 1,
+            overflowY: "auto",
+          }}
+        >
+          {/* My Classes Section */}
+          <div
+            style={{
+              padding: sidebarExpanded ? "1rem" : "1rem 0",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.75rem",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.75rem",
+                color: "#2196f3",
+                padding: sidebarExpanded ? "0.5rem" : "0.5rem 0",
+                borderRadius: "0.375rem",
+                backgroundColor: "#e3f2fd",
+                justifyContent: sidebarExpanded ? "flex-start" : "center",
+                cursor: "pointer",
+              }}
+            >
+              <GraduationCap size={20} color="#2196f3" />
+              {sidebarExpanded && <span style={{ fontWeight: 500 }}>My classes</span>}
+            </div>
+
+            {sidebarExpanded && (
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    color: "#64748b",
+                    padding: "0.5rem 0.5rem 0.5rem 2rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  <GraduationCap size={16} color="#64748b" />
+                  <span style={{ fontSize: "0.875rem" }}>Mga Pangunahing Salita</span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    color: "#64748b",
+                    padding: "0.5rem 0.5rem 0.5rem 2rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  <GraduationCap size={16} color="#64748b" />
+                  <span style={{ fontSize: "0.875rem" }}>Mga Pangungusap</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Study Area */}
+          <div
+            style={{
+              padding: sidebarExpanded ? "0.5rem 1rem" : "1rem 0",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              color: "#64748b",
+              justifyContent: sidebarExpanded ? "flex-start" : "center",
+              cursor: "pointer",
+            }}
+          >
+            <BookOpen size={20} color="#64748b" />
+            {sidebarExpanded && <span style={{ fontWeight: 500 }}>Study area</span>}
+          </div>
+
+          {/* Playground */}
+          <div
+            style={{
+              padding: sidebarExpanded ? "0.5rem 1rem" : "1rem 0",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              color: "#64748b",
+              justifyContent: sidebarExpanded ? "flex-start" : "center",
+              cursor: "pointer",
+            }}
+          >
+            <Code size={20} color="#64748b" />
+            {sidebarExpanded && <span style={{ fontWeight: 500 }}>Playground</span>}
+          </div>
+
+          {/* Certifications */}
+          <div
+            style={{
+              padding: sidebarExpanded ? "0.5rem 1rem" : "1rem 0",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              color: "#64748b",
+              justifyContent: sidebarExpanded ? "flex-start" : "center",
+              cursor: "pointer",
+            }}
+          >
+            <Award size={20} color="#64748b" />
+            {sidebarExpanded && <span style={{ fontWeight: 500 }}>Certifications</span>}
+          </div>
+        </div>
+
+        {/* Chat with us */}
+        <div
+          style={{
+            padding: "1rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: sidebarExpanded ? "flex-start" : "center",
+            gap: "0.75rem",
+            borderTop: "1px solid #e5e7eb",
+            backgroundColor: "#2196f3",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          <MessageSquare size={20} color="white" />
+          {sidebarExpanded && <span style={{ fontWeight: 500 }}>Chat with us!</span>}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Top Navigation */}
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0.75rem 1rem",
+            background: "linear-gradient(135deg, #2196f3, #1976d2)",
+            color: "white",
+            height: "60px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <div
+              style={{
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onClick={toggleSidebar}
+            >
+              
+            </div>
+            
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+              }}
+            >
+              <span
+                style={{
+                  color: "#2196f3",
+                  backgroundColor: "white",
+                  padding: "0.125rem 0.375rem",
+                  borderRadius: "0.25rem",
+                }}
+              >
+                !
+              </span>
+              <span>371ms</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+            <div
+              style={{
+                backgroundColor: "#4caf50",
+                color: "white",
+                padding: "0.25rem 0.75rem",
+                borderRadius: "0.375rem",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+              }}
+            >
+              MAG-AARAL
+            </div>
+            <Moon size={20} color="white" />
+            <Bell size={20} color="white" />
+
+            {/* Profile Dropdown */}
+            <div style={{ position: "relative" }} ref={dropdownRef}>
+              <div
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  backgroundColor: "#e5e7eb",
+                  overflow: "hidden",
+                  border: "2px solid white",
+                  cursor: "pointer",
+                }}
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                {user?.profileImage ? (
+                  <img
+                    src={user.profileImage || "/placeholder.svg"}
+                    alt="User avatar"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#2196f3",
+                      color: "white",
+                      fontSize: "14px",
+                      fontWeight: "bold",
                     }}
                   >
                     {getInitials()}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>
-                      Magandang Araw, {getFullName()}!
-                    </Typography>
-                    <Typography variant="subtitle1">
-                      {user?.userEmail || 'No email provided'}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    startIcon={<StartIcon />}
-                    sx={{
-                      mt: 2,
-                      bgcolor: 'white',
-                      color: theme.palette.primary.main,
-                      '&:hover': {
-                        bgcolor: alpha(theme.palette.common.white, 0.9),
-                      },
-                    }}
-                  >
-                    Magpatuloy sa Pag-aaral
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    startIcon={<LogoutIcon />}
-                    onClick={logout}
-                    sx={{
-                      mt: 2,
-                      borderColor: 'white',
-                      color: 'white',
-                      '&:hover': {
-                        borderColor: alpha(theme.palette.common.white, 0.9),
-                        bgcolor: alpha(theme.palette.common.white, 0.1),
-                      },
-                    }}
-                  >
-                    Mag-sign Out
-                  </Button>
-                </Box>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Box>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Kabuuang Progreso
-                  </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={0}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      bgcolor: alpha(theme.palette.common.white, 0.2),
-                      '& .MuiLinearProgress-bar': {
-                        bgcolor: 'white',
-                      },
-                    }}
-                  />
-                  <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-                    0% nakumpleto
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Box>
-        </Paper>
+                  </div>
+                )}
+              </div>
 
-        {/* Lessons Section */}
-        <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
-          Mga Aralin
-        </Typography>
-        <Grid container spacing={3} sx={{ mb: 6 }}>
-          {featuredLessons.map((lesson, index) => (
-            <Grid item xs={12} md={4} key={index}>
-              <Card
-                elevation={0}
-                sx={{
-                  height: '100%',
-                  borderRadius: 4,
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: `0 12px 24px ${alpha(theme.palette.common.black, 0.1)}`,
-                  },
-                }}
-              >
-                <CardContent>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      mb: 2,
-                    }}
-                  >
-                    <Avatar
-                      sx={{
-                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                        color: theme.palette.primary.main,
-                      }}
-                    >
-                      {lesson.icon}
-                    </Avatar>
-                    <Typography variant="h6" fontWeight="bold">
-                      {lesson.title}
-                    </Typography>
-                  </Box>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
-                    {lesson.description}
-                  </Typography>
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ mb: 1, display: 'block' }}
-                    >
-                      Progreso: {lesson.progress}%
-                    </Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={lesson.progress}
-                      sx={{
-                        height: 6,
-                        borderRadius: 3,
-                      }}
-                    />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* Achievements Section */}
-        <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
-          Mga Nakamit
-        </Typography>
-        <Grid container spacing={3}>
-          {achievements.map((achievement, index) => (
-            <Grid item xs={12} md={4} key={index}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  borderRadius: 4,
-                  bgcolor: achievement.unlocked
-                    ? 'white'
-                    : alpha(theme.palette.common.black, 0.02),
-                  color: achievement.unlocked
-                    ? 'inherit'
-                    : theme.palette.text.disabled,
-                }}
-              >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2,
+              {/* Dropdown Menu */}
+              {dropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    right: 0,
+                    width: "200px",
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                    zIndex: 50,
+                    overflow: "hidden",
                   }}
                 >
-                  <Avatar
-                    sx={{
-                      bgcolor: achievement.unlocked
-                        ? alpha(theme.palette.primary.main, 0.1)
-                        : alpha(theme.palette.common.black, 0.05),
-                      color: achievement.unlocked
-                        ? theme.palette.primary.main
-                        : theme.palette.text.disabled,
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      transition: "background-color 0.2s",
                     }}
+                    onClick={() => setDropdownOpen(false)}
+                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
-                    {achievement.icon}
-                  </Avatar>
-                  <Box>
-                    <Typography
-                      variant="subtitle1"
-                      fontWeight="bold"
-                      gutterBottom
-                    >
-                      {achievement.title}
-                    </Typography>
-                    <Typography variant="body2" color="inherit">
-                      {achievement.description}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-    </Box>
-  );
-} 
+                    <User size={18} />
+                    <span>Aking Account</span>
+                  </div>
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      cursor: "pointer",
+                      color: "#334155",
+                      transition: "background-color 0.2s",
+                    }}
+                    onClick={handleLogout}
+                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#f8fafc")}
+                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
+                    <LogOut size={18} />
+                    <span>Mag-sign Out</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Dashboard Content */}
+        <main
+          style={{
+            flex: 1,
+            backgroundColor: "#f1f5f9",
+            padding: "1.5rem",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "1.25rem",
+              fontWeight: 500,
+              color: "#64748b",
+              marginBottom: "1.5rem",
+            }}
+          >
+            Mga Aktibong Aralin
+          </h2>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: "1.5rem",
+            }}
+          >
+            {/* Class Card */}
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: "0.5rem",
+                overflow: "hidden",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: "#e3f2fd",
+                  height: "100px",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <GraduationCap size={40} color="#2196f3" />
+              </div>
+              <div style={{ padding: "1rem" }}>
+                <h3
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: 600,
+                    marginBottom: "0.25rem",
+                  }}
+                >
+                  Mga Pangunahing Salita
+                </h3>
+                <p
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "#64748b",
+                  }}
+                >
+                  Matutunan ang mga basic na salita sa Filipino
+                </p>
+              </div>
+            </div>
+
+            {/* Class Card */}
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: "0.5rem",
+                overflow: "hidden",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: "#e3f2fd",
+                  height: "100px",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <GraduationCap size={40} color="#2196f3" />
+              </div>
+              <div style={{ padding: "1rem" }}>
+                <h3
+                  style={{
+                    fontSize: "1.125rem",
+                    fontWeight: 600,
+                    marginBottom: "0.25rem",
+                  }}
+                >
+                  Mga Pangungusap
+                </h3>
+                <p
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "#64748b",
+                  }}
+                >
+                  Paano bumuo ng mga simpleng pangungusap
+                </p>
+              </div>
+            </div>
+
+            {/* Join Class Card */}
+            <div
+              id="join-class-card"
+              style={{
+                border: "2px dashed #cbd5e1",
+                borderRadius: "0.5rem",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "200px",
+                backgroundColor: "transparent",
+                color: "#94a3b8",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              onClick={openJoinClassModal}
+              onMouseOver={(e) => {
+                e.currentTarget.style.borderColor = "#2196f3"
+                e.currentTarget.style.color = "#2196f3"
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.borderColor = "#cbd5e1"
+                e.currentTarget.style.color = "#94a3b8"
+              }}
+            >
+              <Plus size={24} />
+              <span
+                style={{
+                  marginTop: "0.5rem",
+                  fontSize: "1rem",
+                  fontWeight: 500,
+                }}
+              >
+                Sumali sa klase
+              </span>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* Join Class Modal */}
+      {joinClassModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
+        >
+          <div
+            ref={modalRef}
+            style={{
+              backgroundColor: "#1e293b",
+              borderRadius: "0.5rem",
+              width: "90%",
+              maxWidth: "500px",
+              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "1rem 1.5rem",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "1.125rem",
+                  fontWeight: 600,
+                  color: "white",
+                  margin: 0,
+                }}
+              >
+                Join Class
+              </h3>
+              <button
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0.25rem",
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                }}
+                onClick={closeJoinClassModal}
+              >
+                <X size={18} color="white" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div
+              style={{
+                padding: "1.5rem",
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "1.5rem",
+                  fontWeight: 600,
+                  color: "white",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                Enter the class code given to you by your teacher.
+              </h2>
+
+              {/* Class Code Input */}
+              <div
+                style={{
+                  marginBottom: "2rem",
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder="Class Code"
+                  value={classCode}
+                  onChange={(e) => setClassCode(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 0",
+                    fontSize: "1rem",
+                    backgroundColor: "transparent",
+                    border: "none",
+                    borderBottom: "1px solid rgba(255, 255, 255, 0.3)",
+                    color: "white",
+                    outline: "none",
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              {/* Join Button */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <button
+                  style={{
+                    backgroundColor: "#4caf50",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "2rem",
+                    padding: "0.75rem 2rem",
+                    fontSize: "1rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "background-color 0.2s",
+                  }}
+                  onClick={handleJoinClass}
+                  disabled={!classCode.trim()}
+                >
+                  Join class
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

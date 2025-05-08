@@ -4,6 +4,7 @@ import { PrivateRoute } from './components/PrivateRoute'
 import { UserProvider } from './context/UserContext'
 import ClassLessons from './pages/ClassLessons/ClassLessons'
 import Home from './pages/Home/Home'
+import StudentDashboard from './pages/Home/Home'
 import LandingPage from './pages/LandingPage/LandingPage'
 import Login from './pages/Login/Login'
 import SignUp from './pages/SignUp/SignUp'
@@ -18,7 +19,7 @@ const App = () => {
         <Route path="/sign-up" element={<SignUp />} />
         <Route 
           path="/home" 
-          element={<PrivateRoute component={Home} requireTeacher={false} />} 
+          element={<PrivateRoute component={StudentDashboard} requireTeacher={false} />} 
         />
         <Route 
           path="/teacher" 
