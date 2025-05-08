@@ -16,6 +16,13 @@ public class StoryEntity {
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    @Column(name = "cover_picture", columnDefinition = "LONGBLOB")
+    @Lob
+    private byte[] coverPicture;
+
+    @Column(name = "cover_picture_type")
+    private String coverPictureType;
+
     @Column(name = "difficulty_level", nullable = false)
     @Enumerated(EnumType.STRING)
     private DifficultyLevel difficultyLevel;
@@ -76,6 +83,22 @@ public class StoryEntity {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public byte[] getCoverPicture() {
+        return coverPicture;
+    }
+
+    public void setCoverPicture(byte[] coverPicture) {
+        this.coverPicture = coverPicture;
+    }
+
+    public String getCoverPictureType() {
+        return coverPictureType;
+    }
+
+    public void setCoverPictureType(String coverPictureType) {
+        this.coverPictureType = coverPictureType;
     }
 
     public DifficultyLevel getDifficultyLevel() {

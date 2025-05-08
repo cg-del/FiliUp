@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import { PrivateRoute } from './components/PrivateRoute'
 import { UserProvider } from './context/UserContext'
+import ClassLessons from './pages/ClassLessons/ClassLessons'
 import Home from './pages/Home/Home'
 import LandingPage from './pages/LandingPage/LandingPage'
 import Login from './pages/Login/Login'
@@ -22,6 +23,10 @@ const App = () => {
         <Route 
           path="/teacher" 
           element={<PrivateRoute component={TeacherHome} requireTeacher={true} />} 
+        />
+        <Route 
+          path="/teacher/class/:classId/lessons" 
+          element={<PrivateRoute component={ClassLessons} requireTeacher={true} />} 
         />
       </Routes>
     </UserProvider>

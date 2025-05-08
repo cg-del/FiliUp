@@ -3,6 +3,7 @@ package edu.cit.filiup.controller;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.service.UserService;
 import edu.cit.filiup.util.JwtUtil;
+import edu.cit.filiup.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -19,6 +20,9 @@ public class UserController {
 
     @Autowired
     UserService userv;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @PostMapping("/postUser")
     public UserEntity postUser(@RequestBody UserEntity user) {
@@ -147,5 +151,9 @@ public class UserController {
                 .body(Map.of("error", "Authentication failed", "message", e.getMessage()));
         }
     }
-    
+
+    @GetMapping("/search")
+    public List<UserEntity> searchStudentsByName(@RequestParam String name) {
+        return userRepository.findByUserRoleAndUserNameContainingIgnoreCase("STUDENT", name);
+    }
 }

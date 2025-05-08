@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 
@@ -106,5 +107,30 @@ public class ClassService {
 
         classEntity.removeStudent(student);
         return classRepository.save(classEntity);
+    }
+
+    @Transactional
+    public ClassEntity regenerateClassCode(Long classId) {
+        ClassEntity classEntity = classRepository.findById(classId)
+            .orElseThrow(() -> new RuntimeException("Class not found"));
+
+        String newCode;
+        do {
+            newCode = generateClassCode();
+        } while (classRepository.existsByClassCode(newCode));
+
+        classEntity.setClassCode(newCode);
+        classRepository.save(classEntity);
+        return classEntity;
+    }
+
+    private String generateClassCode() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 }

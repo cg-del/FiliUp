@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.ArrayList;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.UUID;
+import java.security.SecureRandom;
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
@@ -26,6 +28,9 @@ public class ClassEntity {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    @Column(name = "class_code", nullable = false, unique = true, length = 12)
+    private String classCode;
 
     // Teacher relationship
     @ManyToOne(fetch = FetchType.LAZY)
@@ -51,6 +56,7 @@ public class ClassEntity {
     // Constructors
     public ClassEntity() {
         this.createdAt = LocalDateTime.now();
+        this.classCode = generateClassCode();
     }
 
     public ClassEntity(String className, UserEntity teacher) {
@@ -142,5 +148,24 @@ public class ClassEntity {
     public void removeStory(StoryEntity story) {
         stories.remove(story);
         story.setClassEntity(null);
+    }
+
+    public String getClassCode() {
+        return classCode;
+    }
+
+    public void setClassCode(String classCode) {
+        this.classCode = classCode;
+    }
+
+    private static String generateClassCode() {
+        // Generates a random 8-character alphanumeric code
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(8);
+        for (int i = 0; i < 8; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 }

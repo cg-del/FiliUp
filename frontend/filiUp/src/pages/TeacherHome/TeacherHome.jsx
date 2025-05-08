@@ -12,15 +12,20 @@ import {
   Box,
   Button,
   Card,
+  CardActionArea,
   CardContent,
   Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   Grid,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   TextField,
   Typography,
   alpha,
@@ -28,6 +33,7 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 
 // Add axios base configuration
@@ -59,6 +65,7 @@ api.interceptors.request.use(
 export default function TeacherHome() {
   const theme = useTheme();
   const { user, logout } = useUser();
+  const navigate = useNavigate();
   const [classes, setClasses] = useState([
     {
       classId: 1,
@@ -80,7 +87,15 @@ export default function TeacherHome() {
   const [selectedClass, setSelectedClass] = useState(null);
   const [form, setForm] = useState({ className: '', description: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
+  const [storyDialogOpen, setStoryDialogOpen] = useState(false);
+  const [storyForm, setStoryForm] = useState({
+    title: '',
+    content: '',
+    difficultyLevel: '',
+    coverPicture: null,
+    coverPicturePreview: null,
+  });
+  const [selectedStoryClass, setSelectedStoryClass] = useState(null);
 
   const handleOpenDialog = (mode, classObj = null) => {
     setDialogMode(mode);
@@ -179,7 +194,7 @@ export default function TeacherHome() {
           logout();
           return;
         }
-        setError('Failed to fetch classes. Please try again later.');
+        console.error('Failed to fetch classes. Please try again later.');
       }
     };
 
@@ -194,6 +209,40 @@ export default function TeacherHome() {
           .join('')
           .toUpperCase()
       : '?';
+  };
+
+  // Handle class card click: navigate to lessons page
+  const handleClassCardClick = (classObj) => {
+    navigate(`/teacher/class/${classObj.classId}/lessons`);
+  };
+
+  // Handle story form changes
+  const handleStoryFormChange = (e) => {
+    const { name, value, files } = e.target;
+    if (name === 'coverPicture' && files && files[0]) {
+      setStoryForm((prev) => ({
+        ...prev,
+        coverPicture: files[0],
+        coverPicturePreview: URL.createObjectURL(files[0]),
+      }));
+    } else {
+      setStoryForm((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  // Handle story dialog close
+  const handleStoryDialogClose = () => {
+    setStoryDialogOpen(false);
+    setSelectedStoryClass(null);
+    setStoryForm({ title: '', content: '', difficultyLevel: '', coverPicture: null, coverPicturePreview: null });
+  };
+
+  // Handle story submit (scaffold only)
+  const handleStorySubmit = (e) => {
+    e.preventDefault();
+    // TODO: Implement API call to create story
+    alert('Story created! (API integration needed)');
+    handleStoryDialogClose();
   };
 
   return (
@@ -290,50 +339,52 @@ export default function TeacherHome() {
             <Grid container spacing={3}>
               {Array.isArray(classes) && classes.map((classObj, idx) => (
                 <Grid item xs={12} sm={6} md={4} key={classObj.classId || idx}>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 1,
-                      position: 'relative',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: 'white',
-                      minWidth: 220,
-                      minHeight: 120,
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
-                        {classObj.className}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <IconButton
-                          aria-label="Edit class"
-                          color="primary"
-                          onClick={() => handleOpenDialog('edit', classObj)}
-                          size="small"
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          aria-label="Delete class"
-                          color="error"
-                          onClick={() => handleDelete(classObj.classId)}
-                          size="small"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                  <CardActionArea onClick={() => handleClassCardClick(classObj)}>
+                    <Paper
+                      sx={{
+                        p: 3,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 1,
+                        position: 'relative',
+                        borderRadius: 2,
+                        boxShadow: 2,
+                        bgcolor: 'white',
+                        minWidth: 220,
+                        minHeight: 120,
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                          {classObj.className}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <IconButton
+                            aria-label="Edit class"
+                            color="primary"
+                            onClick={(e) => { e.stopPropagation(); handleOpenDialog('edit', classObj); }}
+                            size="small"
+                          >
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton
+                            aria-label="Delete class"
+                            color="error"
+                            onClick={(e) => { e.stopPropagation(); handleDelete(classObj.classId); }}
+                            size="small"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
                       </Box>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {classObj.description}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Created: {classObj.createdAt ? new Date(classObj.createdAt).toLocaleString() : ''}
-                    </Typography>
-                  </Paper>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        {classObj.description}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Created: {classObj.createdAt ? new Date(classObj.createdAt).toLocaleString() : ''}
+                      </Typography>
+                    </Paper>
+                  </CardActionArea>
                 </Grid>
               ))}
             </Grid>
@@ -382,6 +433,81 @@ export default function TeacherHome() {
               {isSubmitting ? 'Saving...' : dialogMode === 'create' ? 'Gumawa' : 'I-save'}
             </Button>
           </DialogActions>
+        </Dialog>
+
+        {/* Story Management Dialog */}
+        <Dialog open={storyDialogOpen} onClose={handleStoryDialogClose} maxWidth="md" fullWidth>
+          <DialogTitle>
+            {selectedStoryClass ? `Stories for ${selectedStoryClass.className}` : 'Stories'}
+          </DialogTitle>
+          <DialogContent>
+            {/* Create Story Form */}
+            <Box component="form" onSubmit={handleStorySubmit} sx={{ mt: 2 }}>
+              <Typography variant="h6" gutterBottom>Create a New Story</Typography>
+              <TextField
+                name="title"
+                label="Title"
+                value={storyForm.title}
+                onChange={handleStoryFormChange}
+                fullWidth
+                required
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                name="content"
+                label="Content"
+                value={storyForm.content}
+                onChange={handleStoryFormChange}
+                fullWidth
+                required
+                multiline
+                rows={4}
+                sx={{ mb: 2 }}
+              />
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel id="difficulty-label">Difficulty</InputLabel>
+                <Select
+                  labelId="difficulty-label"
+                  name="difficultyLevel"
+                  value={storyForm.difficultyLevel}
+                  label="Difficulty"
+                  onChange={handleStoryFormChange}
+                  required
+                >
+                  <MenuItem value="BEGINNER">Beginner</MenuItem>
+                  <MenuItem value="INTERMEDIATE">Intermediate</MenuItem>
+                  <MenuItem value="ADVANCED">Advanced</MenuItem>
+                </Select>
+              </FormControl>
+              <Button
+                variant="contained"
+                component="label"
+                sx={{ mb: 2 }}
+              >
+                Upload Cover Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  name="coverPicture"
+                  onChange={handleStoryFormChange}
+                />
+              </Button>
+              {storyForm.coverPicturePreview && (
+                <Box sx={{ mb: 2 }}>
+                  <img
+                    src={storyForm.coverPicturePreview}
+                    alt="Cover Preview"
+                    style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8 }}
+                  />
+                </Box>
+              )}
+              <DialogActions>
+                <Button onClick={handleStoryDialogClose}>Cancel</Button>
+                <Button type="submit" variant="contained">Create Story</Button>
+              </DialogActions>
+            </Box>
+          </DialogContent>
         </Dialog>
 
         {/* Quick Actions */}

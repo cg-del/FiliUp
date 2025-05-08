@@ -11,4 +11,5 @@ public interface ClassRepository extends JpaRepository<ClassEntity, Long> {
     List<ClassEntity> findByStudentsUserId(int studentId);
     List<ClassEntity> findByIsActiveTrue();
     boolean existsByClassNameAndTeacherUserId(String className, int teacherId);
+    boolean existsByClassCode(String classCode);
 }

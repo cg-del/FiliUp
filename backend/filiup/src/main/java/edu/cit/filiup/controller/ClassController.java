@@ -1,6 +1,7 @@
 package edu.cit.filiup.controller;
 
 import edu.cit.filiup.entity.ClassEntity;
+import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.service.ClassService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -106,5 +107,18 @@ public class ClassController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @PostMapping("/{classId}/regenerate-code")
+    public ResponseEntity<ClassEntity> regenerateClassCode(@PathVariable Long classId) {
+        ClassEntity updatedClass = classService.regenerateClassCode(classId);
+        return ResponseEntity.ok(updatedClass);
+    }
+
+    @GetMapping("/{classId}/students")
+    public ResponseEntity<List<UserEntity>> getStudentsByClass(@PathVariable Long classId) {
+        return classService.getClassById(classId)
+            .map(classEntity -> ResponseEntity.ok(classEntity.getStudents()))
+            .orElse(ResponseEntity.notFound().build());
     }
 }
