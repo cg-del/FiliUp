@@ -41,13 +41,7 @@ public class UserController {
         UserEntity newUser = userv.registerUser(user);
         if (newUser != null) {
             Map<String, String> tokens = JwtUtil.generateTokens(newUser.getUserEmail());
-            Map<String, Object> response = new HashMap<>();
-            response.put("accessToken", tokens.get("accessToken"));
-            response.put("refreshToken", tokens.get("refreshToken"));
-            response.put("userName", newUser.getUserName());
-            response.put("userRole", newUser.getUserRole());
-            response.put("userEmail", newUser.getUserEmail());
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(tokens);
         }
         return ResponseEntity.badRequest().body("Registration failed");
     }
@@ -55,18 +49,30 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody UserEntity user) {
         UserEntity loggedInUser = userv.loginUser(user.getUserEmail(), user.getUserPassword());
-        
         if (loggedInUser != null) {
             Map<String, String> tokens = JwtUtil.generateTokens(loggedInUser.getUserEmail());
-            Map<String, Object> response = new HashMap<>();
-            response.put("accessToken", tokens.get("accessToken"));
-            response.put("refreshToken", tokens.get("refreshToken"));
-            response.put("userName", loggedInUser.getUserName());
-            response.put("userRole", loggedInUser.getUserRole());
-            response.put("userEmail", loggedInUser.getUserEmail());
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(tokens);
         } else {
             return ResponseEntity.status(401).body("Invalid credentials");
+        }
+    }
+
+    @GetMapping("/info")
+    public ResponseEntity<?> getUserInfo(JwtAuthenticationToken jwtAuthToken) {
+        try {
+            String email = jwtAuthToken.getToken().getClaim("sub");
+            UserEntity user = userv.getUserByEmail(email);
+            if (user != null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("userId", user.getUserId());
+                response.put("userName", user.getUserName());
+                response.put("userRole", user.getUserRole());
+                response.put("userEmail", user.getUserEmail());
+                return ResponseEntity.ok(response);
+            }
+            return ResponseEntity.status(404).body(Map.of("error", "User not found", "email", email));
+        } catch (Exception e) {
+            return ResponseEntity.status(401).body(Map.of("error", "Authentication failed", "message", e.getMessage()));
         }
     }
 
@@ -81,7 +87,6 @@ public class UserController {
             if (JwtUtil.validateToken(refreshToken) && !JwtUtil.isTokenExpired(refreshToken)) {
                 String userEmail = JwtUtil.extractUsername(refreshToken);
                 UserEntity user = userv.getUserByEmail(userEmail);
-                
                 if (user != null) {
                     Map<String, String> tokens = JwtUtil.generateTokens(user.getUserEmail());
                     return ResponseEntity.ok(tokens);
@@ -105,7 +110,6 @@ public class UserController {
             if (JwtUtil.validateToken(token)) {
                 String userEmail = JwtUtil.extractUsername(token);
                 UserEntity user = userv.getUserByEmail(userEmail);
-                
                 if (user != null) {
                     Map<String, Object> response = new HashMap<>();
                     response.put("valid", true);
@@ -126,7 +130,6 @@ public class UserController {
         try {
             String email = jwtAuthToken.getToken().getClaim("sub");
             UserEntity user = userv.getUserByEmail(email);
-            
             if (user != null) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("message", "Hello, " + user.getUserName() + "!");
@@ -135,10 +138,8 @@ public class UserController {
                 response.put("userEmail", user.getUserEmail());
                 return ResponseEntity.ok(response);
             }
-            
             return ResponseEntity.status(404)
                 .body(Map.of("error", "User not found", "email", email));
-                
         } catch (Exception e) {
             System.err.println("Error in hello endpoint: " + e.getMessage());
             e.printStackTrace();

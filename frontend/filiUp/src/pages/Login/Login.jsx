@@ -80,19 +80,13 @@ export default function Login() {
       const response = await axios.post('http://localhost:8080/api/user/login', loginData);
 
       if (response.data) {
-        const { accessToken, refreshToken, ...userData } = response.data;
-        
+        const { accessToken, refreshToken } = response.data;
         // Check if response has the required fields
-        if (!userData.userName || !userData.userRole || !accessToken || !refreshToken) {
+        if (!accessToken || !refreshToken) {
           throw new Error('Invalid response data');
         }
-
-        // Store tokens and user data
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        
-        // Use the login function from context with user data
-        login(userData);
+        // Use the login function from context with tokens only
+        await login({ accessToken, refreshToken });
       }
     } catch (err) {
       console.error('Login error:', err);

@@ -52,14 +52,24 @@ export function UserProvider({ children }) {
     setIsAuthenticated(false);
   };
 
-  const login = (userData) => {
+  // Updated login function: accepts tokens, fetches user info
+  const login = async (tokens) => {
     if (typeof window === 'undefined') return;
     
-    if (!userData || !userData.userName) {
-      console.error('Invalid user data');
+    if (!tokens || !tokens.accessToken) {
+      console.error('No access token received');
       return;
     }
     
+    localStorage.setItem('accessToken', tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
+
+    try {
+      // Fetch user info using the access token
+      const res = await axios.get('http://localhost:8080/api/user/info', {
+        headers: { Authorization: `Bearer ${tokens.accessToken}` }
+      });
+      const userData = res.data;
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userData));
@@ -68,12 +78,15 @@ export function UserProvider({ children }) {
       navigate('/teacher', { replace: true });
     } else {
       navigate('/home', { replace: true });
+      }
+    } catch (error) {
+      console.error('Failed to fetch user info:', error);
+      clearAuthData();
     }
   };
 
   const logout = () => {
     if (typeof window === 'undefined') return;
-    
     clearAuthData();
     navigate('/sign-in', { replace: true });
   };
