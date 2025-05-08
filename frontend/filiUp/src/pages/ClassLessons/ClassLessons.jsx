@@ -6,6 +6,7 @@ import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, Di
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import Stories from './Stories';
 
 export default function ClassLessons() {
   const { classId } = useParams();
@@ -213,6 +214,72 @@ export default function ClassLessons() {
           Bumalik sa Mga Klase
         </Button>
       </Box>
+      {/* Class Info Heading */}
+      <Paper sx={{ p: 4, mb: 3 }}>
+        {loading ? (
+          <Stack alignItems="center">
+            <CircularProgress />
+          </Stack>
+        ) : error ? (
+          <Typography color="error">{error}</Typography>
+        ) : classInfo ? (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h4" fontWeight="bold">
+                {classInfo.className}
+              </Typography>
+              <Box>
+                <Button
+                  startIcon={<EditIcon />}
+                  onClick={handleEditOpen}
+                  sx={{ mr: 1 }}
+                  variant="outlined"
+                >
+                  I-edit
+                </Button>
+                <Button
+                  startIcon={<DeleteIcon />}
+                  onClick={handleDeleteOpen}
+                  color="error"
+                  sx={{ mr: 1 }}
+                  variant="outlined"
+                >
+                  I-delete
+                </Button>
+                <Button
+                  onClick={handleAddStudentDialogOpen}
+                  variant="outlined"
+                >
+                  Add Student
+                </Button>
+              </Box>
+            </Box>
+            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+              {classInfo.description}
+            </Typography>
+            <Typography variant="body1" sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+              <strong>Class Code:</strong> {classInfo.classCode}
+              <Button
+                size="small"
+                startIcon={<AutorenewIcon />}
+                onClick={handleRegenerateCode}
+                disabled={regenLoading}
+                sx={{ ml: 2 }}
+                variant="outlined"
+              >
+                {regenLoading ? 'Regenerating...' : 'Regenerate'}
+              </Button>
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              <strong>Created At:</strong> {new Date(classInfo.createdAt).toLocaleString()}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              <strong>Status:</strong> {classInfo.isActive ? 'Active' : 'Inactive'}
+            </Typography>
+          </>
+        ) : null}
+      </Paper>
+      {/* Tabs Heading */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Button
           variant={activeTab === 'stories' ? 'contained' : 'outlined'}
@@ -229,71 +296,7 @@ export default function ClassLessons() {
         </Button>
       </Box>
       {activeTab === 'stories' ? (
-        <Paper sx={{ p: 4, mb: 3 }}>
-          {loading ? (
-            <Stack alignItems="center">
-              <CircularProgress />
-            </Stack>
-          ) : error ? (
-            <Typography color="error">{error}</Typography>
-          ) : classInfo ? (
-            <>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h4" fontWeight="bold">
-                  {classInfo.className}
-                </Typography>
-                <Box>
-                  <Button
-                    startIcon={<EditIcon />}
-                    onClick={handleEditOpen}
-                    sx={{ mr: 1 }}
-                    variant="outlined"
-                  >
-                    I-edit
-                  </Button>
-                  <Button
-                    startIcon={<DeleteIcon />}
-                    onClick={handleDeleteOpen}
-                    color="error"
-                    sx={{ mr: 1 }}
-                    variant="outlined"
-                  >
-                    I-delete
-                  </Button>
-                  <Button
-                    onClick={handleAddStudentDialogOpen}
-                    variant="outlined"
-                  >
-                    Add Student
-                  </Button>
-                </Box>
-              </Box>
-              <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                {classInfo.description}
-              </Typography>
-              <Typography variant="body1" sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-                <strong>Class Code:</strong> {classInfo.classCode}
-                <Button
-                  size="small"
-                  startIcon={<AutorenewIcon />}
-                  onClick={handleRegenerateCode}
-                  disabled={regenLoading}
-                  sx={{ ml: 2 }}
-                  variant="outlined"
-                >
-                  {regenLoading ? 'Regenerating...' : 'Regenerate'}
-                </Button>
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                <strong>Created At:</strong> {new Date(classInfo.createdAt).toLocaleString()}
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                <strong>Status:</strong> {classInfo.isActive ? 'Active' : 'Inactive'}
-              </Typography>
-            </>
-          ) : null}
-          <Typography variant="h5" gutterBottom>Stories (CRUD coming soon)</Typography>
-        </Paper>
+        <Stories classId={classId} />
       ) : (
         <Paper sx={{ p: 4, mb: 3 }}>
           <Typography variant="h5" gutterBottom>Class Record</Typography>

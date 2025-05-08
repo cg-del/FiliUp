@@ -2,6 +2,7 @@ package edu.cit.filiup.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "stories")
@@ -35,6 +36,7 @@ public class StoryEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id", nullable = false)
+    @JsonIgnore
     private ClassEntity classEntity;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.UUID;
 import java.security.SecureRandom;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
@@ -49,8 +50,8 @@ public class ClassEntity {
     private List<UserEntity> students = new ArrayList<>();
 
     // Stories relationship
-    @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL)
-    @JsonIgnore
+    @OneToMany(mappedBy = "classEntity")
+    @JsonManagedReference
     private List<StoryEntity> stories = new ArrayList<>();
 
     // Constructors
