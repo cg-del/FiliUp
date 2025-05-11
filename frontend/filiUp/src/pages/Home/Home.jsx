@@ -1,5 +1,6 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   Menu,
   Settings,
@@ -15,17 +16,50 @@ import {
   BookOpen,
   Award,
   X,
+  ChevronRight,
 } from "lucide-react"
 import { useUser } from "../../context/UserContext"
 
 export default function StudentDashboard() {
+  const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
   const [joinClassModalOpen, setJoinClassModalOpen] = useState(false)
   const [classCode, setClassCode] = useState("")
+  const [enrolledClasses, setEnrolledClasses] = useState([])
+  const [enrollmentError, setEnrollmentError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const dropdownRef = useRef(null)
   const modalRef = useRef(null)
   const { user, isAuthenticated, loading, logout } = useUser()
+
+  // Fetch enrolled classes when component mounts
+  useEffect(() => {
+    if (user?.userId) {
+      fetchEnrolledClasses()
+    }
+  }, [user])
+
+  const fetchEnrolledClasses = async () => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/classes/student/${user.userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        credentials: 'include'
+      })
+      if (response.ok) {
+        const classes = await response.json()
+        setEnrolledClasses(classes)
+      } else {
+        console.error('Failed to fetch enrolled classes:', await response.text())
+      }
+    } catch (error) {
+      console.error('Error fetching enrolled classes:', error)
+    }
+  }
 
   // Handle clicking outside to close dropdown
   useEffect(() => {
@@ -91,12 +125,74 @@ export default function StudentDashboard() {
     setJoinClassModalOpen(false)
   }
 
-  const handleJoinClass = () => {
-    // Here you would implement the logic to join a class with the provided code
-    console.log("Joining class with code:", classCode)
-    // After successful join, close the modal
-    setJoinClassModalOpen(false)
-    setClassCode("")
+  const handleJoinClass = async () => {
+    if (!classCode.trim()) {
+      setEnrollmentError("Please enter a class code")
+      return
+    }
+
+    setIsLoading(true)
+    setEnrollmentError("")
+
+    try {
+      // First, convert userId to integer to match backend expectation
+      const userIdInt = parseInt(user.userId, 10)
+      
+      const response = await fetch('http://localhost:8080/api/enrollments/enroll', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: userIdInt, // Send as integer
+          classCode: classCode.trim()
+        })
+      })
+
+      let data
+      const contentType = response.headers.get("content-type")
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json()
+      } else {
+        const text = await response.text()
+        console.error('Non-JSON response:', text)
+        throw new Error('Non-JSON response from server')
+      }
+
+      if (response.ok) {
+        // Refresh the enrolled classes list
+        await fetchEnrolledClasses()
+        setJoinClassModalOpen(false)
+        setClassCode("")
+      } else {
+        // More specific error handling
+        if (data.error === "Class not found with code: " + classCode.trim()) {
+          setEnrollmentError("Invalid class code. Please check and try again.")
+        } else if (data.error === "User is already enrolled in this class") {
+          setEnrollmentError("You are already enrolled in this class.")
+        } else if (data.error === "User not found") {
+          setEnrollmentError("User authentication error. Please try logging in again.")
+        } else if (data.error === "Only students can enroll in classes") {
+          setEnrollmentError("Only students can enroll in classes.")
+        } else {
+          setEnrollmentError(data.error || "Failed to join class. Please try again.")
+        }
+        
+        // Log the error for debugging
+        console.error('Enrollment error:', data)
+      }
+    } catch (error) {
+      console.error('Error joining class:', error)
+      setEnrollmentError("An error occurred while joining the class. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleClassClick = (classId) => {
+    navigate(`/class/${classId}/stories`)
   }
 
   return (
@@ -471,87 +567,74 @@ export default function StudentDashboard() {
               gap: "1.5rem",
             }}
           >
-            {/* Class Card */}
-            <div
-              style={{
-                backgroundColor: "white",
-                borderRadius: "0.5rem",
-                overflow: "hidden",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-              }}
-            >
+            {/* Enrolled Classes */}
+            {enrolledClasses.map((classItem) => (
               <div
+                key={classItem.classId}
+                onClick={() => handleClassClick(classItem.classId)}
                 style={{
-                  backgroundColor: "#e3f2fd",
-                  height: "100px",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
+                  backgroundColor: "white",
+                  borderRadius: "0.5rem",
+                  overflow: "hidden",
+                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+                  cursor: "pointer",
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                  position: "relative",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)"
+                  e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)"
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)"
+                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.1)"
                 }}
               >
-                <GraduationCap size={40} color="#2196f3" />
-              </div>
-              <div style={{ padding: "1rem" }}>
-                <h3
+                <div
                   style={{
-                    fontSize: "1.125rem",
-                    fontWeight: 600,
-                    marginBottom: "0.25rem",
+                    backgroundColor: "#e3f2fd",
+                    height: "100px",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
                   }}
                 >
-                  Mga Pangunahing Salita
-                </h3>
-                <p
-                  style={{
-                    fontSize: "0.875rem",
-                    color: "#64748b",
-                  }}
-                >
-                  Matutunan ang mga basic na salita sa Filipino
-                </p>
+                  <GraduationCap size={40} color="#2196f3" />
+                </div>
+                <div style={{ padding: "1rem" }}>
+                  <h3
+                    style={{
+                      fontSize: "1.125rem",
+                      fontWeight: 600,
+                      marginBottom: "0.25rem",
+                      color: "#1e293b",
+                    }}
+                  >
+                    {classItem.className}
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "#64748b",
+                      marginBottom: "1rem",
+                    }}
+                  >
+                    {classItem.description || "No description available"}
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      color: "#2196f3",
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    View Stories <ChevronRight size={16} style={{ marginLeft: "0.25rem" }} />
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* Class Card */}
-            <div
-              style={{
-                backgroundColor: "white",
-                borderRadius: "0.5rem",
-                overflow: "hidden",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: "#e3f2fd",
-                  height: "100px",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <GraduationCap size={40} color="#2196f3" />
-              </div>
-              <div style={{ padding: "1rem" }}>
-                <h3
-                  style={{
-                    fontSize: "1.125rem",
-                    fontWeight: 600,
-                    marginBottom: "0.25rem",
-                  }}
-                >
-                  Mga Pangungusap
-                </h3>
-                <p
-                  style={{
-                    fontSize: "0.875rem",
-                    color: "#64748b",
-                  }}
-                >
-                  Paano bumuo ng mga simpleng pangungusap
-                </p>
-              </div>
-            </div>
+            ))}
 
             {/* Join Class Card */}
             <div
@@ -678,6 +761,22 @@ export default function StudentDashboard() {
                 Enter the class code given to you by your teacher.
               </h2>
 
+              {/* Error Message */}
+              {enrollmentError && (
+                <div
+                  style={{
+                    backgroundColor: "rgba(239, 68, 68, 0.1)",
+                    color: "#ef4444",
+                    padding: "0.75rem",
+                    borderRadius: "0.375rem",
+                    marginBottom: "1rem",
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  {enrollmentError}
+                </div>
+              )}
+
               {/* Class Code Input */}
               <div
                 style={{
@@ -719,13 +818,14 @@ export default function StudentDashboard() {
                     padding: "0.75rem 2rem",
                     fontSize: "1rem",
                     fontWeight: 500,
-                    cursor: "pointer",
+                    cursor: isLoading ? "not-allowed" : "pointer",
+                    opacity: isLoading ? 0.7 : 1,
                     transition: "background-color 0.2s",
                   }}
                   onClick={handleJoinClass}
-                  disabled={!classCode.trim()}
+                  disabled={isLoading || !classCode.trim()}
                 >
-                  Join class
+                  {isLoading ? "Joining..." : "Join class"}
                 </button>
               </div>
             </div>
