@@ -1,34 +1,35 @@
 import {
-    Email as EmailIcon,
-    Lock as LockIcon,
-    Person as PersonIcon,
-    Visibility,
-    VisibilityOff,
+  Email as EmailIcon,
+  Lock as LockIcon,
+  Person as PersonIcon,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 import {
-    Alert,
-    Box,
-    Button,
-    CircularProgress,
-    Container,
-    FormControl,
-    FormControlLabel,
-    FormLabel,
-    IconButton,
-    InputAdornment,
-    Link,
-    Paper,
-    Radio,
-    RadioGroup,
-    Snackbar,
-    TextField,
-    Typography,
-    alpha,
-    useTheme,
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  IconButton,
+  InputAdornment,
+  Link,
+  Paper,
+  Radio,
+  RadioGroup,
+  Snackbar,
+  TextField,
+  Typography,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import axios from 'axios';
 import React, { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import logo from '../../assets/logo.svg';
 
 export default function SignUp() {
   const theme = useTheme();
@@ -62,26 +63,26 @@ export default function SignUp() {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Hindi magkatugma ang mga password!');
+      setError('Passwords do not match!');
       return;
     }
 
     // Validate required fields
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.role) {
-      setError('Mangyaring punan ang lahat ng kinakailangang field.');
+      setError('Please fill in all required fields.');
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setError('Hindi wastong email address.');
+      setError('Invalid email address.');
       return;
     }
 
     // Validate password strength (at least 8 characters)
     if (formData.password.length < 8) {
-      setError('Ang password ay dapat hindi bababa sa 8 character.');
+      setError('Password must be at least 8 characters long.');
       return;
     }
 
@@ -107,7 +108,7 @@ export default function SignUp() {
       console.error('Registration error:', err);
       setError(
         err.response?.data?.message || 
-        'May error sa pag-sign up. Pakisubukang muli.'
+        'Error signing up. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -149,36 +150,29 @@ export default function SignUp() {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
               <Box
                 sx={{
-                  bgcolor: theme.palette.primary.main,
+                  bgcolor: 'white',
                   borderRadius: '50%',
                   p: 0.5,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   boxShadow: `0 0 10px ${alpha(theme.palette.primary.main, 0.3)}`,
+                  width: 47,
+                  height: 47,
+                  overflow: 'hidden',
                 }}
               >
-                <Box
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    bgcolor: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                />
+                <img src={logo} alt="FiliUp Logo" style={{ width: 65, height: 65, objectFit: 'contain', display: 'block' }} />
               </Box>
               <Typography variant="h5" fontWeight="bold" color="primary">
-                filiUp
+                FiliUp
               </Typography>
             </Box>
             <Typography variant="h4" fontWeight="bold" gutterBottom>
-              Mag-sign Up
+              Sign Up
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Gumawa ng account para magsimulang matuto ng Filipino!
+              Create an account to start learning Filipino!
             </Typography>
           </Box>
 
@@ -188,7 +182,7 @@ export default function SignUp() {
                 required
                 fullWidth
                 id="firstName"
-                label="Pangalan"
+                label="First Name"
                 name="firstName"
                 autoComplete="given-name"
                 value={formData.firstName}
@@ -210,7 +204,7 @@ export default function SignUp() {
                 required
                 fullWidth
                 id="lastName"
-                label="Apelyido"
+                label="Last Name"
                 name="lastName"
                 autoComplete="family-name"
                 value={formData.lastName}
@@ -297,7 +291,7 @@ export default function SignUp() {
               required
               fullWidth
               name="confirmPassword"
-              label="Kumpirmahin ang Password"
+              label="Confirm Password"
               type={showConfirmPassword ? 'text' : 'password'}
               id="confirmPassword"
               autoComplete="new-password"
@@ -331,7 +325,7 @@ export default function SignUp() {
 
             <FormControl component="fieldset" sx={{ width: '100%', mb: 3 }}>
               <FormLabel component="legend" sx={{ mb: 1, color: 'text.primary' }}>
-                Ikaw ay isang:
+                You are a:
               </FormLabel>
               <RadioGroup
                 row
@@ -348,12 +342,12 @@ export default function SignUp() {
                 <FormControlLabel 
                   value="STUDENT" 
                   control={<Radio />} 
-                  label="Mag-aaral" 
+                  label="Student" 
                 />
                 <FormControlLabel 
                   value="TEACHER" 
                   control={<Radio />} 
-                  label="Guro" 
+                  label="Teacher" 
                 />
               </RadioGroup>
             </FormControl>
@@ -380,13 +374,13 @@ export default function SignUp() {
               {loading ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
-                'Mag-sign Up'
+                'Sign Up'
               )}
             </Button>
 
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
-                May account ka na ba?{' '}
+                Already have an account?{' '}
                 <Link
                   component={RouterLink}
                   to="/sign-in"
@@ -397,7 +391,7 @@ export default function SignUp() {
                     '&:hover': { textDecoration: 'underline' },
                   }}
                 >
-                  Mag-sign in
+                  Sign In
                 </Link>
               </Typography>
             </Box>

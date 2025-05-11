@@ -1,38 +1,39 @@
 import {
-    ArrowForward as ArrowForwardIcon,
-    EmojiEvents as AwardIcon,
-    MenuBook as BookIcon,
-    Facebook as FacebookIcon,
-    GitHub as GitHubIcon,
-    LocalLibrary as LibraryIcon,
-    People as PeopleIcon,
-    Psychology as PsychologyIcon,
-    School as SchoolIcon,
-    AutoStories as StoriesIcon,
-    Translate as TranslateIcon,
-    Twitter as TwitterIcon,
+  ArrowForward as ArrowForwardIcon,
+  EmojiEvents as AwardIcon,
+  MenuBook as BookIcon,
+  Facebook as FacebookIcon,
+  GitHub as GitHubIcon,
+  LocalLibrary as LibraryIcon,
+  People as PeopleIcon,
+  Psychology as PsychologyIcon,
+  School as SchoolIcon,
+  AutoStories as StoriesIcon,
+  Translate as TranslateIcon,
+  Twitter as TwitterIcon,
 } from "@mui/icons-material";
 import {
-    alpha,
-    AppBar,
-    Avatar,
-    Box,
-    Button,
-    Card,
-    CardContent,
-    CardMedia,
-    Container,
-    Divider,
-    Grid,
-    IconButton,
-    Link,
-    Toolbar,
-    Typography,
-    useTheme,
+  alpha,
+  AppBar,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CardMedia,
+  Container,
+  Divider,
+  Grid,
+  IconButton,
+  Link,
+  Toolbar,
+  Typography,
+  useTheme,
 } from "@mui/material";
 import { Link as RouterLink } from 'react-router-dom';
 import alamatngpinya from '../../assets/alamatngpinya.jpg';
 import filiupLogo from '../../assets/banner.svg';
+import logo from '../../assets/logo.svg';
 import malakasmaganda from '../../assets/malakas at maganda.jpg';
 import pagongatmatsing from '../../assets/pagongatmatsing.jpg';
 
@@ -90,41 +91,21 @@ export default function LandingPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 boxShadow: `0 0 10px ${alpha(theme.palette.primary.main, 0.3)}`,
+                width: 40,
+                height: 40,
+                overflow: 'hidden',
               }}
             >
-              <Box
-                sx={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: "50%",
-                  bgcolor: "primary.main",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  "&::after": {
-                    content: '""',
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    bgcolor: "white",
-                  },
-                }}
-              />
+              <img src={logo} alt="FiliUp Logo" style={{ width: 65, height: 70, objectFit: 'contain', display: 'block' }} />
             </Box>
             <Typography variant="h6" fontWeight="bold" sx={{ letterSpacing: 0.5 }}>
-              filiUp
+              FiliUp
             </Typography>
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <Link component={RouterLink} to="#features" color="inherit" underline="hover" sx={{ fontWeight: 500 }}>
-              Mga Tampok
-            </Link>
-            <Link component={RouterLink} to="#courses" color="inherit" underline="hover" sx={{ fontWeight: 500 }}>
-              Mga Kwento
-            </Link>
-            <Link component={RouterLink} to="#about" color="inherit" underline="hover" sx={{ fontWeight: 500 }}>
-              Tungkol Sa Amin
+            <Link component={RouterLink} to="/about" color="inherit" underline="hover" sx={{ fontWeight: 500 }}>
+              About Us
             </Link>
             <Button 
               component={RouterLink} 
@@ -142,7 +123,7 @@ export default function LandingPage() {
                 }
               }}
             >
-              Mag-sign In
+              Sign In
             </Button>
           </Box>
         </Toolbar>
@@ -168,9 +149,9 @@ export default function LandingPage() {
                   color: 'transparent',
                 }}
               >
-                Matuto sa Pamamagitan ng{" "}
+                Learn Through{" "}
                 <Box component="span" color="primary.main">
-                  Mga Kwentong Pilipino
+                  Filipino Stories
                 </Box>
               </Typography>
               <Typography 
@@ -183,8 +164,8 @@ export default function LandingPage() {
                   lineHeight: 1.6,
                 }}
               >
-                Tuklasin ang yaman ng ating kultura sa pamamagitan ng mga kwentong-bayan, alamat, at pabula. 
-                Matuto ng mga aral habang nag-e-enjoy sa mga interactive na kuwento at pagsusulit.
+                Discover the richness of our culture through folk tales, legends, and fables. 
+                Learn valuable lessons while enjoying interactive stories and quizzes.
               </Typography>
               <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
                 <Button 
@@ -203,7 +184,7 @@ export default function LandingPage() {
                     }
                   }}
                 >
-                  Simulan
+                  Get Started
                 </Button>
                 <Button 
                   variant="outlined" 
@@ -219,7 +200,7 @@ export default function LandingPage() {
                     }
                   }}
                 >
-                  Tingnan ang Mga Kwento
+                  View Stories
                 </Button>
               </Box>
             </Box>
@@ -240,6 +221,17 @@ export default function LandingPage() {
                   borderRadius: '30px',
                   background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.secondary.main, 0.1)})`,
                   zIndex: -1,
+                },
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: -20,
+                  left: -20,
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '30px',
+                  background: `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.1)}, ${alpha(theme.palette.primary.main, 0.1)})`,
+                  zIndex: -1,
                 }
               }}
             >
@@ -250,7 +242,12 @@ export default function LandingPage() {
                   width: '100%', 
                   height: 'auto', 
                   maxHeight: '500px',
-                  filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.1))'
+                  filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.1))',
+                  borderRadius: '30px',
+                  transition: 'transform 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.02)'
+                  }
                 }} 
               />
             </Box>
@@ -291,7 +288,7 @@ export default function LandingPage() {
                 color: 'transparent',
               }}
             >
-              Bakit Piliin ang filiUp?
+              Why Choose FiliUp?
             </Typography>
             <Typography 
               variant="h6" 
@@ -303,7 +300,7 @@ export default function LandingPage() {
                 mb: 2,
               }}
             >
-              Ang aming platform ay nag-aalok ng lahat ng kailangan mo para matuto sa pamamagitan ng mga kwentong Pilipino
+              Our platform offers everything you need to learn through Filipino stories
             </Typography>
           </Box>
 
@@ -364,11 +361,11 @@ export default function LandingPage() {
                   <StoriesIcon fontSize="small" />
                 </Avatar>
                 <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '1.2rem' }}>
-                  Mga Kuwentong Pilipino
+                  Filipino Stories
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, flex: 1 }}>
-                Maglakbay sa mundo ng mga tradisyunal na kuwento, alamat, at mitolohiyang Pilipino. Tuklasin ang mayamang kultura at kasaysayan ng ating bansa.
+                Journey through traditional stories, legends, and Filipino mythology. Discover the rich culture and history of our country.
               </Typography>
             </Box>
 
@@ -408,11 +405,11 @@ export default function LandingPage() {
                   <PsychologyIcon fontSize="small" />
                 </Avatar>
                 <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '1.2rem' }}>
-                  Interactive na Pag-aaral
+                  Interactive Learning
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, flex: 1 }}>
-                Mag-enjoy sa mga interactive na pagsusulit, mga gawain, at mga hamon na magpapalalim ng iyong pag-unawa sa bawat kuwento.
+                Enjoy interactive quizzes, activities, and challenges that deepen your understanding of each story.
               </Typography>
             </Box>
 
@@ -452,11 +449,11 @@ export default function LandingPage() {
                   <TranslateIcon fontSize="small" />
                 </Avatar>
                 <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '1.2rem' }}>
-                  Dalawang Wika
+                  Bilingual Content
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, flex: 1 }}>
-                Magbasa ng mga kuwento sa Filipino at Ingles. Palawakin ang iyong bokabularyo at pagkaunawa sa dalawang wika.
+                Read stories in Filipino and English. Expand your vocabulary and understanding of both languages.
               </Typography>
             </Box>
 
@@ -496,11 +493,11 @@ export default function LandingPage() {
                   <LibraryIcon fontSize="small" />
                 </Avatar>
                 <Typography variant="h6" fontWeight="bold" sx={{ fontSize: '1.2rem' }}>
-                  Araw-araw na Pagbabasa
+                  Daily Reading
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, flex: 1 }}>
-                Subaybayan ang iyong pag-unlad at makakuha ng mga badge para sa bawat kuwentong natapos. Gawing kasanayan ang pagbabasa.
+                Track your progress and earn badges for each completed story. Make reading a daily habit.
               </Typography>
             </Box>
           </Grid>
@@ -731,7 +728,7 @@ export default function LandingPage() {
               fontSize: { xs: '2rem', md: '3rem' },
             }}
           >
-            Handa ka na bang Matuto?
+            Ready to Learn?
           </Typography>
           <Typography 
             variant="h6" 
@@ -743,7 +740,7 @@ export default function LandingPage() {
               lineHeight: 1.6,
             }}
           >
-            Sumali sa libu-libong mag-aaral na natututo sa pamamagitan ng mga kwentong Pilipino sa filiUp
+            Join thousands of students learning through Filipino stories on FiliUp
           </Typography>
           <Box sx={{ display: "flex", gap: 3, justifyContent: "center" }}>
             <Button
@@ -765,7 +762,7 @@ export default function LandingPage() {
                 },
               }}
             >
-              Mag-sign Up Ngayon
+              Sign Up Now
             </Button>
             <Button
               variant="outlined"
@@ -784,7 +781,7 @@ export default function LandingPage() {
                 },
               }}
             >
-              Matuto Pa
+              Learn More
             </Button>
           </Box>
         </Container>
@@ -845,7 +842,7 @@ export default function LandingPage() {
                   />
                 </Box>
                 <Typography variant="h6" fontWeight="bold" sx={{ letterSpacing: 0.5 }}>
-                  filiUp
+                  FiliUp
                 </Typography>
               </Box>
               <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>
@@ -855,27 +852,27 @@ export default function LandingPage() {
 
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Mga Kwento
+                Stories
               </Typography>
               <Box component="ul" sx={{ listStyle: "none", p: 0, m: 0 }}>
                 <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Mga Alamat
+                    Legends
                   </Link>
                 </Box>
                 <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Mga Pabula
+                    Fables
                   </Link>
                 </Box>
                 <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Mga Kwentong-Bayan
+                    Folk Tales
                   </Link>
                 </Box>
                 <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Mga Epiko
+                    Epics
                   </Link>
                 </Box>
               </Box>
@@ -883,7 +880,7 @@ export default function LandingPage() {
 
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Mga Mapagkukunan
+                Resources
               </Typography>
               <Box component="ul" sx={{ listStyle: "none", p: 0, m: 0 }}>
                 <Box component="li" sx={{ mb: 1.5 }}>
@@ -893,17 +890,17 @@ export default function LandingPage() {
                 </Box>
                 <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Mga Pagsusulit
+                    Quizzes
                   </Link>
                 </Box>
                 <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Komunidad
+                    Community
                   </Link>
                 </Box>
                 <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Tulong
+                    Help
                   </Link>
                 </Box>
               </Box>
@@ -911,17 +908,17 @@ export default function LandingPage() {
 
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Kompanya
+                Company
               </Typography>
               <Box component="ul" sx={{ listStyle: "none", p: 0, m: 0 }}>
                 <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Tungkol Sa Amin
+                    About Us
                   </Link>
                 </Box>
                 <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Mga Trabaho
+                    Careers
                   </Link>
                 </Box>
                 <Box component="li" sx={{ mb: 1.5 }}>
@@ -931,7 +928,7 @@ export default function LandingPage() {
                 </Box>
                 <Box component="li" sx={{ mb: 1.5 }}>
                   <Link component={RouterLink} to="#" color="inherit" underline="hover" sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}>
-                    Patakaran sa Privacy
+                    Privacy Policy
                   </Link>
                 </Box>
               </Box>
@@ -948,7 +945,7 @@ export default function LandingPage() {
             }}
           >
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)" }}>
-              © {new Date().getFullYear()} filiUp. Lahat ng karapatan ay nakalaan.
+              © {new Date().getFullYear()} FiliUp. All rights reserved.
             </Typography>
             <Box sx={{ display: "flex", gap: 2 }}>
               <IconButton 

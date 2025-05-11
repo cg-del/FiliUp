@@ -1,28 +1,29 @@
 import {
-    Email as EmailIcon,
-    Lock as LockIcon,
-    Visibility,
-    VisibilityOff,
+  Email as EmailIcon,
+  Lock as LockIcon,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 import {
-    Alert,
-    Box,
-    Button,
-    CircularProgress,
-    Container,
-    IconButton,
-    InputAdornment,
-    Link,
-    Paper,
-    Snackbar,
-    TextField,
-    Typography,
-    alpha,
-    useTheme,
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  IconButton,
+  InputAdornment,
+  Link,
+  Paper,
+  Snackbar,
+  TextField,
+  Typography,
+  alpha,
+  useTheme,
 } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import logo from '../../assets/logo.svg';
 import { useUser } from '../../context/UserContext';
 
 export default function Login() {
@@ -63,7 +64,7 @@ export default function Login() {
 
     // Validate required fields
     if (!formData.email || !formData.password) {
-      setError('Mangyaring punan ang lahat ng kinakailangang field.');
+      setError('Please fill in all required fields.');
       return;
     }
 
@@ -92,10 +93,10 @@ export default function Login() {
       console.error('Login error:', err);
       setError(
         err.response?.status === 401
-          ? 'Hindi tamang email o password.'
+          ? 'Incorrect email or password.'
           : err.message === 'Invalid response data'
-          ? 'May problema sa server response. Pakisubukang muli.'
-          : 'May error sa pag-sign in. Pakisubukang muli.'
+          ? 'Server response error. Please try again.'
+          : 'Error signing in. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -137,36 +138,29 @@ export default function Login() {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 2 }}>
               <Box
                 sx={{
-                  bgcolor: theme.palette.primary.main,
+                  bgcolor: 'white',
                   borderRadius: '50%',
                   p: 0.5,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   boxShadow: `0 0 10px ${alpha(theme.palette.primary.main, 0.3)}`,
+                  width: 47,
+                  height: 47,
+                  overflow: 'hidden',
                 }}
               >
-                <Box
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    bgcolor: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                />
+                <img src={logo} alt="FiliUp Logo" style={{ width: 65, height: 65, objectFit: 'contain', display: 'block' }} />
               </Box>
               <Typography variant="h5" fontWeight="bold" color="primary">
-                filiUp
+                FiliUp
               </Typography>
             </Box>
             <Typography variant="h4" fontWeight="bold" gutterBottom>
-              Mag-sign In
+              Sign In
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Masaya kaming makita ka muli! Mag-sign in para magpatuloy.
+              Welcome back! Sign in to continue.
             </Typography>
           </Box>
 
@@ -244,7 +238,7 @@ export default function Login() {
                   '&:hover': { textDecoration: 'underline' },
                 }}
               >
-                Nakalimutan ang Password?
+                Forgot Password?
               </Link>
             </Box>
 
@@ -270,13 +264,13 @@ export default function Login() {
               {loading ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
-                'Mag-sign In'
+                'Sign In'
               )}
             </Button>
 
             <Box sx={{ textAlign: 'center' }}>
               <Typography variant="body2" color="text.secondary">
-                Wala ka pang account?{' '}
+                Don't have an account?{' '}
                 <Link
                   component={RouterLink}
                   to="/sign-up"
@@ -287,7 +281,7 @@ export default function Login() {
                     '&:hover': { textDecoration: 'underline' },
                   }}
                 >
-                  Mag-sign up
+                  Sign Up
                 </Link>
               </Typography>
             </Box>
