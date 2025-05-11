@@ -76,8 +76,13 @@ public class ClassService {
     public void deleteClass(Long classId) {
         ClassEntity classEntity = classRepository.findById(classId)
             .orElseThrow(() -> new RuntimeException("Class not found"));
-        classEntity.setIsActive(false);
-        classRepository.save(classEntity);
+        
+        // Remove all associations first
+        classEntity.getStudents().clear();
+        classEntity.getStories().clear();
+        
+        // Delete the class
+        classRepository.delete(classEntity);
     }
 
     // Student Management

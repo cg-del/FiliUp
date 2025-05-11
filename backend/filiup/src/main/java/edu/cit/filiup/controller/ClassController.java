@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/classes")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"}, allowCredentials = "true")
 public class ClassController {
     private final ClassService classService;
 
@@ -72,14 +72,14 @@ public class ClassController {
         }
     }
 
-    // Delete class (soft delete)
+    // Delete class (hard delete)
     @DeleteMapping("/{classId}")
-    public ResponseEntity<Void> deleteClass(@PathVariable Long classId) {
+    public ResponseEntity<?> deleteClass(@PathVariable Long classId) {
         try {
             classService.deleteClass(classId);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok().body("Class deleted successfully");
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 

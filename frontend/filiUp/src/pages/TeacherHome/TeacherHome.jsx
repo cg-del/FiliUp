@@ -159,11 +159,17 @@ export default function TeacherHome() {
 
   // Delete class
   const handleDelete = async (classId) => {
-    if (!window.confirm('Are you sure you want to delete this class?')) return;
+    if (!window.confirm('Are you sure you want to delete this class? This action cannot be undone.')) return;
     
     try {
-      await api.delete(`/api/classes/${classId}`);
+      const response = await api.delete(`/api/classes/${classId}`);
+      console.log('Delete response:', response.data);
+      
+      // Remove the class from the state
       setClasses(classes.filter(c => c.classId !== classId));
+      
+      // Show success message
+      alert('Class deleted successfully');
     } catch (error) {
       console.error('Error deleting class:', error);
       if (error.response) {
@@ -174,8 +180,11 @@ export default function TeacherHome() {
           logout();
           return;
         }
+        // Show the specific error message from the server
+        alert(error.response.data || 'Error deleting class. Please try again.');
+      } else {
+        alert('Error deleting class. Please try again.');
       }
-      alert('Error deleting class. Please try again.');
     }
   };
 
