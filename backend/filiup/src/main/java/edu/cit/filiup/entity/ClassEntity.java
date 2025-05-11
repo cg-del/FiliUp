@@ -49,9 +49,8 @@ public class ClassEntity {
     )
     private List<UserEntity> students = new ArrayList<>();
 
-    // Stories relationship
-    @OneToMany(mappedBy = "classEntity")
-    @JsonManagedReference
+    @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<StoryEntity> stories = new ArrayList<>();
 
     // Constructors
