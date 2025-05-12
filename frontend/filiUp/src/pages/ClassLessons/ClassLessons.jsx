@@ -1,19 +1,21 @@
+import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, TextField, Typography } from '@mui/material';
+import GroupIcon from '@mui/icons-material/Group';
+import { Avatar, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, TextField, Typography, alpha, useTheme } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import ClassRecord from './ClassRecord';
 import Stories from './Stories';
 
 export default function ClassLessons() {
+  const theme = useTheme();
   const { classId } = useParams();
   const navigate = useNavigate();
   const [classInfo, setClassInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [form, setForm] = useState({ className: '', description: '' });
@@ -30,14 +32,14 @@ export default function ClassLessons() {
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [studentsError, setStudentsError] = useState('');
+  const [stories, setStories] = useState([]);
+  const [scores, setScores] = useState({});
 
   // Get access token from localStorage
   const accessToken = localStorage.getItem('accessToken');
 
   // Fetch class info
   useEffect(() => {
-    setLoading(true);
-    setError('');
     axios.get(`http://localhost:8080/api/classes/${classId}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`
@@ -46,13 +48,28 @@ export default function ClassLessons() {
       .then(res => {
         setClassInfo(res.data);
         setForm({ className: res.data.className, description: res.data.description });
-        setLoading(false);
       })
       .catch(() => {
-        setError('Failed to load class information.');
-        setLoading(false);
+        // setError('Failed to load class information.');
       });
   }, [classId, accessToken]);
+
+  // Fetch stories for the class
+  useEffect(() => {
+    if (activeTab === 'classRecord') {
+      axios.get(`http://localhost:8080/api/classes/${classId}/stories`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+        .then(res => {
+          setStories(res.data);
+        })
+        .catch(() => {
+          setStories([]);
+        });
+    }
+  }, [activeTab, classId, accessToken]);
 
   // Fetch students when Class Record tab is selected
   useEffect(() => {
@@ -74,6 +91,23 @@ export default function ClassLessons() {
         });
     }
   }, [activeTab, classId, accessToken]);
+
+  // Mock/fetch scores for students and stories
+  useEffect(() => {
+    if (activeTab === 'classRecord' && students.length > 0 && stories.length > 0) {
+      // TODO: Replace this with real API call for scores
+      // For now, generate random scores for demo
+      const newScores = {};
+      students.forEach(student => {
+        newScores[student.userId] = {};
+        stories.forEach(story => {
+          // Random score between 60 and 100 or null
+          newScores[student.userId][story.storyId] = Math.random() > 0.3 ? Math.floor(Math.random() * 41) + 60 : null;
+        });
+      });
+      setScores(newScores);
+    }
+  }, [activeTab, students, stories]);
 
   // Edit handlers
   const handleEditOpen = () => setEditDialogOpen(true);
@@ -208,77 +242,198 @@ export default function ClassLessons() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', p: 4 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: alpha(theme.palette.primary.main, 0.02), p: 4 }}>
       <Box sx={{ mb: 3 }}>
         <Button component={Link} to="/teacher" startIcon={<ArrowBackIcon />} variant="text">
-          Bumalik sa Mga Klase
+          Back to Classes
         </Button>
       </Box>
-      {/* Class Info Heading */}
-      <Paper sx={{ p: 4, mb: 3 }}>
-        {loading ? (
-          <Stack alignItems="center">
-            <CircularProgress />
-          </Stack>
-        ) : error ? (
-          <Typography color="error">{error}</Typography>
-        ) : classInfo ? (
-          <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h4" fontWeight="bold">
-                {classInfo.className}
+      {/* Class Info Header */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 4,
+          mb: 4,
+          borderRadius: 4,
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Stack direction="row" spacing={3} alignItems="center">
+            <Avatar
+              sx={{
+                width: 64,
+                height: 64,
+                bgcolor: 'white',
+                color: theme.palette.primary.main,
+                fontSize: '1.5rem',
+              }}
+            >
+              <GroupIcon sx={{ fontSize: 32 }} />
+            </Avatar>
+            <Box flex={1}>
+              <Typography variant="h4" fontWeight="bold" gutterBottom>
+                {classInfo?.className}
               </Typography>
-              <Box>
+              <Typography variant="subtitle1">
+                {classInfo?.description}
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>Class Code:</strong> {classInfo?.classCode}
                 <Button
-                  startIcon={<EditIcon />}
-                  onClick={handleEditOpen}
-                  sx={{ mr: 1 }}
+                  size="small"
+                  startIcon={<AutorenewIcon />}
+                  onClick={handleRegenerateCode}
+                  disabled={regenLoading}
+                  sx={{ ml: 2, color: 'white', borderColor: 'white', '&:hover': { bgcolor: alpha(theme.palette.common.white, 0.1) } }}
                   variant="outlined"
                 >
-                  I-edit
+                  {regenLoading ? 'Regenerating...' : 'Regenerate'}
                 </Button>
-                <Button
-                  startIcon={<DeleteIcon />}
-                  onClick={handleDeleteOpen}
-                  color="error"
-                  sx={{ mr: 1 }}
-                  variant="outlined"
-                >
-                  I-delete
-                </Button>
-                <Button
-                  onClick={handleAddStudentDialogOpen}
-                  variant="outlined"
-                >
-                  Add Student
-                </Button>
-              </Box>
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>Created At:</strong> {classInfo?.createdAt ? new Date(classInfo.createdAt).toLocaleString() : ''}
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                <strong>Status:</strong> {classInfo?.isActive ? 'Active' : 'Inactive'}
+              </Typography>
             </Box>
-            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-              {classInfo.description}
-            </Typography>
-            <Typography variant="body1" sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-              <strong>Class Code:</strong> {classInfo.classCode}
-              <Button
-                size="small"
-                startIcon={<AutorenewIcon />}
-                onClick={handleRegenerateCode}
-                disabled={regenLoading}
-                sx={{ ml: 2 }}
-                variant="outlined"
-              >
-                {regenLoading ? 'Regenerating...' : 'Regenerate'}
-              </Button>
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              <strong>Created At:</strong> {new Date(classInfo.createdAt).toLocaleString()}
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              <strong>Status:</strong> {classInfo.isActive ? 'Active' : 'Inactive'}
-            </Typography>
-          </>
-        ) : null}
+          </Stack>
+        </Box>
       </Paper>
+      <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3, px: 1 }}>
+        Quick Actions
+      </Typography>
+      <Box sx={{ display: 'flex', gap: 3, mb: 4 }}>
+        {/* Edit Class Quick Action */}
+        <Paper
+          onClick={handleEditOpen}
+          sx={{
+            p: 3,
+            textAlign: 'center',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            borderRadius: 2,
+            boxShadow: 2,
+            bgcolor: 'white',
+            cursor: 'pointer',
+            minWidth: 220,
+            minHeight: 180,
+            transition: 'box-shadow 0.2s',
+            '&:hover': { boxShadow: 6 },
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: '#2196f3',
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mb: 2,
+            }}
+          >
+            <EditIcon sx={{ color: 'white', fontSize: 32 }} />
+          </Box>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+            Edit Class
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Edit class details
+          </Typography>
+        </Paper>
+
+        {/* Add Student Quick Action */}
+        <Paper
+          onClick={handleAddStudentDialogOpen}
+          sx={{
+            p: 3,
+            textAlign: 'center',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            borderRadius: 2,
+            boxShadow: 2,
+            bgcolor: 'white',
+            cursor: 'pointer',
+            minWidth: 220,
+            minHeight: 180,
+            transition: 'box-shadow 0.2s',
+            '&:hover': { boxShadow: 6 },
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: '#2196f3',
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mb: 2,
+            }}
+          >
+            <GroupIcon sx={{ color: 'white', fontSize: 32 }} />
+          </Box>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+            Add Student
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Add a student to the class
+          </Typography>
+        </Paper>
+
+        {/* Delete Class Quick Action */}
+        <Paper
+          onClick={handleDeleteOpen}
+          sx={{
+            p: 3,
+            textAlign: 'center',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            borderRadius: 2,
+            boxShadow: 2,
+            bgcolor: 'white',
+            cursor: 'pointer',
+            minWidth: 220,
+            minHeight: 180,
+            transition: 'box-shadow 0.2s',
+            '&:hover': { boxShadow: 6 },
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: '#2196f3',
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mb: 2,
+            }}
+          >
+            <DeleteIcon sx={{ color: 'white', fontSize: 32 }} />
+          </Box>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+            Delete Class
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Permanently delete the class
+          </Typography>
+        </Paper>
+      </Box>
       {/* Tabs Heading */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Button
@@ -298,37 +453,24 @@ export default function ClassLessons() {
       {activeTab === 'stories' ? (
         <Stories classId={classId} />
       ) : (
-        <Paper sx={{ p: 4, mb: 3 }}>
-          <Typography variant="h5" gutterBottom>Class Record</Typography>
-          {studentsLoading ? (
-            <Stack alignItems="center"><CircularProgress /></Stack>
-          ) : studentsError ? (
-            <Typography color="error">{studentsError}</Typography>
-          ) : students.length > 0 ? (
-            <Box>
-              {students.map(student => (
-                <Box key={student.userId} sx={{ p: 1, borderBottom: '1px solid #eee' }}>
-                  <Typography>
-                    {student.userName} ({student.userEmail})
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          ) : (
-            <Typography>No students enrolled in this class.</Typography>
-          )}
-        </Paper>
+        <ClassRecord
+          students={students}
+          stories={stories}
+          scores={scores}
+          studentsLoading={studentsLoading}
+          studentsError={studentsError}
+        />
       )}
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onClose={handleEditClose}>
-        <DialogTitle>I-edit ang Klase</DialogTitle>
+        <DialogTitle>Edit Class</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
             margin="dense"
             name="className"
-            label="Pangalan ng Klase"
+            label="Class Name"
             type="text"
             fullWidth
             value={form.className}
@@ -339,7 +481,7 @@ export default function ClassLessons() {
           <TextField
             margin="dense"
             name="description"
-            label="Deskripsyon"
+            label="Description"
             type="text"
             fullWidth
             value={form.description}
@@ -350,26 +492,26 @@ export default function ClassLessons() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleEditClose} disabled={isSubmitting}>
-            Kanselahin
+            Cancel
           </Button>
           <Button onClick={handleEditSubmit} variant="contained" disabled={isSubmitting || !form.className.trim()}>
-            {isSubmitting ? 'Saving...' : 'I-save'}
+            {isSubmitting ? 'Saving...' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onClose={handleDeleteClose}>
-        <DialogTitle>I-delete ang Klase</DialogTitle>
+        <DialogTitle>Delete Class</DialogTitle>
         <DialogContent>
-          <Typography>Sigurado ka bang gusto mong i-delete ang klaseng ito?</Typography>
+          <Typography>Are you sure you want to delete this class?</Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeleteClose} disabled={isSubmitting}>
-            Kanselahin
+            Cancel
           </Button>
           <Button onClick={handleDelete} color="error" variant="contained" disabled={isSubmitting}>
-            {isSubmitting ? 'Deleting...' : 'I-delete'}
+            {isSubmitting ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

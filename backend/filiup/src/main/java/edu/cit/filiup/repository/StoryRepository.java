@@ -11,5 +11,5 @@ public interface StoryRepository extends JpaRepository<StoryEntity, Long> {
     List<StoryEntity> findByCreatedByUserId(int userId);
     List<StoryEntity> findByIsActiveTrue();
     List<StoryEntity> findByClassEntityClassIdAndIsActiveTrue(Long classId);
-    List<StoryEntity> findByDifficultyLevel(StoryEntity.DifficultyLevel difficultyLevel);
+    List<StoryEntity> findByGenre(String genre);
 }

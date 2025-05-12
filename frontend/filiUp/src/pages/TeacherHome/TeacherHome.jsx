@@ -66,22 +66,7 @@ export default function TeacherHome() {
   const theme = useTheme();
   const { user, logout } = useUser();
   const navigate = useNavigate();
-  const [classes, setClasses] = useState([
-    {
-      classId: 1,
-      className: "1",
-      description: "1",
-      createdAt: "2025-05-08T09:31:10",
-      isActive: true
-    },
-    {
-      classId: 2,
-      className: "Java Certification Exam",
-      description: "CodeChum Java Programming 1",
-      createdAt: "2025-05-08T09:31:10",
-      isActive: true
-    }
-  ]);
+  const [classes, setClasses] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState('create'); // 'create' or 'edit'
   const [selectedClass, setSelectedClass] = useState(null);
@@ -294,10 +279,10 @@ export default function TeacherHome() {
               </Grid>
               <Grid xs>
                 <Typography variant="h4" gutterBottom>
-                  Maligayang pagbabalik, {user?.userName}!
+                  Welcome back, {user?.userName}!
                 </Typography>
                 <Typography variant="subtitle1">
-                  {user?.userEmail} • Guro
+                  {user?.userEmail} • Teacher
                 </Typography>
               </Grid>
               <Grid>
@@ -314,7 +299,7 @@ export default function TeacherHome() {
                     },
                   }}
                 >
-                  Mag-sign Out
+                  Sign Out
                 </Button>
               </Grid>
             </Grid>
@@ -323,7 +308,7 @@ export default function TeacherHome() {
 
         {/* Classes Section */}
         <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3, px: 1 }}>
-          Mga Klase
+          Classes
         </Typography>
         <Box sx={{ mb: 4 }}>
           {Array.isArray(classes) && classes.length === 0 ? (
@@ -338,10 +323,10 @@ export default function TeacherHome() {
               }}
             >
               <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Wala pang klase
+                No classes yet
               </Typography>
               <Typography variant="body2">
-                Magdagdag ng klase gamit ang quick action sa itaas.
+                Add a class using the quick action above.
               </Typography>
             </Paper>
           ) : (
@@ -402,13 +387,13 @@ export default function TeacherHome() {
 
         {/* Dialog for Create/Edit Class */}
         <Dialog open={openDialog} onClose={handleCloseDialog}>
-          <DialogTitle>{dialogMode === 'create' ? 'Magdagdag ng Klase' : 'I-edit ang Klase'}</DialogTitle>
+          <DialogTitle>{dialogMode === 'create' ? 'Add Class' : 'Edit Class'}</DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
               margin="dense"
               name="className"
-              label="Pangalan ng Klase"
+              label="Class Name"
               type="text"
               fullWidth
               value={form.className}
@@ -421,7 +406,7 @@ export default function TeacherHome() {
             <TextField
               margin="dense"
               name="description"
-              label="Deskripsyon"
+              label="Description"
               type="text"
               fullWidth
               value={form.description}
@@ -432,14 +417,14 @@ export default function TeacherHome() {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog} disabled={isSubmitting}>
-              Kanselahin
+              Cancel
             </Button>
             <Button 
               onClick={handleSubmit} 
               variant="contained" 
               disabled={isSubmitting || !form.className.trim()}
             >
-              {isSubmitting ? 'Saving...' : dialogMode === 'create' ? 'Gumawa' : 'I-save'}
+              {isSubmitting ? 'Saving...' : dialogMode === 'create' ? 'Create' : 'Save'}
             </Button>
           </DialogActions>
         </Dialog>
@@ -521,7 +506,7 @@ export default function TeacherHome() {
 
         {/* Quick Actions */}
         <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3, px: 1 }}>
-          Mga Mabilis na Aksyon
+          Quick Actions
         </Typography>
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {/* Add Class Quick Action */}
@@ -531,7 +516,8 @@ export default function TeacherHome() {
               sx={{
                 p: 3,
                 textAlign: 'center',
-                height: '100%',
+                height: 180,
+                width: 250,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -560,10 +546,10 @@ export default function TeacherHome() {
                 <AddIcon sx={{ color: 'white', fontSize: 32 }} />
               </Box>
               <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
-                Magdagdag ng Klase
+                Add Class
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Lumikha ng bagong klase
+                Create a new class
               </Typography>
             </Paper>
           </Grid>
@@ -574,7 +560,8 @@ export default function TeacherHome() {
               sx={{
                 p: 3,
                 textAlign: 'center',
-                height: '100%',
+                height: 180,
+                width: 250,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -589,10 +576,10 @@ export default function TeacherHome() {
                 <GroupIcon />
               </IconButton>
               <Typography variant="h6" gutterBottom>
-                Mga Mag-aaral
+                Students
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Tingnan ang mga mag-aaral
+                View students
               </Typography>
             </Paper>
           </Grid>
@@ -602,7 +589,8 @@ export default function TeacherHome() {
               sx={{
                 p: 3,
                 textAlign: 'center',
-                height: '100%',
+                height: 180,
+                width: 250,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -617,10 +605,10 @@ export default function TeacherHome() {
                 <AssessmentIcon />
               </IconButton>
               <Typography variant="h6" gutterBottom>
-                Mga Ulat
+                Reports
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Tingnan ang mga ulat at progreso
+                View reports and progress
               </Typography>
             </Paper>
           </Grid>
@@ -630,7 +618,8 @@ export default function TeacherHome() {
               sx={{
                 p: 3,
                 textAlign: 'center',
-                height: '100%',
+                height: 180,
+                width: 250,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -645,10 +634,10 @@ export default function TeacherHome() {
                 <SchoolIcon />
               </IconButton>
               <Typography variant="h6" gutterBottom>
-                Mga Aralin
+                Lessons
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Pamahalaan ang mga aralin
+                Manage lessons
               </Typography>
             </Paper>
           </Grid>
@@ -656,7 +645,7 @@ export default function TeacherHome() {
 
         {/* Recent Activity Section */}
         <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3, px: 1 }}>
-          Mga Kamakailang Gawain
+          Recent Activity
         </Typography>
         <Grid container spacing={3}>
           <Grid item xs={12}>
@@ -669,7 +658,7 @@ export default function TeacherHome() {
             >
               <CardContent>
                 <Typography variant="body2" color="text.secondary">
-                  Walang kamakailang gawain.
+                  No recent activity.
                 </Typography>
               </CardContent>
             </Card>

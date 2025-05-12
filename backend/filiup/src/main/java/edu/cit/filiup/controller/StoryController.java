@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/stories")
@@ -21,14 +23,51 @@ public class StoryController {
 
     // Create a new story
     @PostMapping
-    public ResponseEntity<StoryEntity> createStory(
+    public ResponseEntity<?> createStory(
             @RequestBody StoryEntity storyEntity,
             @RequestParam int userId) {
         try {
+            // Log incoming request
+            System.out.println("Received story creation request:");
+            System.out.println("Story Entity: " + storyEntity);
+            System.out.println("User ID: " + userId);
+
+            // Validate required fields
+            if (storyEntity.getTitle() == null || storyEntity.getTitle().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Title is required");
+            }
+            if (storyEntity.getContent() == null || storyEntity.getContent().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Content is required");
+            }
+            if (storyEntity.getGenre() == null || storyEntity.getGenre().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Genre is required");
+            }
+            
+            // Validate class entity
+            if (storyEntity.getClassEntity() == null) {
+                return ResponseEntity.badRequest().body("Class entity is required");
+            }
+            if (storyEntity.getClassEntity().getClassId() == null) {
+                return ResponseEntity.badRequest().body("Class ID is required");
+            }
+
+            // Create the story
             StoryEntity createdStory = storyService.createStory(storyEntity, userId);
+            
+            // Log success
+            System.out.println("Story created successfully: " + createdStory);
+            
             return ResponseEntity.ok(createdStory);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            // Log error
+            System.err.println("Error creating story: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Return error response
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to create story");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
@@ -58,11 +97,10 @@ public class StoryController {
         return ResponseEntity.ok(storyService.getStoriesByTeacher(userId));
     }
 
-    // Get stories by difficulty level
-    @GetMapping("/difficulty/{difficultyLevel}")
-    public ResponseEntity<List<StoryEntity>> getStoriesByDifficulty(
-            @PathVariable StoryEntity.DifficultyLevel difficultyLevel) {
-        return ResponseEntity.ok(storyService.getStoriesByDifficulty(difficultyLevel));
+    // Get stories by genre
+    @GetMapping("/genre/{genre}")
+    public ResponseEntity<List<StoryEntity>> getStoriesByGenre(@PathVariable String genre) {
+        return ResponseEntity.ok(storyService.getStoriesByGenre(genre));
     }
 
     // Update story

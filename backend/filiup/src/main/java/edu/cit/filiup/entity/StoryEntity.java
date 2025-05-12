@@ -3,9 +3,12 @@ package edu.cit.filiup.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 @Entity
 @Table(name = "stories")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class StoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,42 +27,36 @@ public class StoryEntity {
     @Column(name = "cover_picture_type")
     private String coverPictureType;
 
-    @Column(name = "difficulty_level", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private DifficultyLevel difficultyLevel;
-
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @Column(name = "genre", length = 100)
+    private String genre;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id", nullable = false)
-    @JsonIgnore
+    @JsonProperty("classEntity")
     private ClassEntity classEntity;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
+    @JsonIgnore
     private UserEntity createdBy;
-
-    public enum DifficultyLevel {
-        BEGINNER,
-        INTERMEDIATE,
-        ADVANCED
-    }
 
     // Constructors
     public StoryEntity() {
         this.createdAt = LocalDateTime.now();
     }
 
-    public StoryEntity(String title, String content, DifficultyLevel difficultyLevel, UserEntity createdBy) {
+    public StoryEntity(String title, String content, UserEntity createdBy, String genre) {
         this();
         this.title = title;
         this.content = content;
-        this.difficultyLevel = difficultyLevel;
         this.createdBy = createdBy;
+        this.genre = genre;
     }
 
     // Getters and Setters
@@ -103,14 +100,6 @@ public class StoryEntity {
         this.coverPictureType = coverPictureType;
     }
 
-    public DifficultyLevel getDifficultyLevel() {
-        return difficultyLevel;
-    }
-
-    public void setDifficultyLevel(DifficultyLevel difficultyLevel) {
-        this.difficultyLevel = difficultyLevel;
-    }
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -141,5 +130,25 @@ public class StoryEntity {
 
     public void setCreatedBy(UserEntity createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public String getGenre() {
+        return genre;
+    }
+
+    public void setGenre(String genre) {
+        this.genre = genre;
+    }
+
+    @Override
+    public String toString() {
+        return "StoryEntity{" +
+                "storyId=" + storyId +
+                ", title='" + title + '\'' +
+                ", content='" + content + '\'' +
+                ", genre='" + genre + '\'' +
+                ", classEntity=" + (classEntity != null ? classEntity.getClassId() : "null") +
+                ", createdBy=" + (createdBy != null ? createdBy.getUserId() : "null") +
+                '}';
     }
 }

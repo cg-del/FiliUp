@@ -2,11 +2,34 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import {
+    Avatar,
     Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
-    Paper, Stack, TextField, Typography
+    MenuItem,
+    Paper, Stack,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    TextField, Typography
 } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import StoryView from './StoryView';
+
+const GENRE_OPTIONS = [
+    { value: 'MAIKLING_KWENTO', label: 'Maikling Kwento' },
+    { value: 'TULA', label: 'Tula' },
+    { value: 'DULA', label: 'Dula' },
+    { value: 'NOBELA', label: 'Nobela' },
+    { value: 'SANAYSAY', label: 'Sanaysay' },
+    { value: 'AWIT', label: 'Awit' },
+    { value: 'KORIDO', label: 'Korido' },
+    { value: 'EPIKO', label: 'Epiko' },
+    { value: 'BUGTONG', label: 'Bugtong' },
+    { value: 'SALAWIKAIN', label: 'Salawikain' },
+    { value: 'TALUMPATI', label: 'Talumpati' },
+    { value: 'MITOLOHIYA', label: 'Mitolohiya' },
+    { value: 'ALAMAT', label: 'Alamat' },
+    { value: 'PARABULA', label: 'Parabula' },
+    { value: 'PABULA', label: 'Pabula' }
+];
 
 export default function Stories({ classId }) {
   const [stories, setStories] = useState([]);
@@ -14,10 +37,19 @@ export default function Stories({ classId }) {
   const [error, setError] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [currentStory, setCurrentStory] = useState({ title: '', content: '', difficultyLevel: '' });
+  const [currentStory, setCurrentStory] = useState({ 
+    title: '', 
+    content: '', 
+    genre: '',
+    coverPicture: null,
+    coverPictureType: ''
+  });
   const [selectedStoryId, setSelectedStoryId] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteStoryId, setDeleteStoryId] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedStory, setSelectedStory] = useState(null);
 
   // Get JWT token and userId
   const accessToken = localStorage.getItem('accessToken');
@@ -41,6 +73,23 @@ export default function Stories({ classId }) {
       });
   }, [classId, accessToken]);
 
+  // Handle file selection
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCurrentStory({
+          ...currentStory,
+          coverPicture: reader.result.split(',')[1], // Get base64 data
+          coverPictureType: file.type
+        });
+        setPreviewUrl(URL.createObjectURL(file));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Open dialog for create or edit
   const handleOpenDialog = (story = null) => {
     if (story) {
@@ -48,45 +97,95 @@ export default function Stories({ classId }) {
       setCurrentStory({
         title: story.title,
         content: story.content,
-        difficultyLevel: story.difficultyLevel || ''
+        genre: story.genre || '',
+        coverPicture: story.coverPicture,
+        coverPictureType: story.coverPictureType
       });
       setSelectedStoryId(story.storyId);
+      setPreviewUrl(story.coverPicture ? 
+        `data:${story.coverPictureType};base64,${story.coverPicture}` : null);
     } else {
       setEditMode(false);
-      setCurrentStory({ title: '', content: '', difficultyLevel: '' });
+      setCurrentStory({ 
+        title: '', 
+        content: '', 
+        genre: '',
+        coverPicture: null,
+        coverPictureType: ''
+      });
       setSelectedStoryId(null);
+      setPreviewUrl(null);
     }
     setDialogOpen(true);
   };
 
-  const handleCloseDialog = () => setDialogOpen(false);
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setPreviewUrl(null);
+  };
 
   // Handle create or update
   const handleSave = async () => {
     try {
+      // Ensure classId is a number
+      const classIdNum = parseInt(classId);
+      if (isNaN(classIdNum)) {
+        throw new Error('Invalid Class ID');
+      }
+
+      const storyData = {
+        title: currentStory.title.trim(),
+        content: currentStory.content.trim(),
+        genre: currentStory.genre,
+        coverPicture: currentStory.coverPicture,
+        coverPictureType: currentStory.coverPictureType,
+        classEntity: {
+          classId: classIdNum
+        }
+      };
+
+      console.log('Sending story data:', JSON.stringify(storyData, null, 2));
+
       if (editMode) {
         // Update
-        await axios.put(
+        const response = await axios.put(
           `http://localhost:8080/api/stories/${selectedStoryId}`,
-          { ...currentStory, classEntity: { classId: classId } },
-          { headers: { Authorization: `Bearer ${accessToken}` } }
+          storyData,
+          { 
+            headers: { 
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            } 
+          }
         );
+        console.log('Update response:', response.data);
       } else {
         // Create
-        await axios.post(
+        const response = await axios.post(
           `http://localhost:8080/api/stories?userId=${userId}`,
-          { ...currentStory, classEntity: { classId: classId } },
-          { headers: { Authorization: `Bearer ${accessToken}` } }
+          storyData,
+          { 
+            headers: { 
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            } 
+          }
         );
+        console.log('Create response:', response.data);
       }
+
       // Refresh stories
       const res = await axios.get(`http://localhost:8080/api/stories/class/${classId}`, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       setStories(res.data);
       setDialogOpen(false);
-    } catch {
-      alert('Failed to save story.');
+      setPreviewUrl(null);
+    } catch (error) {
+      console.error('Error saving story:', error);
+      console.error('Request data:', error.config?.data);
+      console.error('Response data:', error.response?.data);
+      alert(error.response?.data || 'Failed to save story.');
     }
   };
 
@@ -103,9 +202,21 @@ export default function Stories({ classId }) {
       });
       setStories(res.data);
       setDeleteDialogOpen(false);
-    } catch {
+    } catch (error) {
+      console.error('Error deleting story:', error);
       alert('Failed to delete story.');
     }
+  };
+
+  // Add handler for viewing a story
+  const handleViewStory = (story) => {
+    setSelectedStory(story);
+    setViewDialogOpen(true);
+  };
+
+  const handleCloseViewDialog = () => {
+    setViewDialogOpen(false);
+    setSelectedStory(null);
   };
 
   return (
@@ -125,16 +236,26 @@ export default function Stories({ classId }) {
       ) : (
         <Box>
           {stories.map(story => (
-            <Paper key={story.storyId} sx={{ p: 2, mb: 2 }}>
+            <Paper key={story.storyId} sx={{ p: 2, mb: 2, backgroundColor: '#e3f2fd', cursor: 'pointer' }} onClick={() => handleViewStory(story)}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="h6">{story.title}</Typography>
-                  <Typography variant="body2" color="text.secondary">{story.difficultyLevel}</Typography>
-                  <Typography variant="body1" sx={{ mt: 1 }}>{story.content}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  {story.coverPicture && (
+                    <Avatar
+                      src={`data:${story.coverPictureType};base64,${story.coverPicture}`}
+                      sx={{ width: 60, height: 60 }}
+                      variant="rounded"
+                    />
+                  )}
+                  <Box>
+                    <Typography variant="h6">{story.title}</Typography>
+                    <Typography variant="body2" color="text.secondary">{
+                      GENRE_OPTIONS.find(opt => opt.value === story.genre)?.label || story.genre
+                    }</Typography>
+                  </Box>
                 </Box>
                 <Box>
-                  <IconButton onClick={() => handleOpenDialog(story)}><EditIcon /></IconButton>
-                  <IconButton color="error" onClick={() => { setDeleteDialogOpen(true); setDeleteStoryId(story.storyId); }}>
+                  <IconButton onClick={e => { e.stopPropagation(); handleOpenDialog(story); }}><EditIcon /></IconButton>
+                  <IconButton color="error" onClick={e => { e.stopPropagation(); setDeleteDialogOpen(true); setDeleteStoryId(story.storyId); }}>
                     <DeleteIcon />
                   </IconButton>
                 </Box>
@@ -145,42 +266,100 @@ export default function Stories({ classId }) {
       )}
 
       {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
+      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>{editMode ? 'Edit Story' : 'Add Story'}</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Title"
-            type="text"
-            fullWidth
-            value={currentStory.title}
-            onChange={e => setCurrentStory({ ...currentStory, title: e.target.value })}
-            sx={{ mb: 2 }}
-            required
-          />
-          <TextField
-            margin="dense"
-            label="Content"
-            type="text"
-            fullWidth
-            multiline
-            rows={3}
-            value={currentStory.content}
-            onChange={e => setCurrentStory({ ...currentStory, content: e.target.value })}
-            sx={{ mb: 2 }}
-            required
-          />
-          <TextField
-            margin="dense"
-            label="Difficulty Level"
-            type="text"
-            fullWidth
-            value={currentStory.difficultyLevel}
-            onChange={e => setCurrentStory({ ...currentStory, difficultyLevel: e.target.value })}
-            sx={{ mb: 2 }}
-            placeholder="e.g. BEGINNER, INTERMEDIATE, ADVANCED"
-          />
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <TextField
+                autoFocus
+                margin="dense"
+                label="Title"
+                type="text"
+                fullWidth
+                value={currentStory.title}
+                onChange={e => setCurrentStory({ ...currentStory, title: e.target.value })}
+                sx={{ mb: 2 }}
+                required
+              />
+              <TextField
+                margin="dense"
+                label="Content"
+                type="text"
+                fullWidth
+                multiline
+                rows={3}
+                value={currentStory.content}
+                onChange={e => setCurrentStory({ ...currentStory, content: e.target.value })}
+                sx={{ mb: 2 }}
+                required
+              />
+              <TextField
+                select
+                margin="dense"
+                label="Genre"
+                fullWidth
+                value={currentStory.genre}
+                onChange={e => setCurrentStory({ ...currentStory, genre: e.target.value })}
+                sx={{ mb: 2 }}
+              >
+                {GENRE_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+            <Box sx={{ width: 200 }}>
+              <input
+                accept="image/*"
+                style={{ display: 'none' }}
+                id="cover-picture-upload"
+                type="file"
+                onChange={handleFileSelect}
+              />
+              <label htmlFor="cover-picture-upload">
+                <Box
+                  sx={{
+                    width: 200,
+                    height: 200,
+                    border: '2px dashed #ccc',
+                    borderRadius: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                    },
+                  }}
+                >
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Cover preview"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <>
+                      <Typography variant="body2" color="text.secondary" align="center">
+                        Click to upload cover picture
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" align="center">
+                        (Max size: 5MB)
+                      </Typography>
+                    </>
+                  )}
+                </Box>
+              </label>
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
@@ -200,6 +379,11 @@ export default function Stories({ classId }) {
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleDelete} color="error" variant="contained">Delete</Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Story View Dialog */}
+      <Dialog open={viewDialogOpen} onClose={handleCloseViewDialog} maxWidth="xl" fullWidth>
+        <StoryView story={selectedStory} onClose={handleCloseViewDialog} />
       </Dialog>
     </Paper>
   );

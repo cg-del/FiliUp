@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.ArrayList;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 import java.security.SecureRandom;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -16,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 public class ClassEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonProperty("classId")
     private Long classId;
 
     @Column(name = "class_name", nullable = false, length = 100)
@@ -167,5 +169,13 @@ public class ClassEntity {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        return "ClassEntity{" +
+                "classId=" + classId +
+                ", className='" + className + '\'' +
+                '}';
     }
 }
