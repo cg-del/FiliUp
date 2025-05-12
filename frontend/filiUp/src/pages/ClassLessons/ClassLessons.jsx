@@ -4,12 +4,13 @@ import AutorenewIcon from '@mui/icons-material/Autorenew';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import GroupIcon from '@mui/icons-material/Group';
-import { Avatar, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, TextField, Typography, alpha, useTheme } from '@mui/material';
+import { Avatar, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography, alpha, useTheme } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ClassRecord from './ClassRecord';
 import Stories from './Stories';
+import StoryView from './StoryView';
 
 export default function ClassLessons() {
   const theme = useTheme();
@@ -34,6 +35,10 @@ export default function ClassLessons() {
   const [studentsError, setStudentsError] = useState('');
   const [stories, setStories] = useState([]);
   const [scores, setScores] = useState({});
+  const [commonStories, setCommonStories] = useState([]);
+  const [selectedGenre, setSelectedGenre] = useState('ALL');
+  const [selectedStory, setSelectedStory] = useState(null);
+  const [viewStoryDialogOpen, setViewStoryDialogOpen] = useState(false);
 
   // Get access token from localStorage
   const accessToken = localStorage.getItem('accessToken');
@@ -108,6 +113,28 @@ export default function ClassLessons() {
       setScores(newScores);
     }
   }, [activeTab, students, stories]);
+
+  // Fetch common stories
+  useEffect(() => {
+    if (activeTab === 'commonStories') {
+      axios.get('http://localhost:8080/api/common-stories', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+        .then(res => {
+          setCommonStories(res.data);
+        })
+        .catch(() => {
+          setCommonStories([]);
+        });
+    }
+  }, [activeTab, accessToken]);
+
+  // Filter stories by genre
+  const filteredStories = selectedGenre === 'ALL' 
+    ? commonStories 
+    : commonStories.filter(story => story.genre === selectedGenre);
 
   // Edit handlers
   const handleEditOpen = () => setEditDialogOpen(true);
@@ -240,6 +267,25 @@ export default function ClassLessons() {
       setSearchLoading(false);
     }
   };
+
+  // Handle story view
+  const handleViewStory = (story) => {
+    setSelectedStory(story);
+    setViewStoryDialogOpen(true);
+  };
+
+  const handleCloseStoryView = () => {
+    setViewStoryDialogOpen(false);
+    setSelectedStory(null);
+  };
+
+  // Add GENRE_OPTIONS constant
+  const GENRE_OPTIONS = [
+    { value: 'ALL', label: 'All Genres' },
+    { value: 'PANTASYA', label: 'Pantasya' },
+    { value: 'ROMANSA', label: 'Romansa' },
+    { value: 'MISTERYO', label: 'Misteryo' }
+  ];
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: alpha(theme.palette.primary.main, 0.02), p: 4 }}>
@@ -444,6 +490,13 @@ export default function ClassLessons() {
           Stories
         </Button>
         <Button
+          variant={activeTab === 'commonStories' ? 'contained' : 'outlined'}
+          onClick={() => setActiveTab('commonStories')}
+          sx={{ mr: 2 }}
+        >
+          Common Stories
+        </Button>
+        <Button
           variant={activeTab === 'classRecord' ? 'contained' : 'outlined'}
           onClick={() => setActiveTab('classRecord')}
         >
@@ -452,6 +505,59 @@ export default function ClassLessons() {
       </Box>
       {activeTab === 'stories' ? (
         <Stories classId={classId} />
+      ) : activeTab === 'commonStories' ? (
+        <Box>
+          {/* Genre Filter */}
+          <FormControl sx={{ minWidth: 200, mb: 3 }}>
+            <InputLabel>Genre</InputLabel>
+            <Select
+              value={selectedGenre}
+              label="Genre"
+              onChange={(e) => setSelectedGenre(e.target.value)}
+            >
+              {GENRE_OPTIONS.map(option => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Stories Grid */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 3 }}>
+            {filteredStories.map(story => (
+              <Paper
+                key={story.storyId}
+                onClick={() => handleViewStory(story)}
+                sx={{
+                  p: 3,
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 6
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  {story.coverPicture && (
+                    <Avatar
+                      src={`data:${story.coverPictureType};base64,${story.coverPicture}`}
+                      sx={{ width: 100, height: 100, mb: 2 }}
+                      variant="rounded"
+                    />
+                  )}
+                  <Typography variant="h6" gutterBottom align="center">
+                    {story.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" align="center">
+                    {GENRE_OPTIONS.find(opt => opt.value === story.genre)?.label || story.genre}
+                  </Typography>
+                </Box>
+              </Paper>
+            ))}
+          </Box>
+        </Box>
       ) : (
         <ClassRecord
           students={students}
@@ -576,6 +682,32 @@ export default function ClassLessons() {
             {addStudentLoading ? 'Adding...' : 'Add'}
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Story View Dialog */}
+      <Dialog
+        open={viewStoryDialogOpen}
+        onClose={handleCloseStoryView}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            height: '90vh',
+            maxHeight: '90vh'
+          }
+        }}
+      >
+        <DialogContent sx={{ p: 0 }}>
+          {selectedStory && (
+            <StoryView
+              story={selectedStory}
+              onAttemptQuiz={() => {
+                // Handle quiz attempt if needed
+                handleCloseStoryView();
+              }}
+            />
+          )}
+        </DialogContent>
       </Dialog>
     </Box>
   );

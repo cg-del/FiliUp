@@ -222,7 +222,7 @@ export default function Stories({ classId }) {
   return (
     <Paper sx={{ p: 4, mb: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5" gutterBottom>Stories</Typography>
+        <Typography variant="h5" gutterBottom>Created By Me</Typography>
         <Button startIcon={<AddIcon />} variant="contained" onClick={() => handleOpenDialog()}>
           Add Story
         </Button>

@@ -51,7 +51,7 @@ public class ClassEntity {
     )
     private List<UserEntity> students = new ArrayList<>();
 
-    @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "classEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<StoryEntity> stories = new ArrayList<>();
 
