@@ -9,8 +9,8 @@ import LandingPage from './pages/LandingPage/LandingPage'
 import Login from './pages/Login/Login'
 import SignUp from './pages/SignUp/SignUp'
 import TeacherHome from './pages/TeacherHome/TeacherHome'
-import StoryList from './pages/StoryList/StoryList'
-import ClassStories from './pages/ClassStories/ClassStories'
+import ClassGenres from './pages/Home/ClassGenres'
+import ClassStories from './pages/Home/ClassStories'
 
 const App = () => {
   return (
@@ -32,8 +32,14 @@ const App = () => {
           path="/teacher/class/:classId/lessons" 
           element={<PrivateRoute component={ClassLessons} requireTeacher={true} />} 
         />
-        <Route path="/class/:classId/stories" element={<ClassStories />} />
-        <Route path="/class/:classId/stories/:genreId" element={<StoryList />} />
+        <Route 
+          path="/class/:classId/genres" 
+          element={<PrivateRoute component={ClassGenres} requireTeacher={false} />} 
+        />
+        <Route 
+          path="/class/:classId/genre/:genre/stories" 
+          element={<PrivateRoute component={ClassStories} requireTeacher={false} />} 
+        />
       </Routes>
     </UserProvider>
   )

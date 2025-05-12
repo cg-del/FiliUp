@@ -16,12 +16,10 @@ import {
   BookOpen,
   Award,
   X,
-  ChevronRight,
 } from "lucide-react"
 import { useUser } from "../../context/UserContext"
 
 export default function StudentDashboard() {
-  const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
   const [joinClassModalOpen, setJoinClassModalOpen] = useState(false)
@@ -32,6 +30,7 @@ export default function StudentDashboard() {
   const dropdownRef = useRef(null)
   const modalRef = useRef(null)
   const { user, isAuthenticated, loading, logout } = useUser()
+  const navigate = useNavigate()
 
   // Fetch enrolled classes when component mounts
   useEffect(() => {
@@ -192,7 +191,7 @@ export default function StudentDashboard() {
   }
 
   const handleClassClick = (classId) => {
-    navigate(`/class/${classId}/stories`)
+    navigate(`/class/${classId}/genres`)
   }
 
   return (
@@ -578,8 +577,7 @@ export default function StudentDashboard() {
                   overflow: "hidden",
                   boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
                   cursor: "pointer",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  position: "relative",
+                  transition: "transform 0.2s ease",
                 }}
                 onMouseOver={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)"
@@ -607,7 +605,6 @@ export default function StudentDashboard() {
                       fontSize: "1.125rem",
                       fontWeight: 600,
                       marginBottom: "0.25rem",
-                      color: "#1e293b",
                     }}
                   >
                     {classItem.className}
@@ -616,22 +613,10 @@ export default function StudentDashboard() {
                     style={{
                       fontSize: "0.875rem",
                       color: "#64748b",
-                      marginBottom: "1rem",
                     }}
                   >
                     {classItem.description || "No description available"}
                   </p>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      color: "#2196f3",
-                      fontSize: "0.875rem",
-                      fontWeight: 500,
-                    }}
-                  >
-                    View Stories <ChevronRight size={16} style={{ marginLeft: "0.25rem" }} />
-                  </div>
                 </div>
               </div>
             ))}
