@@ -487,14 +487,14 @@ export default function ClassLessons() {
           onClick={() => setActiveTab('stories')}
           sx={{ mr: 2 }}
         >
-          Stories
+          Created by Teacher
         </Button>
         <Button
           variant={activeTab === 'commonStories' ? 'contained' : 'outlined'}
           onClick={() => setActiveTab('commonStories')}
           sx={{ mr: 2 }}
         >
-          Common Stories
+          Created By FiliUp
         </Button>
         <Button
           variant={activeTab === 'classRecord' ? 'contained' : 'outlined'}
@@ -543,7 +543,15 @@ export default function ClassLessons() {
                   {story.coverPicture && (
                     <Avatar
                       src={`data:${story.coverPictureType};base64,${story.coverPicture}`}
-                      sx={{ width: 100, height: 100, mb: 2 }}
+                      sx={{ 
+                        width: 200, 
+                        height: 200, 
+                        mb: 2,
+                        boxShadow: 2,
+                        '&:hover': {
+                          boxShadow: 4
+                        }
+                      }}
                       variant="rounded"
                     />
                   )}

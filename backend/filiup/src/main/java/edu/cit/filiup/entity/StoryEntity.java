@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 
 @Entity
 @Table(name = "stories")
@@ -22,12 +25,15 @@ public class StoryEntity {
 
     @Column(name = "cover_picture", columnDefinition = "LONGBLOB")
     @Lob
+    @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     private byte[] coverPicture;
 
     @Column(name = "cover_picture_type")
+    @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     private String coverPictureType;
 
     @Column(name = "created_at", nullable = false)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
 
     @Column(name = "is_active", nullable = false)
@@ -45,6 +51,10 @@ public class StoryEntity {
     @JoinColumn(name = "created_by", nullable = false)
     @JsonIgnore
     private UserEntity createdBy;
+
+    @OneToOne(mappedBy = "story", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private QuizEntity quiz;
 
     // Constructors
     public StoryEntity() {
@@ -138,6 +148,17 @@ public class StoryEntity {
 
     public void setGenre(String genre) {
         this.genre = genre;
+    }
+
+    public QuizEntity getQuiz() {
+        return quiz;
+    }
+
+    public void setQuiz(QuizEntity quiz) {
+        this.quiz = quiz;
+        if (quiz != null) {
+            quiz.setStory(this);
+        }
     }
 
     @Override

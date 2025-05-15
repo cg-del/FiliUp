@@ -22,7 +22,7 @@ public class StoryController {
     }
 
     // Create a new story
-    @PostMapping
+    @PostMapping(consumes = "application/json")
     public ResponseEntity<?> createStory(
             @RequestBody StoryEntity storyEntity,
             @RequestParam int userId) {

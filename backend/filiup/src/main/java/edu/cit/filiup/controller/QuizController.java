@@ -53,20 +53,6 @@ public class QuizController {
         return ResponseEntity.ok(quizService.getQuizzesByTeacher(userId));
     }
 
-    // Get quizzes by difficulty level
-    @GetMapping("/difficulty/{difficultyLevel}")
-    public ResponseEntity<List<QuizEntity>> getQuizzesByDifficulty(
-            @PathVariable QuizEntity.DifficultyLevel difficultyLevel) {
-        return ResponseEntity.ok(quizService.getQuizzesByDifficulty(difficultyLevel));
-    }
-
-    // Get quizzes by category
-    @GetMapping("/category/{category}")
-    public ResponseEntity<List<QuizEntity>> getQuizzesByCategory(
-            @PathVariable QuizEntity.QuizCategory category) {
-        return ResponseEntity.ok(quizService.getQuizzesByCategory(category));
-    }
-
     // Update quiz
     @PutMapping("/{quizId}")
     public ResponseEntity<QuizEntity> updateQuiz(

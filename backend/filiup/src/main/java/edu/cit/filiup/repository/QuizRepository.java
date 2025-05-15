@@ -9,9 +9,5 @@ import java.util.List;
 public interface QuizRepository extends JpaRepository<QuizEntity, Long> {
     List<QuizEntity> findByCreatedByUserId(int userId);
     List<QuizEntity> findByIsActiveTrue();
-    List<QuizEntity> findByDifficultyLevel(QuizEntity.DifficultyLevel difficultyLevel);
-    List<QuizEntity> findByCategory(QuizEntity.QuizCategory category);
     List<QuizEntity> findByCreatedByUserIdAndIsActiveTrue(int userId);
-    List<QuizEntity> findByDifficultyLevelAndIsActiveTrue(QuizEntity.DifficultyLevel difficultyLevel);
-    List<QuizEntity> findByCategoryAndIsActiveTrue(QuizEntity.QuizCategory category);
 }

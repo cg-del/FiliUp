@@ -79,15 +79,24 @@ export default function Stories({ classId }) {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
+        const base64String = reader.result.split(',')[1];
         setCurrentStory({
           ...currentStory,
-          coverPicture: reader.result.split(',')[1], // Get base64 data
+          coverPicture: base64String,
           coverPictureType: file.type
         });
         setPreviewUrl(URL.createObjectURL(file));
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Function to get image URL
+  const getImageUrl = (story) => {
+    if (story.coverPicture && story.coverPictureType) {
+      return `data:${story.coverPictureType};base64,${story.coverPicture}`;
+    }
+    return null;
   };
 
   // Open dialog for create or edit
@@ -241,7 +250,7 @@ export default function Stories({ classId }) {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   {story.coverPicture && (
                     <Avatar
-                      src={`data:${story.coverPictureType};base64,${story.coverPicture}`}
+                      src={getImageUrl(story)}
                       sx={{ width: 60, height: 60 }}
                       variant="rounded"
                     />

@@ -3,6 +3,8 @@ package edu.cit.filiup.entity;
 import jakarta.persistence.*;
 import java.util.List;
 import java.util.ArrayList;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @Table(name = "quizzes")
@@ -18,18 +20,8 @@ public class QuizEntity {
     private String description;
 
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<QuestionEntity> questions = new ArrayList<>();
-
-    @Column(name = "total_points", nullable = false)
-    private Integer totalPoints;
-
-    @Column(name = "difficulty_level", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private DifficultyLevel difficultyLevel;
-
-    @Column(name = "category", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private QuizCategory category;
 
     @Column(name = "time_limit_minutes")
     private Integer timeLimitMinutes;
@@ -39,36 +31,21 @@ public class QuizEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
+    @JsonIgnore
     private UserEntity createdBy;
 
-    // Enums
-    public enum DifficultyLevel {
-        EASY,
-        MEDIUM,
-        HARD
-    }
-
-    public enum QuizCategory {
-        GRAMMAR,
-        VOCABULARY,
-        READING,
-        WRITING,
-        LISTENING,
-        SPEAKING,
-        CULTURE
-    }
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "story_id")
+    @JsonIgnore
+    private StoryEntity story;
 
     // Constructors
     public QuizEntity() {
     }
 
-    public QuizEntity(String title, String description, Integer totalPoints, 
-                     DifficultyLevel difficultyLevel, QuizCategory category) {
+    public QuizEntity(String title, String description) {
         this.title = title;
         this.description = description;
-        this.totalPoints = totalPoints;
-        this.difficultyLevel = difficultyLevel;
-        this.category = category;
     }
 
     // Getters and Setters
@@ -114,30 +91,6 @@ public class QuizEntity {
         question.setQuiz(null);
     }
 
-    public Integer getTotalPoints() {
-        return totalPoints;
-    }
-
-    public void setTotalPoints(Integer totalPoints) {
-        this.totalPoints = totalPoints;
-    }
-
-    public DifficultyLevel getDifficultyLevel() {
-        return difficultyLevel;
-    }
-
-    public void setDifficultyLevel(DifficultyLevel difficultyLevel) {
-        this.difficultyLevel = difficultyLevel;
-    }
-
-    public QuizCategory getCategory() {
-        return category;
-    }
-
-    public void setCategory(QuizCategory category) {
-        this.category = category;
-    }
-
     public Integer getTimeLimitMinutes() {
         return timeLimitMinutes;
     }
@@ -160,5 +113,13 @@ public class QuizEntity {
 
     public void setCreatedBy(UserEntity createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public StoryEntity getStory() {
+        return story;
+    }
+
+    public void setStory(StoryEntity story) {
+        this.story = story;
     }
 }

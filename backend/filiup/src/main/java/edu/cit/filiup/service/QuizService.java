@@ -35,14 +35,6 @@ public class QuizService {
         quizEntity.setCreatedBy(user);
         quizEntity.setIsActive(true);
         
-        // Calculate total points from questions
-        if (quizEntity.getQuestions() != null) {
-            int totalPoints = quizEntity.getQuestions().stream()
-                    .mapToInt(question -> question.getPoints())
-                    .sum();
-            quizEntity.setTotalPoints(totalPoints);
-        }
-
         return quizRepository.save(quizEntity);
     }
 
@@ -59,14 +51,6 @@ public class QuizService {
         return quizRepository.findByCreatedByUserIdAndIsActiveTrue(userId);
     }
 
-    public List<QuizEntity> getQuizzesByDifficulty(QuizEntity.DifficultyLevel difficultyLevel) {
-        return quizRepository.findByDifficultyLevelAndIsActiveTrue(difficultyLevel);
-    }
-
-    public List<QuizEntity> getQuizzesByCategory(QuizEntity.QuizCategory category) {
-        return quizRepository.findByCategoryAndIsActiveTrue(category);
-    }
-
     @Transactional
     public QuizEntity updateQuiz(Long quizId, QuizEntity updatedQuiz) {
         return quizRepository.findById(quizId)
@@ -74,20 +58,12 @@ public class QuizService {
                 .map(existingQuiz -> {
                     existingQuiz.setTitle(updatedQuiz.getTitle());
                     existingQuiz.setDescription(updatedQuiz.getDescription());
-                    existingQuiz.setDifficultyLevel(updatedQuiz.getDifficultyLevel());
-                    existingQuiz.setCategory(updatedQuiz.getCategory());
                     existingQuiz.setTimeLimitMinutes(updatedQuiz.getTimeLimitMinutes());
                     
                     // Update questions if provided
                     if (updatedQuiz.getQuestions() != null) {
                         existingQuiz.getQuestions().clear();
                         updatedQuiz.getQuestions().forEach(existingQuiz::addQuestion);
-                        
-                        // Recalculate total points
-                        int totalPoints = existingQuiz.getQuestions().stream()
-                                .mapToInt(question -> question.getPoints())
-                                .sum();
-                        existingQuiz.setTotalPoints(totalPoints);
                     }
                     
                     return quizRepository.save(existingQuiz);
@@ -112,13 +88,6 @@ public class QuizService {
                 .orElseThrow(() -> new RuntimeException("Quiz not found"));
         
         quiz.addQuestion(question);
-        
-        // Update total points
-        int totalPoints = quiz.getQuestions().stream()
-                .mapToInt(QuestionEntity::getPoints)
-                .sum();
-        quiz.setTotalPoints(totalPoints);
-        
         return quizRepository.save(quiz);
     }
 
@@ -132,12 +101,6 @@ public class QuizService {
                 .filter(q -> q.getQuestionId().equals(questionId))
                 .findFirst()
                 .ifPresent(quiz::removeQuestion);
-        
-        // Update total points
-        int totalPoints = quiz.getQuestions().stream()
-                .mapToInt(QuestionEntity::getPoints)
-                .sum();
-        quiz.setTotalPoints(totalPoints);
         
         return quizRepository.save(quiz);
     }
