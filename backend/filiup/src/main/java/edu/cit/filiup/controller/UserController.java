@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/user")
@@ -155,5 +156,31 @@ public class UserController {
     @GetMapping("/search")
     public List<UserEntity> searchStudentsByName(@RequestParam String name) {
         return userRepository.findByUserRoleAndUserNameContainingIgnoreCase("STUDENT", name);
+    }
+
+    @GetMapping("/sorted-by-role")
+    public ResponseEntity<?> getUsersSortedByRole() {
+        try {
+            List<UserEntity> allUsers = userv.getAllUser();
+            Map<String, List<UserEntity>> sortedUsers = new HashMap<>();
+            
+            // Initialize lists for each role
+            sortedUsers.put("TEACHERS", new ArrayList<>());
+            sortedUsers.put("STUDENTS", new ArrayList<>());
+            
+            // Sort users into their respective lists
+            for (UserEntity user : allUsers) {
+                if (user.getUserRole().equals("TEACHER")) {
+                    sortedUsers.get("TEACHERS").add(user);
+                } else if (user.getUserRole().equals("STUDENT")) {
+                    sortedUsers.get("STUDENTS").add(user);
+                }
+            }
+            
+            return ResponseEntity.ok(sortedUsers);
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                .body(Map.of("error", "Failed to fetch users", "message", e.getMessage()));
+        }
     }
 }

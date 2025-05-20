@@ -72,8 +72,8 @@ public class UserService {
         
         // Validate role
         String role = user.getUserRole();
-        if (role == null || (!role.equals("STUDENT") && !role.equals("TEACHER"))) {
-            throw new IllegalArgumentException("Invalid user role. Must be either STUDENT or TEACHER.");
+        if (role == null || (!role.equals("STUDENT") && !role.equals("TEACHER") && !role.equals("ADMIN"))) {
+            throw new IllegalArgumentException("Invalid user role. Must be either STUDENT, TEACHER, or ADMIN.");
         }
         
         return urepo.save(user);

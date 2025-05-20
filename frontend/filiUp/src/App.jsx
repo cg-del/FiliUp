@@ -3,14 +3,18 @@ import './App.css'
 import { PrivateRoute } from './components/PrivateRoute'
 import { UserProvider } from './context/UserContext'
 import About from './pages/About/About'
+import AdminDashboard from './pages/Admin/AdminDashboard'
+import ClassManagement from './pages/Admin/ClassManagement'
+import CommonStories from './pages/Admin/CommonStories'
+import UserManagement from './pages/Admin/UserManagement'
 import ClassLessons from './pages/ClassLessons/ClassLessons'
+import ClassGenres from './pages/Home/ClassGenres'
+import ClassStories from './pages/Home/ClassStories'
 import { default as Home, default as StudentDashboard } from './pages/Home/Home'
 import LandingPage from './pages/LandingPage/LandingPage'
 import Login from './pages/Login/Login'
 import SignUp from './pages/SignUp/SignUp'
 import TeacherHome from './pages/TeacherHome/TeacherHome'
-import ClassGenres from './pages/Home/ClassGenres'
-import ClassStories from './pages/Home/ClassStories'
 
 const App = () => {
   return (
@@ -39,6 +43,22 @@ const App = () => {
         <Route 
           path="/class/:classId/genre/:genre/stories" 
           element={<PrivateRoute component={ClassStories} requireTeacher={false} />} 
+        />
+        <Route 
+          path="/admin" 
+          element={<PrivateRoute component={AdminDashboard} requireAdmin={true} />} 
+        />
+        <Route 
+          path="/admin/common-stories" 
+          element={<PrivateRoute component={CommonStories} requireAdmin={true} />} 
+        />
+        <Route 
+          path="/admin/users" 
+          element={<PrivateRoute component={UserManagement} requireAdmin={true} />} 
+        />
+        <Route 
+          path="/admin/classes" 
+          element={<PrivateRoute component={ClassManagement} requireAdmin={true} />} 
         />
       </Routes>
     </UserProvider>

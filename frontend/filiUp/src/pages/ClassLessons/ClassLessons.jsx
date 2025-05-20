@@ -9,6 +9,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ClassRecord from './ClassRecord';
+import CommonStories from './CommonStories';
 import Stories from './Stories';
 import StoryView from './StoryView';
 
@@ -35,8 +36,6 @@ export default function ClassLessons() {
   const [studentsError, setStudentsError] = useState('');
   const [stories, setStories] = useState([]);
   const [scores, setScores] = useState({});
-  const [commonStories, setCommonStories] = useState([]);
-  const [selectedGenre, setSelectedGenre] = useState('ALL');
   const [selectedStory, setSelectedStory] = useState(null);
   const [viewStoryDialogOpen, setViewStoryDialogOpen] = useState(false);
 
@@ -113,28 +112,6 @@ export default function ClassLessons() {
       setScores(newScores);
     }
   }, [activeTab, students, stories]);
-
-  // Fetch common stories
-  useEffect(() => {
-    if (activeTab === 'commonStories') {
-      axios.get('http://localhost:8080/api/common-stories', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
-      })
-        .then(res => {
-          setCommonStories(res.data);
-        })
-        .catch(() => {
-          setCommonStories([]);
-        });
-    }
-  }, [activeTab, accessToken]);
-
-  // Filter stories by genre
-  const filteredStories = selectedGenre === 'ALL' 
-    ? commonStories 
-    : commonStories.filter(story => story.genre === selectedGenre);
 
   // Edit handlers
   const handleEditOpen = () => setEditDialogOpen(true);
@@ -278,14 +255,6 @@ export default function ClassLessons() {
     setViewStoryDialogOpen(false);
     setSelectedStory(null);
   };
-
-  // Add GENRE_OPTIONS constant
-  const GENRE_OPTIONS = [
-    { value: 'ALL', label: 'All Genres' },
-    { value: 'PANTASYA', label: 'Pantasya' },
-    { value: 'ROMANSA', label: 'Romansa' },
-    { value: 'MISTERYO', label: 'Misteryo' }
-  ];
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: alpha(theme.palette.primary.main, 0.02), p: 4 }}>
@@ -506,66 +475,7 @@ export default function ClassLessons() {
       {activeTab === 'stories' ? (
         <Stories classId={classId} />
       ) : activeTab === 'commonStories' ? (
-        <Box>
-          {/* Genre Filter */}
-          <FormControl sx={{ minWidth: 200, mb: 3 }}>
-            <InputLabel>Genre</InputLabel>
-            <Select
-              value={selectedGenre}
-              label="Genre"
-              onChange={(e) => setSelectedGenre(e.target.value)}
-            >
-              {GENRE_OPTIONS.map(option => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Stories Grid */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 3 }}>
-            {filteredStories.map(story => (
-              <Paper
-                key={story.storyId}
-                onClick={() => handleViewStory(story)}
-                sx={{
-                  p: 3,
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6
-                  }
-                }}
-              >
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  {story.coverPicture && (
-                    <Avatar
-                      src={`data:${story.coverPictureType};base64,${story.coverPicture}`}
-                      sx={{ 
-                        width: 200, 
-                        height: 200, 
-                        mb: 2,
-                        boxShadow: 2,
-                        '&:hover': {
-                          boxShadow: 4
-                        }
-                      }}
-                      variant="rounded"
-                    />
-                  )}
-                  <Typography variant="h6" gutterBottom align="center">
-                    {story.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" align="center">
-                    {GENRE_OPTIONS.find(opt => opt.value === story.genre)?.label || story.genre}
-                  </Typography>
-                </Box>
-              </Paper>
-            ))}
-          </Box>
-        </Box>
+        <CommonStories onViewStory={handleViewStory} />
       ) : (
         <ClassRecord
           students={students}

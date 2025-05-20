@@ -1,24 +1,24 @@
 import {
-  Email as EmailIcon,
-  Lock as LockIcon,
-  Visibility,
-  VisibilityOff,
+    Email as EmailIcon,
+    Lock as LockIcon,
+    Visibility,
+    VisibilityOff,
 } from '@mui/icons-material';
 import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Container,
-  IconButton,
-  InputAdornment,
-  Link,
-  Paper,
-  Snackbar,
-  TextField,
-  Typography,
-  alpha,
-  useTheme,
+    Alert,
+    Box,
+    Button,
+    CircularProgress,
+    Container,
+    IconButton,
+    InputAdornment,
+    Link,
+    Paper,
+    Snackbar,
+    TextField,
+    Typography,
+    alpha,
+    useTheme,
 } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
@@ -42,7 +42,9 @@ export default function Login() {
   useEffect(() => {
     if (isAuthenticated) {
       const user = JSON.parse(localStorage.getItem('user'));
-      if (user?.userRole === 'TEACHER') {
+      if (user?.userRole === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else if (user?.userRole === 'TEACHER') {
         navigate('/teacher', { replace: true });
       } else {
         navigate('/home', { replace: true });

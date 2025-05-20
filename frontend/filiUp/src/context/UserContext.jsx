@@ -74,11 +74,13 @@ export function UserProvider({ children }) {
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userData));
     
-    if (userData.userRole === 'TEACHER') {
+    if (userData.userRole === 'ADMIN') {
+      navigate('/admin', { replace: true });
+    } else if (userData.userRole === 'TEACHER') {
       navigate('/teacher', { replace: true });
     } else {
       navigate('/home', { replace: true });
-      }
+    }
     } catch (error) {
       console.error('Failed to fetch user info:', error);
       clearAuthData();
