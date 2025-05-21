@@ -163,8 +163,8 @@ export default function StudentDashboard() {
       if (response.ok) {
         // Refresh the enrolled classes list
         await fetchEnrolledClasses()
-        setJoinClassModalOpen(false)
-        setClassCode("")
+    setJoinClassModalOpen(false)
+    setClassCode("")
       } else {
         // More specific error handling
         if (data.error === "Class not found with code: " + classCode.trim()) {
@@ -568,14 +568,14 @@ export default function StudentDashboard() {
           >
             {/* Enrolled Classes */}
             {enrolledClasses.map((classItem) => (
-              <div
+            <div
                 key={classItem.classId}
                 onClick={() => handleClassClick(classItem.classId)}
-                style={{
-                  backgroundColor: "white",
-                  borderRadius: "0.5rem",
-                  overflow: "hidden",
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+              style={{
+                backgroundColor: "white",
+                borderRadius: "0.5rem",
+                overflow: "hidden",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
                   cursor: "pointer",
                   transition: "transform 0.2s ease",
                 }}
@@ -586,38 +586,38 @@ export default function StudentDashboard() {
                 onMouseOut={(e) => {
                   e.currentTarget.style.transform = "translateY(0)"
                   e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.1)"
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: "#e3f2fd",
+                  height: "100px",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
               >
-                <div
+                <GraduationCap size={40} color="#2196f3" />
+              </div>
+              <div style={{ padding: "1rem" }}>
+                <h3
                   style={{
-                    backgroundColor: "#e3f2fd",
-                    height: "100px",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    fontSize: "1.125rem",
+                    fontWeight: 600,
+                    marginBottom: "0.25rem",
                   }}
                 >
-                  <GraduationCap size={40} color="#2196f3" />
-                </div>
-                <div style={{ padding: "1rem" }}>
-                  <h3
-                    style={{
-                      fontSize: "1.125rem",
-                      fontWeight: 600,
-                      marginBottom: "0.25rem",
-                    }}
-                  >
                     {classItem.className}
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: "0.875rem",
-                      color: "#64748b",
-                    }}
-                  >
+                </h3>
+                <p
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "#64748b",
+                  }}
+                >
                     {classItem.description || "No description available"}
-                  </p>
-                </div>
+                </p>
+              </div>
               </div>
             ))}
 

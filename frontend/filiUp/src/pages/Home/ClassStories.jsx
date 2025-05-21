@@ -1,7 +1,9 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Book } from "lucide-react"
+import { ArrowLeft, Book, Search, Bell, User } from "lucide-react"
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Button, Typography } from '@mui/material';
 
 const GENRE_OPTIONS = [
   { value: 'MAIKLING_KWENTO', label: 'Maikling Kwento' },
@@ -26,10 +28,18 @@ export default function ClassStories() {
   const [className, setClassName] = useState("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [expandedStory, setExpandedStory] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [selectedStory, setSelectedStory] = useState(null)
   const { classId, genre } = useParams()
   const navigate = useNavigate()
+  const [userName, setUserName] = useState("")
 
   useEffect(() => {
+    // Fetch user info from localStorage
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserName(userInfo.userName || '');
+
     fetchStories()
   }, [classId, genre])
 
@@ -81,6 +91,20 @@ export default function ClassStories() {
     return GENRE_OPTIONS.find(opt => opt.value === genreValue)?.label || genreValue
   }
 
+  const toggleStory = (storyId) => {
+    setExpandedStory(expandedStory === storyId ? null : storyId)
+  }
+
+  const openModal = (story) => {
+    setSelectedStory(story)
+    setModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setModalOpen(false)
+    setSelectedStory(null)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -94,6 +118,7 @@ export default function ClassStories() {
           margin: "0 auto",
           display: "flex",
           alignItems: "center",
+          justifyContent: "flex-start",
           gap: "1rem",
         }}>
           <button
@@ -112,23 +137,47 @@ export default function ClassStories() {
           >
             <ArrowLeft size={24} color="#ffffff" />
           </button>
-          <div>
-            <h1 style={{
-              fontSize: "1.5rem",
-              fontWeight: "600",
-              margin: 0,
+          <h1 style={{
+            fontSize: "1.75rem",
+            fontWeight: "600",
+            color: "#1e293b",
+            marginRight: "43rem",
+          }}>
+            Story {genre ? `- ${getGenreLabel(genre)}` : ''}
+          </h1>
+          
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "1.5rem",
+          }}>
+            <Search size={20} color="#64748b" style={{ cursor: "pointer" }} />
+            <Bell size={20} color="#64748b" style={{ cursor: "pointer" }} />
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
             }}>
-              {className || 'Class Stories'}
-            </h1>
-            {genre && (
-              <p style={{
-                fontSize: "1rem",
-                margin: "0.25rem 0 0 0",
-                opacity: 0.9,
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
               }}>
-                {getGenreLabel(genre)}
-              </p>
-            )}
+                <span style={{ fontWeight: "500", color: "#1e293b" }}>{userName}</span>
+                <span style={{ fontSize: "0.875rem", color: "#64748b" }}>Student</span>
+              </div>
+              <div style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                backgroundColor: "#f1f5f9",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
+                <User size={24} color="#64748b" />
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -139,6 +188,46 @@ export default function ClassStories() {
         margin: "2rem auto",
         padding: "0 1rem",
       }}>
+        <div style={{
+          marginBottom: "1.5rem",
+          fontSize: "1.125rem",
+          color: "#4a5568",
+          textAlign: "left",
+        }}>
+          Awesome choice! Now go ahead and pick a story that sparks your curiosity and imagination—let the adventure begin!
+        </div>
+
+        {/* Buttons for Created By */}
+        <div style={{
+          display: "flex",
+          justifyContent: "flex-start",
+          gap: "1rem",
+          marginBottom: "1.5rem",
+        }}>
+          <button style={{
+            backgroundColor: "#34d399", // Green color
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "0.375rem",
+            padding: "0.5rem 1rem",
+            cursor: "pointer",
+            fontSize: "1rem",
+          }}>
+            Created by FiliUp
+          </button>
+          <button style={{
+            backgroundColor: "#fefcbf", // Light color
+            color: "#1e293b",
+            border: "none",
+            borderRadius: "0.375rem",
+            padding: "0.5rem 1rem",
+            cursor: "pointer",
+            fontSize: "1rem",
+          }}>
+            Created by Teacher
+          </button>
+        </div>
+
         {loading ? (
           <div style={{
             textAlign: "center",
@@ -169,10 +258,10 @@ export default function ClassStories() {
         ) : (
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(800px, 1fr))",
             gap: "1.5rem",
           }}>
-            {stories.map((story) => (
+            {stories.map((story, index) => (
               <div
                 key={story.storyId}
                 style={{
@@ -182,48 +271,81 @@ export default function ClassStories() {
                   boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
                   transition: "transform 0.2s ease, box-shadow 0.2s ease",
                   cursor: "pointer",
+                  padding: "1rem",
+                  marginBottom: "0.5rem",
                 }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)"
-                  e.currentTarget.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)"
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)"
-                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(0, 0, 0, 0.1)"
-                }}
+                onClick={() => toggleStory(story.storyId)}
               >
-                <div style={{
-                  backgroundColor: "#e3f2fd",
-                  padding: "1.5rem",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}>
-                  <Book size={32} color="#2196f3" />
-                </div>
-                <div style={{ padding: "1.5rem" }}>
-                  <h3 style={{
-                    fontSize: "1.125rem",
-                    fontWeight: "600",
-                    marginBottom: "0.5rem",
-                    color: "#1e293b",
-                  }}>
-                    {story.title}
-                  </h3>
-                  {!genre && (
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={{ marginRight: "1.5rem", marginLeft: "1rem", fontSize: "1.3rem", color: "#1e293b" }}>
+                    ▼
+                  </span>
+                  <div style={{ display: "block" }}>
                     <p style={{
                       fontSize: "0.875rem",
                       color: "#64748b",
+                      margin: 0,
                     }}>
-                      Genre: {getGenreLabel(story.genre)}
+                      Story {index + 1}
                     </p>
-                  )}
+                    <h3 style={{
+                      fontSize: "1.35rem",
+                      fontWeight: "700",
+                      marginBottom: "0.5rem",
+                      color: "#1e293b",
+                    }}>
+                      {story.title}
+                    </h3>
+                  </div>
                 </div>
+
+                {expandedStory === story.storyId && (
+                  <div style={{ marginTop: "1rem", borderLeft: "2px solid #1e293b", paddingLeft: "1rem" }}>
+                    <button 
+                      style={{ 
+                        marginBottom: "0.5rem", 
+                        padding: "0.5rem 1rem", 
+                        backgroundColor: "#fefcbf", 
+                        border: "none", 
+                        borderRadius: "0.25rem" 
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openModal(story)
+                      }}
+                    >
+                      Read Story
+                    </button>
+                    <div style={{ marginTop: "0.5rem", fontWeight: "bold", backgroundColor: "#fefcbf", padding: "0.5rem", borderRadius: "0.25rem" }}>
+                      {story.title} Quiz
+                    </div>
+                    <p>Date & Time Started:</p>
+                    <p>Date & Time Finished:</p>
+                    <p>Score: -/12</p>
+                    <button style={{ padding: "0.5rem 1rem", backgroundColor: "#34d399", border: "none", borderRadius: "0.25rem" }}>
+                      Attempt Quiz
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
       </main>
+
+      {/* Story Modal */}
+      <Dialog open={modalOpen} onClose={closeModal} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedStory?.title}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+            {selectedStory?.content}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeModal} color="primary">Close</Button>
+          <Button onClick={() => {/* Handle Attempt Quiz logic */}} color="primary">Attempt Quiz</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   )
 } 
