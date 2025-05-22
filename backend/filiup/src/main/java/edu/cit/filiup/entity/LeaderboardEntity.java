@@ -17,7 +17,7 @@ public class LeaderboardEntity {
     @Column(name = "score", nullable = false)
     private Integer score;
 
-    @Column(name = "rank")
+    @Column(name = "ranking")
     private Integer rank;
 
     @Column(name = "category", nullable = false)
