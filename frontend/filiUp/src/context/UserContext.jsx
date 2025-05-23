@@ -112,7 +112,7 @@ export function UserProvider({ children }) {
 
             // Call refresh token endpoint
             const response = await axios.post('http://localhost:8080/api/user/refresh', {
-              refreshToken
+              refreshToken: refreshToken
             });
 
             const { accessToken, refreshToken: newRefreshToken } = response.data;
@@ -127,6 +127,7 @@ export function UserProvider({ children }) {
             // Retry the original request
             return axios(originalRequest);
           } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
             // If refresh token fails, logout the user
             clearAuthData();
             navigate('/sign-in', { replace: true });

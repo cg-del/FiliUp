@@ -8,6 +8,7 @@ import { Avatar, Box, Button, CircularProgress, Dialog, DialogActions, DialogCon
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useUser } from '../../context/UserContext';
 import ClassRecord from './ClassRecord';
 import CommonStories from './CommonStories';
 import Stories from './Stories';
@@ -17,6 +18,7 @@ export default function ClassLessons() {
   const theme = useTheme();
   const { classId } = useParams();
   const navigate = useNavigate();
+  const { user } = useUser();
   const [classInfo, setClassInfo] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -38,29 +40,74 @@ export default function ClassLessons() {
   const [scores, setScores] = useState({});
   const [selectedStory, setSelectedStory] = useState(null);
   const [viewStoryDialogOpen, setViewStoryDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
 
   // Get access token from localStorage
   const accessToken = localStorage.getItem('accessToken');
 
+  // Debug logging
+  useEffect(() => {
+    console.log('Debug Info:', {
+      user,
+      classId,
+      accessToken: accessToken ? 'Present' : 'Missing',
+      loading,
+      error,
+      classInfo
+    });
+  }, [user, classId, accessToken, loading, error, classInfo]);
+
   // Fetch class info
   useEffect(() => {
-    axios.get(`http://localhost:8080/api/classes/${classId}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
+    const fetchClassInfo = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        setDebugInfo('Fetching class info...');
+        
+        if (!accessToken) {
+          throw new Error('No access token found');
+        }
+
+        if (!classId) {
+          throw new Error('No class ID provided');
+        }
+
+        const response = await axios.get(`http://localhost:8080/api/classes/${classId}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        });
+
+        if (!response.data) {
+          throw new Error('No data received from server');
+        }
+
+        setClassInfo(response.data);
+        setForm({ className: response.data.className, description: response.data.description });
+        setDebugInfo('Class info loaded successfully');
+      } catch (error) {
+        console.error('Failed to load class information:', error);
+        setError(error.response?.data?.message || error.message || 'Failed to load class information. Please try again.');
+        setDebugInfo(`Error: ${error.message}`);
+      } finally {
+        setLoading(false);
       }
-    })
-      .then(res => {
-        setClassInfo(res.data);
-        setForm({ className: res.data.className, description: res.data.description });
-      })
-      .catch(() => {
-        // setError('Failed to load class information.');
-      });
-  }, [classId, accessToken]);
+    };
+
+    if (user && (user.userRole === 'TEACHER' || user.userRole === 'ADMIN')) {
+      fetchClassInfo();
+    } else {
+      setError('User not authorized');
+      setLoading(false);
+    }
+  }, [classId, accessToken, user]);
 
   // Fetch stories for the class
   useEffect(() => {
-    if (activeTab === 'classRecord') {
+    if (user && (user.userRole === 'TEACHER' || user.userRole === 'ADMIN') && activeTab === 'classRecord') {
       axios.get(`http://localhost:8080/api/classes/${classId}/stories`, {
         headers: {
           Authorization: `Bearer ${accessToken}`
@@ -69,15 +116,16 @@ export default function ClassLessons() {
         .then(res => {
           setStories(res.data);
         })
-        .catch(() => {
+        .catch(error => {
+          console.error('Failed to load stories:', error);
           setStories([]);
         });
     }
-  }, [activeTab, classId, accessToken]);
+  }, [activeTab, classId, accessToken, user]);
 
   // Fetch students when Class Record tab is selected
   useEffect(() => {
-    if (activeTab === 'classRecord') {
+    if (user && (user.userRole === 'TEACHER' || user.userRole === 'ADMIN') && activeTab === 'classRecord') {
       setStudentsLoading(true);
       setStudentsError('');
       axios.get(`http://localhost:8080/api/classes/${classId}/students`, {
@@ -89,29 +137,100 @@ export default function ClassLessons() {
           setStudents(res.data);
           setStudentsLoading(false);
         })
-        .catch(() => {
+        .catch(error => {
+          console.error('Failed to load students:', error);
           setStudentsError('Failed to load students.');
           setStudentsLoading(false);
         });
     }
-  }, [activeTab, classId, accessToken]);
+  }, [activeTab, classId, accessToken, user]);
 
   // Mock/fetch scores for students and stories
   useEffect(() => {
-    if (activeTab === 'classRecord' && students.length > 0 && stories.length > 0) {
+    if (user && (user.userRole === 'TEACHER' || user.userRole === 'ADMIN') && 
+        activeTab === 'classRecord' && students.length > 0 && stories.length > 0) {
       // TODO: Replace this with real API call for scores
-      // For now, generate random scores for demo
       const newScores = {};
       students.forEach(student => {
         newScores[student.userId] = {};
         stories.forEach(story => {
-          // Random score between 60 and 100 or null
           newScores[student.userId][story.storyId] = Math.random() > 0.3 ? Math.floor(Math.random() * 41) + 60 : null;
         });
       });
       setScores(newScores);
     }
-  }, [activeTab, students, stories]);
+  }, [activeTab, students, stories, user]);
+
+  // Check if user has access
+  if (!user || (user.userRole !== 'TEACHER' && user.userRole !== 'ADMIN')) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Typography color="error">Access denied. Teacher or Admin privileges required.</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Current user role: {user?.userRole || 'Not logged in'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        gap: 2
+      }}>
+        <CircularProgress />
+        <Typography>Loading class information...</Typography>
+        {debugInfo && (
+          <Typography variant="body2" color="text.secondary">
+            {debugInfo}
+          </Typography>
+        )}
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ 
+        p: 4, 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center', 
+        gap: 2
+      }}>
+        <Typography color="error">{error}</Typography>
+        {debugInfo && (
+          <Typography variant="body2" color="text.secondary">
+            {debugInfo}
+          </Typography>
+        )}
+        <Button 
+          variant="contained" 
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!classInfo) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Typography color="error">Class not found.</Typography>
+        {debugInfo && (
+          <Typography variant="body2" color="text.secondary">
+            {debugInfo}
+          </Typography>
+        )}
+      </Box>
+    );
+  }
 
   // Edit handlers
   const handleEditOpen = () => setEditDialogOpen(true);
@@ -259,8 +378,13 @@ export default function ClassLessons() {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: alpha(theme.palette.primary.main, 0.02), p: 4 }}>
       <Box sx={{ mb: 3 }}>
-        <Button component={Link} to="/teacher" startIcon={<ArrowBackIcon />} variant="text">
-          Back to Classes
+        <Button 
+          component={Link} 
+          to={user.userRole === 'ADMIN' ? '/admin/classes' : '/teacher'} 
+          startIcon={<ArrowBackIcon />} 
+          variant="text"
+        >
+          Back to {user.userRole === 'ADMIN' ? 'Class Management' : 'Classes'}
         </Button>
       </Box>
       {/* Class Info Header */}
@@ -291,13 +415,13 @@ export default function ClassLessons() {
             </Avatar>
             <Box flex={1}>
               <Typography variant="h4" fontWeight="bold" gutterBottom>
-                {classInfo?.className}
+                {classInfo.className}
               </Typography>
               <Typography variant="subtitle1">
-                {classInfo?.description}
+                {classInfo.description}
               </Typography>
               <Typography variant="body2" sx={{ mt: 1 }}>
-                <strong>Class Code:</strong> {classInfo?.classCode}
+                <strong>Class Code:</strong> {classInfo.classCode}
                 <Button
                   size="small"
                   startIcon={<AutorenewIcon />}
@@ -310,145 +434,150 @@ export default function ClassLessons() {
                 </Button>
               </Typography>
               <Typography variant="body2" sx={{ mt: 1 }}>
-                <strong>Created At:</strong> {classInfo?.createdAt ? new Date(classInfo.createdAt).toLocaleString() : ''}
+                <strong>Created At:</strong> {classInfo.createdAt ? new Date(classInfo.createdAt).toLocaleString() : ''}
               </Typography>
               <Typography variant="body2" sx={{ mt: 1 }}>
-                <strong>Status:</strong> {classInfo?.isActive ? 'Active' : 'Inactive'}
+                <strong>Status:</strong> {classInfo.isActive ? 'Active' : 'Inactive'}
               </Typography>
             </Box>
           </Stack>
         </Box>
       </Paper>
-      <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3, px: 1 }}>
-        Quick Actions
-      </Typography>
-      <Box sx={{ display: 'flex', gap: 3, mb: 4 }}>
-        {/* Edit Class Quick Action */}
-        <Paper
-          onClick={handleEditOpen}
-          sx={{
-            p: 3,
-            textAlign: 'center',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            borderRadius: 2,
-            boxShadow: 2,
-            bgcolor: 'white',
-            cursor: 'pointer',
-            minWidth: 220,
-            minHeight: 180,
-            transition: 'box-shadow 0.2s',
-            '&:hover': { boxShadow: 6 },
-          }}
-        >
-          <Box
-            sx={{
-              bgcolor: '#2196f3',
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mb: 2,
-            }}
-          >
-            <EditIcon sx={{ color: 'white', fontSize: 32 }} />
-          </Box>
-          <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
-            Edit Class
+      {/* Quick Actions - Only show for teachers */}
+      {user.userRole === 'TEACHER' && (
+        <>
+          <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3, px: 1 }}>
+            Quick Actions
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Edit class details
-          </Typography>
-        </Paper>
+          <Box sx={{ display: 'flex', gap: 3, mb: 4 }}>
+            {/* Edit Class Quick Action */}
+            <Paper
+              onClick={handleEditOpen}
+              sx={{
+                p: 3,
+                textAlign: 'center',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                borderRadius: 2,
+                boxShadow: 2,
+                bgcolor: 'white',
+                cursor: 'pointer',
+                minWidth: 220,
+                minHeight: 180,
+                transition: 'box-shadow 0.2s',
+                '&:hover': { boxShadow: 6 },
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: '#2196f3',
+                  width: 56,
+                  height: 56,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mb: 2,
+                }}
+              >
+                <EditIcon sx={{ color: 'white', fontSize: 32 }} />
+              </Box>
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                Edit Class
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Edit class details
+              </Typography>
+            </Paper>
 
-        {/* Add Student Quick Action */}
-        <Paper
-          onClick={handleAddStudentDialogOpen}
-          sx={{
-            p: 3,
-            textAlign: 'center',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            borderRadius: 2,
-            boxShadow: 2,
-            bgcolor: 'white',
-            cursor: 'pointer',
-            minWidth: 220,
-            minHeight: 180,
-            transition: 'box-shadow 0.2s',
-            '&:hover': { boxShadow: 6 },
-          }}
-        >
-          <Box
-            sx={{
-              bgcolor: '#2196f3',
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mb: 2,
-            }}
-          >
-            <GroupIcon sx={{ color: 'white', fontSize: 32 }} />
-          </Box>
-          <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
-            Add Student
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Add a student to the class
-          </Typography>
-        </Paper>
+            {/* Add Student Quick Action */}
+            <Paper
+              onClick={handleAddStudentDialogOpen}
+              sx={{
+                p: 3,
+                textAlign: 'center',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                borderRadius: 2,
+                boxShadow: 2,
+                bgcolor: 'white',
+                cursor: 'pointer',
+                minWidth: 220,
+                minHeight: 180,
+                transition: 'box-shadow 0.2s',
+                '&:hover': { boxShadow: 6 },
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: '#2196f3',
+                  width: 56,
+                  height: 56,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mb: 2,
+                }}
+              >
+                <GroupIcon sx={{ color: 'white', fontSize: 32 }} />
+              </Box>
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                Add Student
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Add a student to the class
+              </Typography>
+            </Paper>
 
-        {/* Delete Class Quick Action */}
-        <Paper
-          onClick={handleDeleteOpen}
-          sx={{
-            p: 3,
-            textAlign: 'center',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            borderRadius: 2,
-            boxShadow: 2,
-            bgcolor: 'white',
-            cursor: 'pointer',
-            minWidth: 220,
-            minHeight: 180,
-            transition: 'box-shadow 0.2s',
-            '&:hover': { boxShadow: 6 },
-          }}
-        >
-          <Box
-            sx={{
-              bgcolor: '#2196f3',
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mb: 2,
-            }}
-          >
-            <DeleteIcon sx={{ color: 'white', fontSize: 32 }} />
+            {/* Delete Class Quick Action */}
+            <Paper
+              onClick={handleDeleteOpen}
+              sx={{
+                p: 3,
+                textAlign: 'center',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                borderRadius: 2,
+                boxShadow: 2,
+                bgcolor: 'white',
+                cursor: 'pointer',
+                minWidth: 220,
+                minHeight: 180,
+                transition: 'box-shadow 0.2s',
+                '&:hover': { boxShadow: 6 },
+              }}
+            >
+              <Box
+                sx={{
+                  bgcolor: '#2196f3',
+                  width: 56,
+                  height: 56,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mb: 2,
+                }}
+              >
+                <DeleteIcon sx={{ color: 'white', fontSize: 32 }} />
+              </Box>
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                Delete Class
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Permanently delete the class
+              </Typography>
+            </Paper>
           </Box>
-          <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
-            Delete Class
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Permanently delete the class
-          </Typography>
-        </Paper>
-      </Box>
+        </>
+      )}
       {/* Tabs Heading */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Button
@@ -486,121 +615,126 @@ export default function ClassLessons() {
         />
       )}
 
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onClose={handleEditClose}>
-        <DialogTitle>Edit Class</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            name="className"
-            label="Class Name"
-            type="text"
-            fullWidth
-            value={form.className}
-            onChange={handleFormChange}
-            sx={{ mb: 2 }}
-            required
-          />
-          <TextField
-            margin="dense"
-            name="description"
-            label="Description"
-            type="text"
-            fullWidth
-            value={form.description}
-            onChange={handleFormChange}
-            multiline
-            rows={3}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleEditClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleEditSubmit} variant="contained" disabled={isSubmitting || !form.className.trim()}>
-            {isSubmitting ? 'Saving...' : 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Only show edit and delete dialogs for teachers */}
+      {user.userRole === 'TEACHER' && (
+        <>
+          {/* Edit Dialog */}
+          <Dialog open={editDialogOpen} onClose={handleEditClose}>
+            <DialogTitle>Edit Class</DialogTitle>
+            <DialogContent>
+              <TextField
+                autoFocus
+                margin="dense"
+                name="className"
+                label="Class Name"
+                type="text"
+                fullWidth
+                value={form.className}
+                onChange={handleFormChange}
+                sx={{ mb: 2 }}
+                required
+              />
+              <TextField
+                margin="dense"
+                name="description"
+                label="Description"
+                type="text"
+                fullWidth
+                value={form.description}
+                onChange={handleFormChange}
+                multiline
+                rows={3}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleEditClose} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditSubmit} variant="contained" disabled={isSubmitting || !form.className.trim()}>
+                {isSubmitting ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogActions>
+          </Dialog>
 
-      {/* Delete Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteClose}>
-        <DialogTitle>Delete Class</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to delete this class?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleDelete} color="error" variant="contained" disabled={isSubmitting}>
-            {isSubmitting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          {/* Delete Dialog */}
+          <Dialog open={deleteDialogOpen} onClose={handleDeleteClose}>
+            <DialogTitle>Delete Class</DialogTitle>
+            <DialogContent>
+              <Typography>Are you sure you want to delete this class?</Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleDeleteClose} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button onClick={handleDelete} color="error" variant="contained" disabled={isSubmitting}>
+                {isSubmitting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </DialogActions>
+          </Dialog>
 
-      {/* Add Student Dialog */}
-      <Dialog open={addStudentDialogOpen} onClose={handleAddStudentDialogClose}>
-        <DialogTitle>Add Student to Class</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Search Student Name"
-            type="text"
-            fullWidth
-            value={studentSearch}
-            onChange={e => {
-              setStudentSearch(e.target.value);
-              if (e.target.value.length >= 2) {
-                handleStudentSearch(e.target.value);
-              } else {
-                setStudentResults([]);
-              }
-            }}
-            disabled={addStudentLoading}
-          />
-          {searchLoading && <Typography>Searching...</Typography>}
-          {studentResults.length > 0 && (
-            <Box sx={{ maxHeight: 200, overflowY: 'auto', mt: 1 }}>
-              {studentResults.map(student => (
-                <Box
-                  key={student.userId}
-                  sx={{
-                    p: 1,
-                    cursor: 'pointer',
-                    bgcolor: selectedStudent?.userId === student.userId ? 'action.selected' : 'background.paper',
-                    '&:hover': { bgcolor: 'action.hover' }
-                  }}
-                  onClick={() => setSelectedStudent(student)}
-                >
-                  <Typography>
-                    {student.userName} ({student.userEmail})
-                  </Typography>
+          {/* Add Student Dialog */}
+          <Dialog open={addStudentDialogOpen} onClose={handleAddStudentDialogClose}>
+            <DialogTitle>Add Student to Class</DialogTitle>
+            <DialogContent>
+              <TextField
+                autoFocus
+                margin="dense"
+                label="Search Student Name"
+                type="text"
+                fullWidth
+                value={studentSearch}
+                onChange={e => {
+                  setStudentSearch(e.target.value);
+                  if (e.target.value.length >= 2) {
+                    handleStudentSearch(e.target.value);
+                  } else {
+                    setStudentResults([]);
+                  }
+                }}
+                disabled={addStudentLoading}
+              />
+              {searchLoading && <Typography>Searching...</Typography>}
+              {studentResults.length > 0 && (
+                <Box sx={{ maxHeight: 200, overflowY: 'auto', mt: 1 }}>
+                  {studentResults.map(student => (
+                    <Box
+                      key={student.userId}
+                      sx={{
+                        p: 1,
+                        cursor: 'pointer',
+                        bgcolor: selectedStudent?.userId === student.userId ? 'action.selected' : 'background.paper',
+                        '&:hover': { bgcolor: 'action.hover' }
+                      }}
+                      onClick={() => setSelectedStudent(student)}
+                    >
+                      <Typography>
+                        {student.userName} ({student.userEmail})
+                      </Typography>
+                    </Box>
+                  ))}
                 </Box>
-              ))}
-            </Box>
-          )}
-          {addStudentMessage && (
-            <Typography sx={{ mt: 1 }} color={addStudentMessage.includes('success') ? 'success.main' : 'error'}>
-              {addStudentMessage}
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleAddStudentDialogClose} disabled={addStudentLoading}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleAddStudent}
-            variant="contained"
-            disabled={addStudentLoading || !selectedStudent}
-          >
-            {addStudentLoading ? 'Adding...' : 'Add'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+              )}
+              {addStudentMessage && (
+                <Typography sx={{ mt: 1 }} color={addStudentMessage.includes('success') ? 'success.main' : 'error'}>
+                  {addStudentMessage}
+                </Typography>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleAddStudentDialogClose} disabled={addStudentLoading}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddStudent}
+                variant="contained"
+                disabled={addStudentLoading || !selectedStudent}
+              >
+                {addStudentLoading ? 'Adding...' : 'Add'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
 
       {/* Story View Dialog */}
       <Dialog
@@ -620,7 +754,6 @@ export default function ClassLessons() {
             <StoryView
               story={selectedStory}
               onAttemptQuiz={() => {
-                // Handle quiz attempt if needed
                 handleCloseStoryView();
               }}
             />

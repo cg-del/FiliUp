@@ -40,7 +40,7 @@ public class ProgressEntity {
     private String notes;
 
     public enum ActivityType {
-        QUIZ,
+        QUESTION_BANK,
         ASSIGNMENT,
         LESSON,
         PRACTICE,

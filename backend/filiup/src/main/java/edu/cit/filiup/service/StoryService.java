@@ -91,10 +91,8 @@ public class StoryService {
     @Transactional
     public void deleteStory(Long storyId) {
         storyRepository.findById(storyId)
-                .filter(StoryEntity::getIsActive)
                 .ifPresent(story -> {
-                    story.setIsActive(false);
-                    storyRepository.save(story);
+                    storyRepository.delete(story);
                 });
     }
 }

@@ -6,6 +6,8 @@ import About from './pages/About/About'
 import AdminDashboard from './pages/Admin/AdminDashboard'
 import ClassManagement from './pages/Admin/ClassManagement'
 import CommonStories from './pages/Admin/CommonStories'
+import QuestionBank from './pages/Admin/QuestionBank'
+import StoryBank from './pages/Admin/StoryBank'
 import UserManagement from './pages/Admin/UserManagement'
 import ClassLessons from './pages/ClassLessons/ClassLessons'
 import ClassGenres from './pages/Home/ClassGenres'
@@ -37,6 +39,10 @@ const App = () => {
           element={<PrivateRoute component={ClassLessons} requireTeacher={true} />} 
         />
         <Route 
+          path="/admin/class/:classId/lessons" 
+          element={<PrivateRoute component={ClassLessons} requireAdmin={true} />} 
+        />
+        <Route 
           path="/class/:classId/genres" 
           element={<PrivateRoute component={ClassGenres} requireTeacher={false} />} 
         />
@@ -51,6 +57,14 @@ const App = () => {
         <Route 
           path="/admin/common-stories" 
           element={<PrivateRoute component={CommonStories} requireAdmin={true} />} 
+        />
+        <Route 
+          path="/admin/story-bank" 
+          element={<PrivateRoute component={StoryBank} requireAdmin={true} />} 
+        />
+        <Route 
+          path="/admin/question-bank" 
+          element={<PrivateRoute component={QuestionBank} requireAdmin={true} />} 
         />
         <Route 
           path="/admin/users" 

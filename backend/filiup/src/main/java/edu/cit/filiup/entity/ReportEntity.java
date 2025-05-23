@@ -41,7 +41,7 @@ public class ReportEntity {
     public enum ReportType {
         STUDENT_PROGRESS,
         CLASS_PERFORMANCE,
-        QUIZ_RESULTS,
+        QUESTION_BANK_RESULTS,
         ATTENDANCE,
         CUSTOM
     }

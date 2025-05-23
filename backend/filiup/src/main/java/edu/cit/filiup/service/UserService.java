@@ -54,13 +54,11 @@ public class UserService {
     }
 
     public String deleteUser(int id) {
-        String msg = "";
-        if (urepo.findById(id) != null) {
-            urepo.deleteById(id);
-            msg = "User successfully deleted.";
-        } else
-            msg = id + " not found.";
-        return msg;
+        if (!urepo.existsById(id)) {
+            throw new NoSuchElementException("User with ID " + id + " not found");
+        }
+        urepo.deleteById(id);
+        return "User successfully deleted";
     }
 
     // Signup Method

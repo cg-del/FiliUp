@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/classes")
@@ -120,5 +121,11 @@ public class ClassController {
         return classService.getClassById(classId)
             .map(classEntity -> ResponseEntity.ok(classEntity.getStudents()))
             .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{classId}/teacher")
+    public ResponseEntity<Map<String, String>> getClassTeacher(@PathVariable Long classId) {
+        Map<String, String> teacherInfo = classService.getClassTeacher(classId);
+        return ResponseEntity.ok(teacherInfo);
     }
 }

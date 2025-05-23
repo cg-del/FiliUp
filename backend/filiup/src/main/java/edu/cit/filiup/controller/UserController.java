@@ -37,9 +37,15 @@ public class UserController {
     public UserEntity putUser(@RequestParam int id, @RequestBody UserEntity newUserDetails) {
         return userv.putUser(id, newUserDetails);
     }
-    @DeleteMapping("/deleteUser")
-    public String deleteUser(@PathVariable int id) {
-        return userv.deleteUser(id);
+    @DeleteMapping("/deleteUser/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable int id) {
+        try {
+            String result = userv.deleteUser(id);
+            return ResponseEntity.ok(Map.of("message", result));
+        } catch (Exception e) {
+            return ResponseEntity.status(404)
+                .body(Map.of("error", "User not found", "message", e.getMessage()));
+        }
     }
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody UserEntity user) {

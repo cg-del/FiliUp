@@ -32,7 +32,7 @@ public class LeaderboardEntity {
     private LocalDateTime lastUpdated;
 
     public enum Category {
-        QUIZ,
+        QUESTION_BANK,
         ASSIGNMENT,
         LESSON,
         PRACTICE,

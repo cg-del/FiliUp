@@ -17,7 +17,7 @@ public class StoryEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long storyId;
 
-    @Column(name = "title", nullable = false, length = 200)
+    @Column(name = "title", nullable = false, length = 255)
     private String title;
 
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
@@ -28,7 +28,7 @@ public class StoryEntity {
     @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     private byte[] coverPicture;
 
-    @Column(name = "cover_picture_type")
+    @Column(name = "cover_picture_type", length = 50)
     @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     private String coverPictureType;
 
@@ -39,7 +39,7 @@ public class StoryEntity {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    @Column(name = "genre", length = 100)
+    @Column(name = "genre", nullable = false)
     private String genre;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -47,25 +47,21 @@ public class StoryEntity {
     @JsonProperty("classEntity")
     private ClassEntity classEntity;
 
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     @JsonIgnore
     private UserEntity createdBy;
-
-    @OneToOne(mappedBy = "story", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private QuizEntity quiz;
 
     // Constructors
     public StoryEntity() {
         this.createdAt = LocalDateTime.now();
     }
 
-    public StoryEntity(String title, String content, UserEntity createdBy, String genre) {
+    public StoryEntity(String title, String content, String genre) {
         this();
         this.title = title;
         this.content = content;
-        this.createdBy = createdBy;
         this.genre = genre;
     }
 
@@ -92,6 +88,14 @@ public class StoryEntity {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getGenre() {
+        return genre;
+    }
+
+    public void setGenre(String genre) {
+        this.genre = genre;
     }
 
     public byte[] getCoverPicture() {
@@ -126,14 +130,6 @@ public class StoryEntity {
         this.isActive = isActive;
     }
 
-    public ClassEntity getClassEntity() {
-        return classEntity;
-    }
-
-    public void setClassEntity(ClassEntity classEntity) {
-        this.classEntity = classEntity;
-    }
-
     public UserEntity getCreatedBy() {
         return createdBy;
     }
@@ -142,23 +138,12 @@ public class StoryEntity {
         this.createdBy = createdBy;
     }
 
-    public String getGenre() {
-        return genre;
+    public ClassEntity getClassEntity() {
+        return classEntity;
     }
 
-    public void setGenre(String genre) {
-        this.genre = genre;
-    }
-
-    public QuizEntity getQuiz() {
-        return quiz;
-    }
-
-    public void setQuiz(QuizEntity quiz) {
-        this.quiz = quiz;
-        if (quiz != null) {
-            quiz.setStory(this);
-        }
+    public void setClassEntity(ClassEntity classEntity) {
+        this.classEntity = classEntity;
     }
 
     @Override

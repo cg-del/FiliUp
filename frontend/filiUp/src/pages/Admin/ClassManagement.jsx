@@ -3,6 +3,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, TextField, Typography } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
@@ -21,6 +22,7 @@ export default function ClassManagement() {
   const [teachers, setTeachers] = useState([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [classToDelete, setClassToDelete] = useState(null);
+  const [classTeachers, setClassTeachers] = useState({});
 
   // Check if user is admin
   if (!user || user.userRole !== 'ADMIN') {
@@ -98,6 +100,29 @@ export default function ClassManagement() {
     }
   };
 
+  // Function to fetch teacher info for a class
+  const fetchClassTeacher = async (classId, token) => {
+    try {
+      const response = await axios.get(`http://localhost:8080/api/classes/${classId}/teacher`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setClassTeachers(prev => ({
+        ...prev,
+        [classId]: response.data
+      }));
+    } catch (error) {
+      if (error.response?.status === 401) {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          return fetchClassTeacher(classId, newToken);
+        }
+      }
+      console.error('Failed to load teacher info:', error);
+    }
+  };
+
   // Fetch data on component mount
   useEffect(() => {
     if (accessToken) {
@@ -109,6 +134,15 @@ export default function ClassManagement() {
       navigate('/sign-in');
     }
   }, [accessToken, navigate]);
+
+  // Update useEffect to fetch teacher info for each class
+  useEffect(() => {
+    if (classes.length > 0 && accessToken) {
+      classes.forEach(classItem => {
+        fetchClassTeacher(classItem.classId, accessToken);
+      });
+    }
+  }, [classes, accessToken]);
 
   const handleCreateClass = async () => {
     try {
@@ -180,6 +214,10 @@ export default function ClassManagement() {
     }
   };
 
+  const handleViewClass = (classId) => {
+    navigate(`/admin/class/${classId}/lessons`);
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -234,6 +272,14 @@ export default function ClassManagement() {
               <Box>
                 <IconButton
                   size="small"
+                  onClick={() => handleViewClass(classItem.classId)}
+                  title="View Class"
+                  color="primary"
+                >
+                  <VisibilityIcon />
+                </IconButton>
+                <IconButton
+                  size="small"
                   onClick={() => handleRegenerateCode(classItem.classId)}
                   title="Regenerate Code"
                 >
@@ -261,6 +307,18 @@ export default function ClassManagement() {
             <Typography variant="caption" color="text.secondary">
               Students: {classItem.students?.length || 0}
             </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Teacher: {classTeachers[classItem.classId]?.teacherName || 'Loading...'}
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<VisibilityIcon />}
+              onClick={() => handleViewClass(classItem.classId)}
+              sx={{ mt: 1 }}
+            >
+              View Class Details
+            </Button>
           </Paper>
         ))}
       </Box>

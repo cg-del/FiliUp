@@ -1,6 +1,7 @@
 package edu.cit.filiup.controller;
 
 import edu.cit.filiup.entity.StoryEntity;
+import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.service.StoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/stories")
@@ -73,8 +75,37 @@ public class StoryController {
 
     // Get all active stories
     @GetMapping
-    public ResponseEntity<List<StoryEntity>> getAllStories() {
-        return ResponseEntity.ok(storyService.getAllStories());
+    public ResponseEntity<List<Map<String, Object>>> getAllStories() {
+        List<StoryEntity> stories = storyService.getAllStories();
+        List<Map<String, Object>> storiesWithAuthorInfo = stories.stream()
+            .map(story -> {
+                Map<String, Object> storyMap = new HashMap<>();
+                storyMap.put("storyId", story.getStoryId());
+                storyMap.put("title", story.getTitle());
+                storyMap.put("content", story.getContent());
+                storyMap.put("genre", story.getGenre());
+                storyMap.put("coverPicture", story.getCoverPicture());
+                storyMap.put("coverPictureType", story.getCoverPictureType());
+                storyMap.put("createdAt", story.getCreatedAt());
+                storyMap.put("classEntity", story.getClassEntity());
+                
+                // Get author information
+                UserEntity author = story.getCreatedBy();
+                if (author != null) {
+                    Map<String, Object> authorInfo = new HashMap<>();
+                    authorInfo.put("userId", author.getUserId());
+                    authorInfo.put("userName", author.getUserName());
+                    authorInfo.put("userRole", author.getUserRole());
+                    storyMap.put("createdBy", authorInfo);
+                } else {
+                    storyMap.put("createdBy", null);
+                }
+                
+                return storyMap;
+            })
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(storiesWithAuthorInfo);
     }
 
     // Get story by ID
@@ -101,6 +132,35 @@ public class StoryController {
     @GetMapping("/genre/{genre}")
     public ResponseEntity<List<StoryEntity>> getStoriesByGenre(@PathVariable String genre) {
         return ResponseEntity.ok(storyService.getStoriesByGenre(genre));
+    }
+
+    // Get all stories with teacher information
+    @GetMapping("/with-teacher-info")
+    public ResponseEntity<List<Map<String, Object>>> getAllStoriesWithTeacherInfo() {
+        List<StoryEntity> stories = storyService.getAllStories();
+        List<Map<String, Object>> storiesWithTeacherInfo = stories.stream()
+            .map(story -> {
+                Map<String, Object> storyMap = new HashMap<>();
+                storyMap.put("storyId", story.getStoryId());
+                storyMap.put("title", story.getTitle());
+                storyMap.put("content", story.getContent());
+                storyMap.put("genre", story.getGenre());
+                storyMap.put("coverPicture", story.getCoverPicture());
+                storyMap.put("coverPictureType", story.getCoverPictureType());
+                
+                // Get teacher information from the createdBy field
+                UserEntity teacher = story.getCreatedBy();
+                if (teacher != null && "TEACHER".equals(teacher.getUserRole())) {
+                    storyMap.put("teacherName", teacher.getUserName());
+                } else {
+                    storyMap.put("teacherName", "System");
+                }
+                
+                return storyMap;
+            })
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(storiesWithTeacherInfo);
     }
 
     // Update story

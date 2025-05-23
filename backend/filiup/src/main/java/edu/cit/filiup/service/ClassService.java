@@ -4,12 +4,15 @@ import edu.cit.filiup.entity.ClassEntity;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.repository.ClassRepository;
 import edu.cit.filiup.repository.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Optional;
 
 @Service
@@ -56,6 +59,25 @@ public class ClassService {
 
     public List<ClassEntity> getClassesByStudent(int studentId) {
         return classRepository.findByStudentsUserId(studentId);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, String> getClassTeacher(Long classId) {
+        ClassEntity classEntity = classRepository.findById(classId)
+                .orElseThrow(() -> new EntityNotFoundException("Class not found"));
+
+        UserEntity teacher = classEntity.getTeacher();
+        Map<String, String> response = new HashMap<>();
+        
+        if (teacher != null) {
+            response.put("teacherName", teacher.getUserName());
+            response.put("teacherId", String.valueOf(teacher.getUserId()));
+        } else {
+            response.put("teacherName", "Not Assigned");
+            response.put("teacherId", null);
+        }
+
+        return response;
     }
 
     // Update
