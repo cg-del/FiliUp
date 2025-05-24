@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import './App.css'
 import { PrivateRoute } from './components/PrivateRoute'
 import { UserProvider } from './context/UserContext'
 import About from './pages/About/About'
@@ -21,6 +20,7 @@ import TeacherHome from './pages/TeacherHome/TeacherHome'
 const App = () => {
   return (
     <UserProvider>
+      <div className="min-h-screen bg-gray-200">
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/sign-in" element={<Login />} />
@@ -75,6 +75,7 @@ const App = () => {
           element={<PrivateRoute component={ClassManagement} requireAdmin={true} />} 
         />
       </Routes>
+      </div>
     </UserProvider>
   )
 }

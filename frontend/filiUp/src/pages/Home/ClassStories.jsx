@@ -1,9 +1,12 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Book, Search, Bell, User } from "lucide-react"
+import { ArrowLeft, Book, Search, Bell, User, LogOut, ChevronLeft, GraduationCap, BookOpen, Code, Award } from "lucide-react"
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { Button, Typography } from '@mui/material';
+import { Button, Typography, Box, Paper } from '@mui/material';
+import { alpha } from '@mui/material/styles'
+import logo from '../../assets/logo.svg'
+import { useUser } from '../../context/UserContext';
 
 const GENRE_OPTIONS = [
   { value: 'MAIKLING_KWENTO', label: 'Maikling Kwento' },
@@ -31,9 +34,21 @@ export default function ClassStories() {
   const [expandedStory, setExpandedStory] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedStory, setSelectedStory] = useState(null)
+  const [userName, setUserName] = useState("")
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('darkMode');
+      return savedMode ? JSON.parse(savedMode) : false;
+    } else {
+      return false;
+    }
+  })
+  const [openUserMenu, setOpenUserMenu] = useState(false)
+  const [myClassesOpen, setMyClassesOpen] = useState(true)
+  const [activeItem, setActiveItem] = useState('my-classes')
   const { classId, genre } = useParams()
   const navigate = useNavigate()
-  const [userName, setUserName] = useState("")
+  const { user, logout } = useUser();
 
   useEffect(() => {
     // Fetch user info from localStorage
@@ -42,6 +57,18 @@ export default function ClassStories() {
 
     fetchStories()
   }, [classId, genre])
+
+  useEffect(() => {
+    const htmlElement = document.documentElement;
+    if (isDarkMode) {
+      htmlElement.classList.add('dark');
+    } else {
+      htmlElement.classList.remove('dark');
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+    }
+  }, [isDarkMode]);
 
   const fetchStories = async () => {
     try {
@@ -80,7 +107,7 @@ export default function ClassStories() {
   const handleBack = () => {
     if (genre) {
       // If we're viewing stories of a specific genre, go back to genres view
-      navigate(`/class/${classId}/genres`)
+      navigate(`/class/${classId}/genres`, { state: { className: className } });
     } else {
       // Otherwise go back to home
       navigate(-1)
@@ -105,245 +132,285 @@ export default function ClassStories() {
     setSelectedStory(null)
   }
 
+  const toggleUserMenu = () => {
+    setOpenUserMenu(prev => !prev)
+  }
+
+  const toggleMyClasses = () => { setMyClassesOpen(!myClassesOpen); }
+
+  const handleMenuItemClick = (item) => {
+    setActiveItem(item);
+    if (item === 'my-classes') {
+      toggleMyClasses();
+    }
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => !prev);
+  };
+
+  const handleLogoutClick = () => {
+    logout();
+    setOpenUserMenu(false);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header style={{
-        padding: "1rem 2rem",
-        backgroundColor: "#d1fae5",
-        borderBottom: "1px solid #e5e7eb",
-      }}>
-        <div style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          gap: "1rem",
-        }}>
-          <button
-            onClick={handleBack}
-            style={{
-              background: "#34d399",
-              border: "none",
-              borderRadius: "50%",
-              width: "40px",
-              height: "40px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
+    <div className="min-h-screen w-full flex bg-[#95dfc1] dark:bg-gray-900 transition-colors duration-300">
+      {/* Sidebar */}
+      <div className="w-56 flex flex-col items-center py-8 bg-[#7BD0A7] dark:bg-gray-900 transition-colors duration-300">
+        <div className="bg-white dark:bg-gray-800 rounded-full shadow p-3 flex items-center justify-center mb-6 transition-colors duration-300" style={{ width: 96, height: 96 }}>
+          <img src={logo} alt="FiliUp Logo" className="w-20 h-20 object-contain" />
+        </div>
+        <div className="flex flex-col gap-2 w-full px-2">
+          {/* My Classes */}
+          <div
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg font-semibold cursor-pointer transition-colors duration-300 ${activeItem === 'my-classes' ? 'bg-white dark:bg-gray-900 text-[#7BD0A7] dark:text-white' : 'text-black dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            onClick={() => handleMenuItemClick('my-classes')}
           >
-            <ArrowLeft size={24} color="#ffffff" />
-          </button>
-          <h1 style={{
-            fontSize: "1.75rem",
-            fontWeight: "600",
-            color: "#1e293b",
-            marginRight: "43rem",
-          }}>
-            Story {genre ? `- ${getGenreLabel(genre)}` : ''}
-          </h1>
-          
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "1.5rem",
-          }}>
-            <Search size={20} color="#64748b" style={{ cursor: "pointer" }} />
-            <Bell size={20} color="#64748b" style={{ cursor: "pointer" }} />
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}>
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-              }}>
-                <span style={{ fontWeight: "500", color: "#1e293b" }}>{userName}</span>
-                <span style={{ fontSize: "0.875rem", color: "#64748b" }}>Student</span>
+            <GraduationCap size={22} color={activeItem === 'my-classes' ? "#7BD0A7" : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <span className="text-black dark:text-white font-semibold">My Classes</span>
+          </div>
+          {/* Collapsible sub-items */}
+          {myClassesOpen && (
+            <div className="flex flex-col gap-1 pl-6">
+              <div className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-300">
+                <GraduationCap size={24} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
+                <span className="font-semibold">Mga Pangunahing Salita</span>
               </div>
-              <div style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                backgroundColor: "#f1f5f9",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}>
-                <User size={24} color="#64748b" />
+              <div className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-300">
+                <GraduationCap size={18} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
+                <span className="font-semibold">Mga Pangungusap</span>
               </div>
             </div>
+          )}
+          {/* Study Area */}
+          <div
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg cursor-pointer transition-colors duration-300 ${activeItem === 'study-area' ? 'text-[#7BD0A7] dark:text-white' : 'text-black dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
+            onClick={() => handleMenuItemClick('study-area')}
+          >
+            <BookOpen size={20} color={activeItem === 'study-area' ? (isDarkMode ? "#d1d5db" : "#7BD0A7") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <span className="font-semibold">Study area</span>
+          </div>
+          {/* Playground */}
+          <div
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg cursor-pointer transition-colors duration-300 ${activeItem === 'playground' ? 'text-[#7BD0A7] dark:text-white' : 'text-black dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
+            onClick={() => handleMenuItemClick('playground')}
+          >
+            <Code size={20} color={activeItem === 'playground' ? (isDarkMode ? "#d1d5db" : "#7BD0A7") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <span className="font-semibold">Playground</span>
+          </div>
+          {/* Certifications */}
+          <div
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg cursor-pointer transition-colors duration-300 ${activeItem === 'certifications' ? 'text-[#7BD0A7] dark:text-white' : 'text-black dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
+            onClick={() => handleMenuItemClick('certifications')}
+          >
+            <Award size={20} color={activeItem === 'certifications' ? (isDarkMode ? "#d1d5db" : "#7BD0A7") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <span className="font-semibold">Certifications</span>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Content */}
-      <main style={{
-        maxWidth: "1200px",
-        margin: "2rem auto",
-        padding: "0 1rem",
-      }}>
-        <div style={{
-          marginBottom: "1.5rem",
-          fontSize: "1.125rem",
-          color: "#4a5568",
-          textAlign: "left",
-        }}>
-          Awesome choice! Now go ahead and pick a story that sparks your curiosity and imagination—let the adventure begin!
-        </div>
-
-        {/* Buttons for Created By */}
-        <div style={{
-          display: "flex",
-          justifyContent: "flex-start",
-          gap: "1rem",
-          marginBottom: "1.5rem",
-        }}>
-          <button style={{
-            backgroundColor: "#34d399", // Green color
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "0.375rem",
-            padding: "0.5rem 1rem",
-            cursor: "pointer",
-            fontSize: "1rem",
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col bg-[#7BD0A7] dark:bg-gray-900 transition-colors duration-300 min-h-screen">
+        <div className="flex-1 flex flex-col justify-start items-center px-6 py-10">
+          <div className="main-content w-full max-w-8xl bg-white dark:bg-gray-800 rounded-2xl shadow-lg flex flex-col transition-colors duration-300 teacher-scrollbar" style={{ 
+            height: 'calc(100vh - 80px)',
+            overflow: 'hidden'
           }}>
-            Created by FiliUp
-          </button>
-          <button style={{
-            backgroundColor: "#fefcbf", // Light color
-            color: "#1e293b",
-            border: "none",
-            borderRadius: "0.375rem",
-            padding: "0.5rem 1rem",
-            cursor: "pointer",
-            fontSize: "1rem",
-          }}>
-            Created by Teacher
-          </button>
-        </div>
-
-        {loading ? (
-          <div style={{
-            textAlign: "center",
-            padding: "2rem",
-            color: "#64748b",
-          }}>
-            Loading stories...
-          </div>
-        ) : error ? (
-          <div style={{
-            textAlign: "center",
-            padding: "2rem",
-            color: "#ef4444",
-          }}>
-            {error}
-          </div>
-        ) : stories.length === 0 ? (
-          <div style={{
-            textAlign: "center",
-            padding: "2rem",
-            color: "#64748b",
-          }}>
-            {genre 
-              ? `No stories available for ${getGenreLabel(genre)}`
-              : 'No stories available for this class yet.'
-            }
-          </div>
-        ) : (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(800px, 1fr))",
-            gap: "1.5rem",
-          }}>
-            {stories.map((story, index) => (
-              <div
-                key={story.storyId}
-                style={{
-                  backgroundColor: "#d1fae5",
-                  borderRadius: "0.5rem",
-                  overflow: "hidden",
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                  cursor: "pointer",
-                  padding: "1rem",
-                  marginBottom: "0.5rem",
-                }}
-                onClick={() => toggleStory(story.storyId)}
-              >
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <span style={{ marginRight: "1.5rem", marginLeft: "1rem", fontSize: "1.3rem", color: "#1e293b" }}>
-                    ▼
-                  </span>
-                  <div style={{ display: "block" }}>
-                    <p style={{
-                      fontSize: "0.875rem",
-                      color: "#64748b",
-                      margin: 0,
-                    }}>
-                      Story {index + 1}
-                    </p>
-                    <h3 style={{
-                      fontSize: "1.35rem",
-                      fontWeight: "700",
-                      marginBottom: "0.5rem",
-                      color: "#1e293b",
-                    }}>
-                      {story.title}
-                    </h3>
-                  </div>
-                </div>
-
-                {expandedStory === story.storyId && (
-                  <div style={{ marginTop: "1rem", borderLeft: "2px solid #1e293b", paddingLeft: "1rem" }}>
-                    <button 
-                      style={{ 
-                        marginBottom: "0.5rem", 
-                        padding: "0.5rem 1rem", 
-                        backgroundColor: "#fefcbf", 
-                        border: "none", 
-                        borderRadius: "0.25rem" 
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openModal(story)
-                      }}
-                    >
-                      Read Story
-                    </button>
-                    <div style={{ marginTop: "0.5rem", fontWeight: "bold", backgroundColor: "#fefcbf", padding: "0.5rem", borderRadius: "0.25rem" }}>
-                      {story.title} Quiz
-                    </div>
-                    <p>Date & Time Started:</p>
-                    <p>Date & Time Finished:</p>
-                    <p>Score: -/12</p>
-                    <button style={{ padding: "0.5rem 1rem", backgroundColor: "#34d399", border: "none", borderRadius: "0.25rem" }}>
-                      Attempt Quiz
-                    </button>
-                  </div>
-                )}
+            {/* Top Navigation within White Box */}
+            <div className="flex items-center justify-between mb-6 w-full sticky top-0 bg-white dark:bg-gray-800 z-10 px-8 pt-8 pb-0 transition-colors duration-300">
+              <div className="flex items-center">
+                <Button
+                  variant="text"
+                  startIcon={<ChevronLeft size={24} />}
+                  onClick={handleBack}
+                  sx={{
+                    fontSize: '1.5rem',
+                    fontWeight: 'bold',
+                    color: '#7BD0A7',
+                    minWidth: 'auto',
+                    padding: '4px',
+                  }}
+                >
+                </Button>
+                <Typography variant="h4" fontWeight="bold" sx={{ ml: 2 }} className="text-gray-800 dark:text-white">
+                  Story <span className="text-gray-600 dark:text-gray-300" style={{ fontWeight: 'normal' }}>{genre ? `${getGenreLabel(genre)}` : ''}</span>
+                </Typography>
               </div>
-            ))}
+
+              <div className="flex items-center gap-4">
+                <button
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
+                  onClick={toggleDarkMode}
+                  aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                  {isDarkMode ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12.79A9 9 0 1112.79 3a7 7 0 108.21 9.79z" />
+                    </svg>
+                  )}
+                </button>
+                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 7.165 6 9.388 6 12v2.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                </button>
+                <div className="relative">
+                  <div
+                    className="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 cursor-pointer transition-colors duration-300"
+                    onClick={toggleUserMenu}
+                  >
+                    <div className="flex flex-col items-end mr-2">
+                      <span className="font-bold text-gray-800 dark:text-white leading-tight text-md">{userName}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 leading-tight">Mag-aaral</span>
+                    </div>
+                    <img
+                      src="https://randomuser.me/api/portraits/lego/1.jpg"
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-white shadow"
+                    />
+                  </div>
+                  {openUserMenu && (
+                    <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg z-50 transition-colors duration-300">
+                      <div className="flex items-center gap-3 p-3 text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-300">
+                        <User size={18} color={isDarkMode ? "#d1d5db" : "#4b5563"} />
+                        <span>Aking Account</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-300" onClick={handleLogoutClick}>
+                        <LogOut size={18} color={isDarkMode ? "#d1d5db" : "#4b5563"} />
+                        <span>Mag-sign Out</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <Box className="flex-1 p-8 overflow-y-auto teacher-scrollbar" style={{ height: 'calc(100% - 80px)' }}>
+              {/* Description */}
+              <Typography variant="h6" fontWeight="medium" gutterBottom sx={{ mb: 1 }} className="text-gray-800 dark:text-white">
+                Awesome choice! Now go ahead and pick a story that sparks your curiosity and imagination—let the adventure begin!
+              </Typography>
+              {/* Buttons for Created By */}
+              <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
+                <Button
+                  variant="contained"
+                  sx={{
+                    bgcolor: '#34d399', // Green color
+                    color: '#ffffff',
+                    fontWeight: 'bold',
+                    '&:hover': { bgcolor: '#22c55e' }, // Darker green on hover
+                    borderRadius: '0.375rem',
+                    px: 2,
+                    py: 1,
+                    textTransform: 'none',
+                  }}
+                >
+                  Created by FiliUp
+                </Button>
+                <Button
+                  variant="contained"
+                  sx={{
+                    bgcolor: '#fefcbf', // Light color
+                    color: '#1e293b',
+                    fontWeight: 'bold',
+                    '&:hover': { bgcolor: '#fde047' }, // Slightly darker yellow on hover
+                    borderRadius: '0.375rem',
+                    px: 2,
+                    py: 1,
+                    textTransform: 'none',
+                  }}
+                >
+                  Created by Teacher
+                </Button>
+              </Box>
+
+              {loading ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-300">
+                  Loading stories...
+                </div>
+              ) : error ? (
+                <div className="text-center py-8 text-red-500 dark:text-red-400">
+                  {error}
+                </div>
+              ) : stories.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-300">
+                  {genre 
+                    ? `No stories available for ${getGenreLabel(genre)}`
+                    : 'No stories available for this class yet.'
+                  }
+                </div>
+              ) : (
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(800px, 1fr))",
+                  gap: "1.5rem",
+                }}>
+                  {stories.map((story, index) => (
+                    <div
+                      key={story.storyId}
+                      className="bg-[#d1fae5] dark:bg-gray-700 rounded-lg overflow-hidden shadow transition-all duration-300 cursor-pointer p-4 mb-2"
+                      onClick={() => toggleStory(story.storyId)}
+                    >
+                      <div className="flex items-center">
+                        <span className="mr-6 ml-4 text-xl text-gray-800 dark:text-white">
+                          ▼
+                        </span>
+                        <div className="block">
+                          <p className="text-sm text-gray-600 dark:text-gray-300 m-0">
+                            Story {index + 1}
+                          </p>
+                          <h3 className="text-xl font-bold mb-2 text-gray-800 dark:text-white">
+                            {story.title}
+                          </h3>
+                        </div>
+                      </div>
+
+                      {expandedStory === story.storyId && (
+                        <div className="mt-4 border-l-2 border-gray-800 dark:border-gray-300 pl-4">
+                          <button 
+                            className="mb-2 px-4 py-2 bg-[#fefcbf] dark:bg-gray-600 border-none rounded text-gray-800 dark:text-white hover:bg-[#fde047] dark:hover:bg-gray-500 transition-colors duration-300"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openModal(story)
+                            }}
+                          >
+                            Read Story
+                          </button>
+                          <div className="mt-2 font-bold bg-[#fefcbf] dark:bg-gray-600 p-2 rounded text-gray-800 dark:text-white">
+                            {story.title} Quiz
+                          </div>
+                          <p className="text-gray-800 dark:text-white">Date & Time Started:</p>
+                          <p className="text-gray-800 dark:text-white">Date & Time Finished:</p>
+                          <p className="text-gray-800 dark:text-white">Score: -/12</p>
+                          <button className="px-4 py-2 bg-[#34d399] dark:bg-green-600 border-none rounded text-white hover:bg-[#22c55e] dark:hover:bg-green-500 transition-colors duration-300">
+                            Attempt Quiz
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Box>
           </div>
-        )}
-      </main>
+        </div>
+      </div>
 
       {/* Story Modal */}
-      <Dialog open={modalOpen} onClose={closeModal} maxWidth="md" fullWidth>
-        <DialogTitle>{selectedStory?.title}</DialogTitle>
+      <Dialog open={modalOpen} onClose={closeModal} maxWidth="md" fullWidth className="dark:bg-gray-800">
+        <DialogTitle className="text-gray-800 dark:text-white">{selectedStory?.title}</DialogTitle>
         <DialogContent>
-          <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+          <Typography variant="body1" className="text-gray-800 dark:text-white" sx={{ whiteSpace: 'pre-line' }}>
             {selectedStory?.content}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeModal} color="primary">Close</Button>
-          <Button onClick={() => {/* Handle Attempt Quiz logic */}} color="primary">Attempt Quiz</Button>
+          <Button onClick={closeModal} color="primary" className="text-gray-800 dark:text-white">Close</Button>
+          <Button onClick={() => {/* Handle Attempt Quiz logic */}} color="primary" className="text-gray-800 dark:text-white">Attempt Quiz</Button>
         </DialogActions>
       </Dialog>
     </div>
