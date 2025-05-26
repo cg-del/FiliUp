@@ -9,5 +9,6 @@ import java.util.List;
 public interface QuestionBankRepository extends JpaRepository<QuestionBankEntity, Long> {
     List<QuestionBankEntity> findByIsActiveTrue();
     List<QuestionBankEntity> findByCreatedByUserIdAndIsActiveTrue(Integer userId);
-    List<QuestionBankEntity> findByStoryStoryIdAndIsActiveTrue(Long storyId);
+    List<QuestionBankEntity> findByStoryIdAndIsActiveTrue(Long storyId);
+    List<QuestionBankEntity> findByStoryIdAndStoryTypeAndIsActiveTrue(Long storyId, String storyType);
 } 

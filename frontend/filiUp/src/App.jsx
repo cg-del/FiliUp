@@ -7,6 +7,7 @@ import ClassManagement from './pages/Admin/ClassManagement'
 import CommonStories from './pages/Admin/CommonStories'
 import QuestionBank from './pages/Admin/QuestionBank'
 import StoryBank from './pages/Admin/StoryBank'
+import StoryQuestions from './pages/Admin/StoryQuestions'
 import UserManagement from './pages/Admin/UserManagement'
 import ClassLessons from './pages/ClassLessons/ClassLessons'
 import ClassGenres from './pages/Home/ClassGenres'
@@ -74,6 +75,7 @@ const App = () => {
           path="/admin/classes" 
           element={<PrivateRoute component={ClassManagement} requireAdmin={true} />} 
         />
+        <Route path="/admin/story-questions/:storyId/:storyType" element={<StoryQuestions />} />
       </Routes>
       </div>
     </UserProvider>

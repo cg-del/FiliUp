@@ -195,7 +195,17 @@ export default function UserManagement() {
     <Box sx={{ p: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <IconButton onClick={() => navigate('/admin')} sx={{ mr: 2 }}>
+          <IconButton 
+            onClick={() => navigate('/admin')} 
+            sx={{ 
+              mr: 2,
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              }
+            }}
+          >
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h4">User Management</Typography>

@@ -18,10 +18,8 @@ public class QuestionBankController {
 
     @PostMapping
     public ResponseEntity<QuestionBankEntity> createQuestion(
-            @RequestBody QuestionBankEntity question,
-            @RequestParam Integer userId,
-            @RequestParam Long storyId) {
-        QuestionBankEntity createdQuestion = questionBankService.createQuestion(question, userId, storyId);
+            @RequestBody QuestionBankEntity question) {
+        QuestionBankEntity createdQuestion = questionBankService.createQuestion(question);
         return ResponseEntity.ok(createdQuestion);
     }
 

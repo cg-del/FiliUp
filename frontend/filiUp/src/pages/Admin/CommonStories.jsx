@@ -2,6 +2,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import QuizIcon from '@mui/icons-material/Quiz';
 import SearchIcon from '@mui/icons-material/Search';
 import { Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, IconButton, InputAdornment, InputLabel, List, ListItem, ListItemAvatar, ListItemText, MenuItem, Paper, Select, TextField, Typography, alpha, useTheme } from '@mui/material';
 import axios from 'axios';
@@ -42,6 +43,7 @@ export default function CommonStories() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -50,6 +52,12 @@ export default function CommonStories() {
     coverPictureType: ''
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [questionForm, setQuestionForm] = useState({
+    title: '',
+    questionText: '',
+    options: ['', '', '', ''],
+    correctAnswer: ''
+  });
   const theme = useTheme();
 
   // Check if user is admin
@@ -189,6 +197,56 @@ export default function CommonStories() {
     setViewDialogOpen(true);
   };
 
+  const handleAddQuestion = (story) => {
+    navigate(`/admin/story-questions/${story.storyId}/COMMON`);
+  };
+
+  const handleQuestionInputChange = (e, index) => {
+    const { name, value } = e.target;
+    if (name === 'options') {
+      const newOptions = [...questionForm.options];
+      newOptions[index] = value;
+      setQuestionForm(prev => ({
+        ...prev,
+        options: newOptions
+      }));
+    } else {
+      setQuestionForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleQuestionSubmit = async () => {
+    try {
+      const requestData = {
+        title: questionForm.title,
+        questionText: questionForm.questionText,
+        options: JSON.stringify(questionForm.options),
+        correctAnswer: questionForm.correctAnswer,
+        storyId: selectedStory.storyId
+      };
+
+      await axios.post('http://localhost:8080/api/question-bank', requestData, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      setQuestionDialogOpen(false);
+      setQuestionForm({
+        title: '',
+        questionText: '',
+        options: ['', '', '', ''],
+        correctAnswer: ''
+      });
+    } catch (error) {
+      setError('Failed to add question.');
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -201,7 +259,17 @@ export default function CommonStories() {
     <Box sx={{ p: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <IconButton onClick={() => navigate('/admin')} sx={{ mr: 2 }}>
+          <IconButton 
+            onClick={() => navigate('/admin')} 
+            sx={{ 
+              mr: 2,
+              bgcolor: 'primary.main',
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              }
+            }}
+          >
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h4">Common Stories Management</Typography>
@@ -335,6 +403,14 @@ export default function CommonStories() {
                   {GENRE_OPTIONS.find(opt => opt.value === story.genre)?.label || story.genre}
                 </Typography>
                 <Box sx={{ width: '30%', display: 'flex', gap: 1 }}>
+                  <IconButton 
+                    onClick={() => handleAddQuestion(story)} 
+                    color="primary"
+                    size="small"
+                    title="Add Questions"
+                  >
+                    <QuizIcon />
+                  </IconButton>
                   <IconButton 
                     onClick={() => handleEditStory(story)} 
                     color="primary"

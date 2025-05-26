@@ -3,15 +3,19 @@ package edu.cit.filiup.service;
 import edu.cit.filiup.entity.QuestionBankEntity;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.entity.StoryEntity;
+import edu.cit.filiup.entity.CommonStoryEntity;
 import edu.cit.filiup.repository.QuestionBankRepository;
 import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.repository.StoryRepository;
+import edu.cit.filiup.repository.CommonStoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class QuestionBankService {
@@ -25,17 +29,46 @@ public class QuestionBankService {
     @Autowired
     private StoryRepository storyRepository;
 
+    @Autowired
+    private CommonStoryRepository commonStoryRepository;
+
     @Transactional
-    public QuestionBankEntity createQuestion(QuestionBankEntity question, Integer userId, Long storyId) {
-        UserEntity teacher = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Teacher not found"));
+    public QuestionBankEntity createQuestion(QuestionBankEntity question) {
+        try {
+            // Check if the story exists in common_stories
+            Optional<CommonStoryEntity> commonStory = commonStoryRepository.findById(question.getStoryId());
+            if (commonStory.isPresent()) {
+                question.setStoryType("COMMON");
+            } else {
+                // Check if the story exists in stories
+                Optional<StoryEntity> story = storyRepository.findById(question.getStoryId());
+                if (story.isPresent()) {
+                    question.setStoryType("CLASS");
+                } else {
+                    throw new EntityNotFoundException(
+                        String.format("Story not found with ID: %d", question.getStoryId())
+                    );
+                }
+            }
 
-        StoryEntity story = storyRepository.findById(storyId)
-                .orElseThrow(() -> new EntityNotFoundException("Story not found"));
+            // Get the default admin user (ID 1) or handle null case
+            UserEntity defaultUser = userRepository.findById(1)
+                    .orElseThrow(() -> new RuntimeException("Default admin user not found"));
 
-        question.setCreatedBy(teacher);
-        question.setStory(story);
-        return questionBankRepository.save(question);
+            question.setCreatedBy(defaultUser);
+            question.setIsActive(true);
+            question.setCreatedAt(LocalDateTime.now());
+            
+            return questionBankRepository.save(question);
+        } catch (EntityNotFoundException e) {
+            throw new EntityNotFoundException(
+                String.format("Failed to create question: %s", e.getMessage())
+            );
+        } catch (Exception e) {
+            throw new RuntimeException(
+                String.format("Failed to create question: %s", e.getMessage())
+            );
+        }
     }
 
     @Transactional(readOnly = true)
@@ -50,7 +83,14 @@ public class QuestionBankService {
 
     @Transactional(readOnly = true)
     public List<QuestionBankEntity> getQuestionsByStory(Long storyId) {
-        return questionBankRepository.findByStoryStoryIdAndIsActiveTrue(storyId);
+        // First try to find questions for common stories
+        List<QuestionBankEntity> commonQuestions = questionBankRepository.findByStoryIdAndStoryTypeAndIsActiveTrue(storyId, "COMMON");
+        if (!commonQuestions.isEmpty()) {
+            return commonQuestions;
+        }
+        
+        // If no common story questions found, try class story questions
+        return questionBankRepository.findByStoryIdAndStoryTypeAndIsActiveTrue(storyId, "CLASS");
     }
 
     @Transactional(readOnly = true)

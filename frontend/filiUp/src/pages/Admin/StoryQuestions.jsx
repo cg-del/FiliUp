@@ -1,4 +1,4 @@
-import { Add as AddIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon, Edit as EditIcon, Search as SearchIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
+import { Add as AddIcon, ArrowBack as ArrowBackIcon, Delete as DeleteIcon, Edit as EditIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
 import {
     Alert,
     Box,
@@ -9,10 +9,8 @@ import {
     DialogContent,
     DialogTitle,
     IconButton,
-    InputAdornment,
     List,
     ListItem,
-    ListItemText,
     Paper,
     TextField,
     Typography,
@@ -21,19 +19,19 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 
-const QuestionBank = () => {
+const StoryQuestions = () => {
     const navigate = useNavigate();
     const { user } = useUser();
+    const { storyId, storyType } = useParams();
     const [questions, setQuestions] = useState([]);
-    const [storyNames, setStoryNames] = useState({});
+    const [storyTitle, setStoryTitle] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedQuestion, setSelectedQuestion] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
     const [formData, setFormData] = useState({
         title: '',
         questionText: '',
@@ -68,37 +66,28 @@ const QuestionBank = () => {
     axios.defaults.headers.common['Content-Type'] = 'application/json';
 
     useEffect(() => {
+        fetchStoryDetails();
         fetchQuestions();
-    }, []);
+    }, [storyId, storyType]);
 
-    const fetchStoryName = async (storyId, storyType) => {
+    const fetchStoryDetails = async () => {
         try {
             const endpoint = storyType === 'COMMON' 
                 ? `http://localhost:8080/api/common-stories/${storyId}`
                 : `http://localhost:8080/api/stories/${storyId}`;
             
             const response = await axios.get(endpoint);
-            return response.data.title;
+            setStoryTitle(response.data.title);
         } catch (error) {
-            console.error(`Error fetching story name for ID ${storyId}:`, error);
-            return 'Unknown Story';
+            console.error('Error fetching story details:', error);
+            setError('Failed to load story details');
         }
     };
 
     const fetchQuestions = async () => {
         try {
-            const response = await axios.get('http://localhost:8080/api/question-bank');
-            const questionsData = response.data;
-            setQuestions(questionsData);
-            
-            // Fetch story names for all questions
-            const storyNamesMap = {};
-            for (const question of questionsData) {
-                const storyName = await fetchStoryName(question.storyId, question.storyType);
-                storyNamesMap[`${question.storyType}-${question.storyId}`] = storyName;
-            }
-            setStoryNames(storyNamesMap);
-            
+            const response = await axios.get(`http://localhost:8080/api/question-bank/story/${storyId}`);
+            setQuestions(response.data);
             setLoading(false);
             setError('');
         } catch (error) {
@@ -160,7 +149,9 @@ const QuestionBank = () => {
         try {
             const requestData = {
                 ...formData,
-                options: JSON.stringify(formData.options)
+                options: JSON.stringify(formData.options),
+                storyId: storyId,
+                storyType: storyType
             };
 
             if (selectedQuestion) {
@@ -220,16 +211,6 @@ const QuestionBank = () => {
         setIsCorrect(false);
     };
 
-    const handleAddQuestion = (storyId, storyType) => {
-        navigate(`/admin/story-questions/${storyId}/${storyType}`);
-    };
-
-    // Filter questions based on search query
-    const filteredQuestions = questions.filter(question =>
-        question.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        question.questionText.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -255,8 +236,21 @@ const QuestionBank = () => {
                     >
                         <ArrowBackIcon />
                     </IconButton>
-                    <Typography variant="h4">Question Bank</Typography>
+                    <Box>
+                        <Typography variant="h4">Story Questions</Typography>
+                        <Typography variant="subtitle1" color="text.secondary">
+                            {storyTitle}
+                        </Typography>
+                    </Box>
                 </Box>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<AddIcon />}
+                    onClick={() => handleOpenDialog()}
+                >
+                    Add Question
+                </Button>
             </Box>
 
             {error && (
@@ -264,22 +258,6 @@ const QuestionBank = () => {
                     {error}
                 </Alert>
             )}
-
-            <TextField
-                fullWidth
-                variant="outlined"
-                placeholder="Search questions..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                sx={{ mb: 3 }}
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <SearchIcon />
-                        </InputAdornment>
-                    ),
-                }}
-            />
 
             <Paper sx={{ width: '100%', bgcolor: 'background.paper' }}>
                 <Box sx={{ 
@@ -291,10 +269,10 @@ const QuestionBank = () => {
                     alignItems: 'center'
                 }}>
                     <Typography variant="h6">Questions List</Typography>
-                    <Typography variant="subtitle1">Total Questions: {filteredQuestions.length}</Typography>
+                    <Typography variant="subtitle1">Total Questions: {questions.length}</Typography>
                 </Box>
                 <List>
-                    {filteredQuestions.map((question) => (
+                    {questions.map((question) => (
                         <ListItem
                             key={question.questionId}
                             sx={{
@@ -318,24 +296,10 @@ const QuestionBank = () => {
                                 width: '100%',
                                 mb: 1
                             }}>
+                                <Typography variant="h6" color="primary">
+                                    {question.title}
+                                </Typography>
                                 <Box>
-                                    <Typography variant="h6" color="primary">
-                                        {question.title}
-                                    </Typography>
-                                    <Typography variant="subtitle2" color="textSecondary">
-                                        Story: {storyNames[`${question.storyType}-${question.storyId}`] || 'Loading...'} 
-                                        ({question.storyType === 'COMMON' ? 'Common Story' : 'Class Story'})
-                                    </Typography>
-                                </Box>
-                                <Box>
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => handleAddQuestion(question.storyId, question.storyType)}
-                                        sx={{ mr: 1 }}
-                                        color="primary"
-                                    >
-                                        <AddIcon />
-                                    </IconButton>
                                     <IconButton
                                         size="small"
                                         onClick={() => handlePreviewQuestion(question)}
@@ -400,6 +364,7 @@ const QuestionBank = () => {
                 </List>
             </Paper>
 
+            {/* Add/Edit Question Dialog */}
             <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
                 <DialogTitle>
                     {selectedQuestion ? 'Edit Question' : 'Add New Question'}
@@ -469,9 +434,6 @@ const QuestionBank = () => {
                         <DialogTitle>
                             <Typography variant="h5" component="div">
                                 {selectedQuestionForPreview.title}
-                            </Typography>
-                            <Typography variant="subtitle1" color="text.secondary">
-                                Story: {storyNames[`${selectedQuestionForPreview.storyType}-${selectedQuestionForPreview.storyId}`] || 'Loading...'}
                             </Typography>
                         </DialogTitle>
                         <DialogContent>
@@ -599,4 +561,4 @@ const QuestionBank = () => {
     );
 };
 
-export default QuestionBank; 
+export default StoryQuestions; 

@@ -3,6 +3,7 @@ package edu.cit.filiup.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "question_bank")
@@ -30,18 +31,20 @@ public class QuestionBankEntity {
     private Boolean isActive = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
+    @JoinColumn(name = "created_by", nullable = true)
     @JsonIgnore
     private UserEntity createdBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "story_id", nullable = false)
-    @JsonIgnore
-    private StoryEntity story;
+    @Column(name = "story_id", nullable = false)
+    private Long storyId;
+
+    @Column(name = "story_type", length = 20, nullable = false)
+    private String storyType; // "COMMON" or "CLASS"
 
     // Constructors
     public QuestionBankEntity() {
         this.createdAt = LocalDateTime.now();
+        this.isActive = true;
     }
 
     public QuestionBankEntity(String title, String questionText, String options, String correctAnswer) {
@@ -117,11 +120,19 @@ public class QuestionBankEntity {
         this.createdBy = createdBy;
     }
 
-    public StoryEntity getStory() {
-        return story;
+    public Long getStoryId() {
+        return storyId;
     }
 
-    public void setStory(StoryEntity story) {
-        this.story = story;
+    public void setStoryId(Long storyId) {
+        this.storyId = storyId;
+    }
+
+    public String getStoryType() {
+        return storyType;
+    }
+
+    public void setStoryType(String storyType) {
+        this.storyType = storyType;
     }
 } 
