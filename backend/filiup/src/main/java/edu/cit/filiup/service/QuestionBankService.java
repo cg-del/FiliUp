@@ -35,20 +35,19 @@ public class QuestionBankService {
     @Transactional
     public QuestionBankEntity createQuestion(QuestionBankEntity question) {
         try {
-            // Check if the story exists in common_stories
-            Optional<CommonStoryEntity> commonStory = commonStoryRepository.findById(question.getStoryId());
-            if (commonStory.isPresent()) {
-                question.setStoryType("COMMON");
+            // Validate story existence based on type
+            if (question.getStoryType() == QuestionBankEntity.StoryType.COMMON) {
+                CommonStoryEntity commonStory = commonStoryRepository.findById(question.getStoryId())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                        String.format("Common story not found with ID: %d", question.getStoryId())
+                    ));
+            } else if (question.getStoryType() == QuestionBankEntity.StoryType.CLASS) {
+                StoryEntity story = storyRepository.findById(question.getStoryId())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                        String.format("Class story not found with ID: %d", question.getStoryId())
+                    ));
             } else {
-                // Check if the story exists in stories
-                Optional<StoryEntity> story = storyRepository.findById(question.getStoryId());
-                if (story.isPresent()) {
-                    question.setStoryType("CLASS");
-                } else {
-                    throw new EntityNotFoundException(
-                        String.format("Story not found with ID: %d", question.getStoryId())
-                    );
-                }
+                throw new IllegalArgumentException("Invalid story type");
             }
 
             // Get the default admin user (ID 1) or handle null case
@@ -84,13 +83,19 @@ public class QuestionBankService {
     @Transactional(readOnly = true)
     public List<QuestionBankEntity> getQuestionsByStory(Long storyId) {
         // First try to find questions for common stories
-        List<QuestionBankEntity> commonQuestions = questionBankRepository.findByStoryIdAndStoryTypeAndIsActiveTrue(storyId, "COMMON");
+        List<QuestionBankEntity> commonQuestions = questionBankRepository.findByStoryIdAndStoryTypeAndIsActiveTrue(
+            storyId, 
+            QuestionBankEntity.StoryType.COMMON
+        );
         if (!commonQuestions.isEmpty()) {
             return commonQuestions;
         }
         
         // If no common story questions found, try class story questions
-        return questionBankRepository.findByStoryIdAndStoryTypeAndIsActiveTrue(storyId, "CLASS");
+        return questionBankRepository.findByStoryIdAndStoryTypeAndIsActiveTrue(
+            storyId, 
+            QuestionBankEntity.StoryType.CLASS
+        );
     }
 
     @Transactional(readOnly = true)

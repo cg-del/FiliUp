@@ -10,5 +10,5 @@ public interface QuestionBankRepository extends JpaRepository<QuestionBankEntity
     List<QuestionBankEntity> findByIsActiveTrue();
     List<QuestionBankEntity> findByCreatedByUserIdAndIsActiveTrue(Integer userId);
     List<QuestionBankEntity> findByStoryIdAndIsActiveTrue(Long storyId);
-    List<QuestionBankEntity> findByStoryIdAndStoryTypeAndIsActiveTrue(Long storyId, String storyType);
+    List<QuestionBankEntity> findByStoryIdAndStoryTypeAndIsActiveTrue(Long storyId, QuestionBankEntity.StoryType storyType);
 } 

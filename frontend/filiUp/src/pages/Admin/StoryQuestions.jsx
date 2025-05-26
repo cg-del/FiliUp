@@ -147,33 +147,39 @@ const StoryQuestions = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const requestData = {
-                ...formData,
+            const questionData = {
+                title: formData.title,
+                questionText: formData.questionText,
                 options: JSON.stringify(formData.options),
-                storyId: storyId,
-                storyType: storyType
+                correctAnswer: formData.correctAnswer,
+                storyId: parseInt(storyId),
+                storyType: storyType.toUpperCase()
             };
 
-            if (selectedQuestion) {
-                await axios.put(
-                    `http://localhost:8080/api/question-bank/${selectedQuestion.questionId}`,
-                    requestData
-                );
-            } else {
-                await axios.post(
-                    'http://localhost:8080/api/question-bank',
-                    requestData
-                );
+            const response = await axios.post(
+                'http://localhost:8080/api/question-bank',
+                questionData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.status === 200 || response.status === 201) {
+                setQuestions([...questions, response.data]);
+                handleCloseDialog();
+                setFormData({
+                    title: '',
+                    questionText: '',
+                    options: ['', '', '', ''],
+                    correctAnswer: ''
+                });
             }
-            handleCloseDialog();
-            fetchQuestions();
         } catch (error) {
-            if (error.response?.status === 401) {
-                localStorage.removeItem('accessToken');
-                navigate('/login');
-            } else {
-                setError('Failed to save question. Please try again.');
-            }
+            console.error('Error creating question:', error);
+            setError(error.response?.data?.message || 'Failed to create question');
         }
     };
 

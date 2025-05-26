@@ -39,7 +39,13 @@ public class QuestionBankEntity {
     private Long storyId;
 
     @Column(name = "story_type", length = 20, nullable = false)
-    private String storyType; // "COMMON" or "CLASS"
+    @Enumerated(EnumType.STRING)
+    private StoryType storyType; // "COMMON" or "CLASS"
+
+    public enum StoryType {
+        COMMON,
+        CLASS
+    }
 
     // Constructors
     public QuestionBankEntity() {
@@ -128,11 +134,11 @@ public class QuestionBankEntity {
         this.storyId = storyId;
     }
 
-    public String getStoryType() {
+    public StoryType getStoryType() {
         return storyType;
     }
 
-    public void setStoryType(String storyType) {
+    public void setStoryType(StoryType storyType) {
         this.storyType = storyType;
     }
 } 
