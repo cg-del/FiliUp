@@ -233,17 +233,23 @@ export default function StudentDashboard() {
             <GraduationCap size={22} color={activeItem === 'my-classes' ? "#7BD0A7" : (isDarkMode ? "#d1d5db" : "#6b7280")} />
             <span className="text-black dark:text-white">My Classes</span>
           </div>
-          {/* Collapsible sub-items */}           
+          {/* Display Enrolled Classes */}
           {myClassesOpen && (
             <div className="flex flex-col gap-1 pl-6">
-              <div className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-500">
-                <GraduationCap size={24} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
-                <span className="font-semibold">Mga Pangunahing Salita</span>
-              </div>
-              <div className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-500">
-                <GraduationCap size={18} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
-                <span className="font-semibold">Mga Pangungusap</span>
-              </div>
+              {enrolledClasses.length > 0 ? (
+                enrolledClasses.map((classItem) => (
+                  <div 
+                    key={classItem.classId} 
+                    className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-500"
+                    onClick={() => navigate(`/class/${classItem.classId}/genres`)} // Navigate to genres
+                  >
+                    <GraduationCap size={24} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
+                    <span className="font-semibold">{classItem.className}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-gray-500 dark:text-gray-400">No classes enrolled.</div>
+              )}
             </div>
           )}
           {/* Study Area */}
