@@ -18,6 +18,9 @@ public class EnrollmentEntity {
 
     @Column(name = "class_code", nullable = false)
     private String classCode;
+    
+    @Column(name = "is_accepted", columnDefinition = "boolean default false")
+    private Boolean isAccepted;
 
     @Column(name = "enrollment_date")
     private LocalDateTime enrollmentDate;

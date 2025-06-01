@@ -32,7 +32,7 @@ import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
-import { CircleUserRound, BookOpen, GraduationCap, LogOut, User, Plus, X } from 'lucide-react';
+import { CircleUserRound, BookOpen, GraduationCap, LogOut, User, Plus, X, ClipboardList } from 'lucide-react';
 import logo from '../../assets/logo.svg';
 
 // Add axios base configuration
@@ -276,6 +276,14 @@ export default function TeacherHome() {
             <BookOpen size={20} color={activeItem === 'question-bank' ? (isDarkMode ? "#d1d5db" : "#0891b2") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
             <span className="text-black dark:text-gray-300">Question Bank</span>
           </div>
+          {/* Quiz Bank */}
+          <div
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg font-semibold cursor-pointer transition-colors duration-500 ${activeItem === 'quiz-bank' ? 'bg-white dark:bg-gray-900 text-cyan-600 dark:text-white' : 'text-black dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            onClick={() => handleMenuItemClick('quiz-bank')}
+          >
+            <ClipboardList size={20} color={activeItem === 'quiz-bank' ? (isDarkMode ? "#d1d5db" : "#0891b2") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <span className="text-black dark:text-gray-300">Quiz Bank</span>
+          </div>
         </div>
       </div>
 
@@ -338,25 +346,46 @@ export default function TeacherHome() {
                   <>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 transition-colors duration-500">Active Classes</h3>
-                      <Button
-                        variant="contained"
-                        onClick={() => handleOpenDialog()}
-                        sx={{
-                           bgcolor: '#7BD0A7',
-                          '&:hover': {
-                            bgcolor: '#5bbd8b',
-                          },
-                          borderRadius: '10px',
-                          px: 3,
-                          py: 1.5,
-                          fontSize: '1rem',
-                          color: 'white',
-                          fontWeight: 'bold',
-                          textTransform: 'none',
-                        }}
-                      >
-                        Create Class
-                      </Button>
+                      <div className="flex gap-3">
+                        <Button
+                          variant="contained"
+                          onClick={() => navigate('/teacher/create-quiz')}
+                          sx={{
+                            bgcolor: '#67a3d9',
+                            '&:hover': {
+                              bgcolor: '#4f89c5',
+                            },
+                            borderRadius: '10px',
+                            px: 3,
+                            py: 1.5,
+                            fontSize: '1rem',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            textTransform: 'none',
+                          }}
+                        >
+                          Create Quiz
+                        </Button>
+                        <Button
+                          variant="contained"
+                          onClick={() => handleOpenDialog()}
+                          sx={{
+                             bgcolor: '#7BD0A7',
+                            '&:hover': {
+                              bgcolor: '#5bbd8b',
+                            },
+                            borderRadius: '10px',
+                            px: 3,
+                            py: 1.5,
+                            fontSize: '1rem',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            textTransform: 'none',
+                          }}
+                        >
+                          Create Class
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex flex-col gap-6 w-full">
                       {Array.isArray(classes) && classes.map((classObj) => (
@@ -394,25 +423,46 @@ export default function TeacherHome() {
                   <div className="flex flex-col items-center justify-center w-full py-24">
                     <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-4 transition-colors duration-500">No classes yet</h3>
                     <p className="text-gray-500 dark:text-gray-400 mb-6 transition-colors duration-500">You haven't created any classes yet.</p>
-                    <Button
-                      variant="contained"
-                      onClick={() => handleOpenDialog()}
-                      sx={{
-                         bgcolor: '#7BD0A7',
-                        '&:hover': {
-                          bgcolor: '#5bbd8b',
-                        },
-                        borderRadius: '25px',
-                        px: 3,
-                        py: 1.5,
-                        fontSize: '1rem',
-                        color: 'white',
-                        fontWeight: 'medium',
-                        textTransform: 'none',
-                      }}
-                    >
-                      Create Class
-                    </Button>
+                    <div className="flex gap-3">
+                      <Button
+                        variant="contained"
+                        onClick={() => navigate('/teacher/create-quiz')}
+                        sx={{
+                          bgcolor: '#67a3d9',
+                          '&:hover': {
+                            bgcolor: '#4f89c5',
+                          },
+                          borderRadius: '25px',
+                          px: 3,
+                          py: 1.5,
+                          fontSize: '1rem',
+                          color: 'white',
+                          fontWeight: 'medium',
+                          textTransform: 'none',
+                        }}
+                      >
+                        Create Quiz
+                      </Button>
+                      <Button
+                        variant="contained"
+                        onClick={() => handleOpenDialog()}
+                        sx={{
+                           bgcolor: '#7BD0A7',
+                          '&:hover': {
+                            bgcolor: '#5bbd8b',
+                          },
+                          borderRadius: '25px',
+                          px: 3,
+                          py: 1.5,
+                          fontSize: '1rem',
+                          color: 'white',
+                          fontWeight: 'medium',
+                          textTransform: 'none',
+                        }}
+                      >
+                        Create Class
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

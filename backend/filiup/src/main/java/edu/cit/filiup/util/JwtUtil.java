@@ -40,6 +40,26 @@ public class JwtUtil {
             throw new IllegalStateException("JWT Secret Key not initialized");
         }
         
+        // Validate and normalize role
+        if (role == null || role.trim().isEmpty()) {
+            System.err.println("Warning: Null or empty role provided for JWT token. Defaulting to 'STUDENT'");
+            role = "STUDENT";
+        }
+        
+        // Normalize role to uppercase and remove any SCOPE_ prefix if it exists
+        role = role.trim().toUpperCase();
+        if (role.startsWith("SCOPE_")) {
+            role = role.substring(6);
+        }
+        
+        // Ensure role is one of the valid types
+        if (!role.equals("STUDENT") && !role.equals("TEACHER") && !role.equals("ADMIN")) {
+            System.err.println("Warning: Invalid role '" + role + "' provided for JWT token. Defaulting to 'STUDENT'");
+            role = "STUDENT";
+        }
+        
+        System.out.println("Generating JWT tokens for subject: " + subject + ", role: " + role);
+        
         try {
             String jti = UUID.randomUUID().toString();
             Date now = new Date();
@@ -71,6 +91,8 @@ public class JwtUtil {
             Map<String, String> tokens = new HashMap<>();
             tokens.put("accessToken", accessToken);
             tokens.put("refreshToken", refreshToken);
+            
+            System.out.println("JWT tokens generated successfully");
             return tokens;
         } catch (Exception e) {
             System.err.println("Error generating tokens: " + e.getMessage());
@@ -81,6 +103,7 @@ public class JwtUtil {
 
     // Overload for backward compatibility
     public static Map<String, String> generateTokens(String subject) {
+        System.out.println("Warning: generateTokens called without role parameter for subject: " + subject);
         return generateTokens(subject, "STUDENT"); // Default role
     }
 
@@ -100,9 +123,12 @@ public class JwtUtil {
             // Validate token type
             String type = claims.get("type", String.class);
             if (type == null || (!type.equals("access") && !type.equals("refresh"))) {
+                System.out.println("Token validation failed: Invalid token type: " + type);
                 return false;
             }
 
+            System.out.println("Token validated successfully for subject: " + claims.getSubject());
+            System.out.println("Token contains role: " + claims.get("role"));
             return true;
         } catch (ExpiredJwtException e) {
             System.err.println("Token expired: " + e.getMessage());
@@ -150,7 +176,9 @@ public class JwtUtil {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-            return claims.get("role", String.class);
+            String role = claims.get("role", String.class);
+            System.out.println("Extracted role from token: " + role);
+            return role;
         } catch (Exception e) {
             System.err.println("Error extracting role from token: " + e.getMessage());
             return null;
@@ -168,8 +196,13 @@ public class JwtUtil {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-            return claims.getExpiration().before(new Date());
+            boolean expired = claims.getExpiration().before(new Date());
+            if (expired) {
+                System.out.println("Token has expired");
+            }
+            return expired;
         } catch (Exception e) {
+            System.err.println("Error checking token expiration: " + e.getMessage());
             return true;
         }
     }

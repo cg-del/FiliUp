@@ -30,6 +30,9 @@ public class DataSeeder {
     private QuestionBankRepository questionBankRepository;
 
     @Autowired
+    private StudentProfileRepository studentProfileRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Bean
@@ -84,6 +87,31 @@ public class DataSeeder {
             // Save students
             student1 = userRepository.save(student1);
             student2 = userRepository.save(student2);
+
+            // Create student profiles
+            StudentProfileEntity profile1 = new StudentProfileEntity();
+            profile1.setUser(student1);
+            profile1.setParentsEmail("parent1@example.com");
+            profile1.setSection("Section A");
+            profile1.setBadges("Quick Reader,Story Master");
+            profile1.setAverageScore(85.5);
+            profile1.setNumberOfQuizTakes(10);
+            profile1.setIsAccepted(true);
+            profile1.setEmailVerified(true);
+
+            StudentProfileEntity profile2 = new StudentProfileEntity();
+            profile2.setUser(student2);
+            profile2.setParentsEmail("parent2@example.com");
+            profile2.setSection("Section B");
+            profile2.setBadges("Fast Learner,Quiz Champion");
+            profile2.setAverageScore(92.0);
+            profile2.setNumberOfQuizTakes(15);
+            profile2.setIsAccepted(true);
+            profile2.setEmailVerified(true);
+
+            // Save student profiles
+            studentProfileRepository.save(profile1);
+            studentProfileRepository.save(profile2);
 
             // Create classes
             ClassEntity class1 = new ClassEntity("English Literature", teacher1);

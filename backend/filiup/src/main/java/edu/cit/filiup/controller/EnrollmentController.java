@@ -1,116 +1,104 @@
 package edu.cit.filiup.controller;
 
-import edu.cit.filiup.entity.EnrollmentEntity;
+import edu.cit.filiup.dto.EnrollmentResponseDTO;
 import edu.cit.filiup.entity.UserEntity;
+import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.service.EnrollmentService;
-import edu.cit.filiup.service.UserService;
+import edu.cit.filiup.util.RequireRole;
+import edu.cit.filiup.util.ResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
-import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/enrollments")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"}, allowCredentials = "true")
 public class EnrollmentController {
 
-    @Autowired
-    private EnrollmentService enrollmentService;
+    private final EnrollmentService enrollmentService;
+    private final UserRepository userRepository;
+    
+
+
     
     @Autowired
-    private UserService userService;
+    public EnrollmentController(EnrollmentService enrollmentService, UserRepository userRepository) {
+        this.enrollmentService = enrollmentService;
+        this.userRepository = userRepository;
+    }
 
-    /**
-     * Enrolls the authenticated user in a class using the class code
-     *
-     * @param requestBody containing classCode
-     * @return ResponseEntity with the created enrollment entity or error message
-     */
     @PostMapping("/enroll")
-    public ResponseEntity<Map<String, Object>> enrollStudent(@RequestBody Map<String, Object> requestBody) {
-        Map<String, Object> response = new HashMap<>();
-        
-        // Get the authenticated user
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userEmail = authentication.getName();
-        UserEntity user = userService.getUserByEmail(userEmail);
-        
-        if (user == null) {
-            response.put("error", "User not authenticated");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-        
-        // Extract class code from request body
-        String classCode = null;
-        if (requestBody.containsKey("classCode") && requestBody.get("classCode") != null) {
-            classCode = requestBody.get("classCode").toString();
-        }
-        
-        // Validate required parameters
-        if (classCode == null || classCode.trim().isEmpty()) {
-            response.put("error", "Class code is required");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
+    @RequireRole("STUDENT")
+    public ResponseEntity<?> enrollStudent(
+            @RequestBody Map<String, String> payload,
+            JwtAuthenticationToken token) {
         try {
-            EnrollmentEntity enrollment = enrollmentService.enrollStudent(user.getUserId(), classCode);
-            response.put("message", "Successfully enrolled");
-            response.put("enrollment", enrollment);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
-            response.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-    }
-
-    /**
-     * Gets all enrollments for the authenticated user
-     *
-     * @return ResponseEntity with list of enrollments
-     */
-    @GetMapping("/user")
-    public ResponseEntity<?> getEnrollmentsByUser() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String userEmail = authentication.getName();
-            UserEntity user = userService.getUserByEmail(userEmail);
-            
-            if (user == null) {
-                Map<String, Object> errorResponse = new HashMap<>();
-                errorResponse.put("error", "User not authenticated");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            String classCode = payload.get("classCode");
+            if (classCode == null || classCode.trim().isEmpty()) {
+                return ResponseUtil.badRequest("Class code is required");
             }
+
+            // Extract email from JWT token
+            String userEmail = token.getToken().getSubject();
             
-            List<EnrollmentEntity> enrollments = enrollmentService.getEnrollmentsByStudent(user.getUserId());
-            return ResponseEntity.ok(enrollments);
-        } catch (RuntimeException e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            // Get user by email
+            UserEntity user = userRepository.findByUserEmail(userEmail);
+            if (user == null) {
+                throw new IllegalStateException("User not found");
+            }
+
+            enrollmentService.enrollStudent(user.getUserId(), classCode);
+            return ResponseUtil.success("Successfully enrolled in class");
+        } catch (IllegalStateException e) {
+            return ResponseUtil.badRequest(e.getMessage());
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to enroll: " + e.getMessage());
         }
     }
 
-    /**
-     * Gets all enrollments for a class
-     *
-     * @param classCode the code of the class
-     * @return ResponseEntity with list of enrollments
-     */
     @GetMapping("/class/{classCode}")
-    public ResponseEntity<?> getEnrollmentsByClass(@PathVariable String classCode) {
+    @RequireRole("TEACHER")
+    public ResponseEntity<?> getEnrollmentsByClassCode(@PathVariable String classCode) {
         try {
-            List<EnrollmentEntity> enrollments = enrollmentService.getEnrollmentsByClass(classCode);
-            return ResponseEntity.ok(enrollments);
-        } catch (RuntimeException e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            List<EnrollmentResponseDTO> enrollments = enrollmentService.getEnrollmentsByClassCode(classCode);
+            return ResponseUtil.success("Enrollments retrieved successfully", enrollments);
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to retrieve enrollments: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/accept/{classCode}/{studentId}")
+    @RequireRole("TEACHER")
+    public ResponseEntity<?> acceptStudent(
+            @PathVariable UUID studentId,
+            @PathVariable String classCode) {
+        try {
+            enrollmentService.acceptStudent(studentId, classCode);
+            return ResponseUtil.success("Student accepted successfully");
+        } catch (IllegalStateException e) {
+            return ResponseUtil.badRequest(e.getMessage());
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to accept student: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/accept-multiple")
+    @RequireRole("TEACHER")
+    public ResponseEntity<?> acceptMultipleStudents(
+            @RequestParam String classCode,
+            @RequestBody List<UUID> studentIds) {
+        try {
+            enrollmentService.acceptMultipleStudents(studentIds, classCode);
+            return ResponseUtil.success("Students accepted successfully");
+        } catch (IllegalStateException e) {
+            return ResponseUtil.badRequest(e.getMessage());
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to accept students: " + e.getMessage());
         }
     }
 }

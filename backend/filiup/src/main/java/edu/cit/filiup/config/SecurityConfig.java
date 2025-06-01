@@ -11,6 +11,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -19,6 +21,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import javax.crypto.SecretKey;
 import io.jsonwebtoken.security.Keys;
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
@@ -32,6 +35,20 @@ public class SecurityConfig {
     public JwtDecoder jwtDecoder() {
         SecretKey key = Keys.hmacShaKeyFor(secretKeyString.getBytes());
         return NimbusJwtDecoder.withSecretKey(key).build();
+    }
+    
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        // Set the claim name to "role" (default is "scope" or "scp")
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("role");
+        // Remove prefix (default is "SCOPE_")
+        grantedAuthoritiesConverter.setAuthorityPrefix("");
+        
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+        
+        return jwtAuthenticationConverter;
     }
     
     @Bean
@@ -59,7 +76,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/user/getAllUser",
                     "/api/user/deleteUser/**"
-                ).hasAuthority("SCOPE_ADMIN")
+                ).hasAuthority("ADMIN")
                 // Teacher endpoints
                 .requestMatchers(
                     "/api/class/create",
@@ -71,13 +88,14 @@ public class SecurityConfig {
                     "/api/question-bank/create",
                     "/api/question-bank/update/**",
                     "/api/question-bank/delete/**"
-                ).hasAnyAuthority("SCOPE_TEACHER", "SCOPE_ADMIN")
+                ).hasAnyAuthority("TEACHER", "ADMIN")
                 // Authenticated endpoints
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt
                     .decoder(jwtDecoder())
+                    .jwtAuthenticationConverter(jwtAuthenticationConverter())
                 )
             );
         return http.build();

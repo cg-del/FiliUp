@@ -19,9 +19,8 @@ public class CommonStoryEntity {
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    @Column(name = "cover_picture", columnDefinition = "LONGBLOB")
-    @Lob
-    private byte[] coverPicture;
+    @Column(name = "cover_picture_url")
+    private String coverPictureUrl;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -69,12 +68,12 @@ public class CommonStoryEntity {
         this.content = content;
     }
 
-    public byte[] getCoverPicture() {
-        return coverPicture;
+    public String getCoverPictureUrl() {
+        return coverPictureUrl;
     }
 
-    public void setCoverPicture(byte[] coverPicture) {
-        this.coverPicture = coverPicture;
+    public void setCoverPictureUrl(String coverPictureUrl) {
+        this.coverPictureUrl = coverPictureUrl;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Map;
@@ -102,7 +103,8 @@ public class ClassController {
                 return ResponseUtil.forbidden("Only students can access this endpoint");
             }
             
-            List<ClassEntity> classes = classService.getClassesByStudent(user.getUserId());
+            // Get only accepted classes
+            List<ClassEntity> classes = classService.getAcceptedClassesByStudent(user.getUserId());
             return ResponseUtil.success("Classes retrieved successfully", classes);
         } catch (Exception e) {
             return ResponseUtil.serverError("Failed to retrieve classes: " + e.getMessage());
@@ -195,6 +197,37 @@ public class ClassController {
             return ResponseUtil.success("Teacher information retrieved successfully", teacherInfo);
         } catch (Exception e) {
             return ResponseUtil.notFound("Teacher for class ID " + classId + " not found: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{classCode}/enrollments/{studentId}/accept")
+    @RequireRole("TEACHER")
+    public ResponseEntity<?> acceptEnrollment(
+            @PathVariable String classCode,
+            @PathVariable UUID studentId) {
+        try {
+            // Get the authenticated teacher
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String userEmail = authentication.getName();
+            UserEntity teacher = userService.getUserByEmail(userEmail);
+            
+            if (teacher == null) {
+                return ResponseUtil.unauthorized("User not authenticated");
+            }
+            
+            // Verify the user is a teacher
+            if (!"TEACHER".equals(teacher.getUserRole())) {
+                return ResponseUtil.forbidden("Only teachers can accept enrollments");
+            }
+            
+            classService.acceptEnrollment(classCode, studentId, teacher.getUserId());
+            return ResponseUtil.success("Enrollment accepted successfully");
+        } catch (AccessDeniedException e) {
+            return ResponseUtil.forbidden(e.getMessage());
+        } catch (EntityNotFoundException e) {
+            return ResponseUtil.notFound(e.getMessage());
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to accept enrollment: " + e.getMessage());
         }
     }
 }

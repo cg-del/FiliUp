@@ -10,11 +10,31 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ClassRecord from './ClassRecord';
 import CommonStories from './CommonStories';
+import GenreStories from './GenreStories';
 import Stories from './Stories';
 import StoryView from './StoryView';
 import logo from '../../assets/logo.svg';
 import { useUser } from '../../context/UserContext';
-import { LogOut, User, GraduationCap, BookOpen, X, ChevronLeft, ChevronDown, Copy, UserPlus, ClipboardList, Users, BarChart2, AlertCircle, CheckCircle, Plus, Upload } from 'lucide-react';
+import { LogOut, User, GraduationCap, BookOpen, X, ChevronLeft, ChevronDown, Copy, UserPlus, ClipboardList, Users, BarChart2, AlertCircle, CheckCircle, Plus, Upload, UserCheck, Award } from 'lucide-react';
+
+// Genre options with colors for consistent styling
+const GENRE_OPTIONS = [
+  { value: 'MAIKLING_KWENTO', label: 'Maikling Kwento', color: '#e74c3c' },
+  { value: 'TULA', label: 'Tula', color: '#e91e63' },
+  { value: 'DULA', label: 'Dula', color: '#9c27b0' },
+  { value: 'NOBELA', label: 'Nobela', color: '#3f51b5' },
+  { value: 'SANAYSAY', label: 'Sanaysay', color: '#2196f3' },
+  { value: 'AWIT', label: 'Awit', color: '#00bcd4' },
+  { value: 'KORIDO', label: 'Korido', color: '#009688' },
+  { value: 'EPIKO', label: 'Epiko', color: '#4caf50' },
+  { value: 'BUGTONG', label: 'Bugtong', color: '#8bc34a' },
+  { value: 'SALAWIKAIN', label: 'Salawikain', color: '#cddc39' },
+  { value: 'TALUMPATI', label: 'Talumpati', color: '#ffc107' },
+  { value: 'MITOLOHIYA', label: 'Mitolohiya', color: '#ff9800' },
+  { value: 'ALAMAT', label: 'Alamat', color: '#ff5722' },
+  { value: 'PARABULA', label: 'Parabula', color: '#795548' },
+  { value: 'PABULA', label: 'Pabula', color: '#607d8b' }
+];
 
 export default function ClassLessons() {
   const theme = useTheme();
@@ -546,20 +566,23 @@ export default function ClassLessons() {
             </div>
 
             {/* Main content tabs */}
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-2 mb-6 border-b border-gray-200">
               <Button
                 onClick={() => setActiveMainContentTab('dashboard')}
                 sx={{
-                  px: 3,
+                  px: 4,
                   py: 1.5,
-                  borderRadius: 3,
-                  bgcolor: activeMainContentTab === 'dashboard' ? '#0891b2' : 'transparent',
-                  color: activeMainContentTab === 'dashboard' ? 'white' : '#0891b2',
+                  borderRadius: 0,
+                  borderBottom: activeMainContentTab === 'dashboard' ? 2 : 0,
                   borderColor: '#0891b2',
+                  color: activeMainContentTab === 'dashboard' ? '#0891b2' : 'text.secondary',
                   '&:hover': {
-                    bgcolor: activeMainContentTab === 'dashboard' ? '#0e7490' : alpha('#0891b2', 0.1),
+                    bgcolor: 'transparent',
+                    color: '#0891b2'
                   },
-                  border: activeMainContentTab !== 'dashboard' ? 1 : 0,
+                  fontWeight: activeMainContentTab === 'dashboard' ? 600 : 400,
+                  textTransform: 'uppercase',
+                  fontSize: '0.85rem',
                 }}
               >
                 Dashboard
@@ -567,16 +590,19 @@ export default function ClassLessons() {
               <Button
                 onClick={() => setActiveMainContentTab('genre')}
                 sx={{
-                  px: 3,
+                  px: 4,
                   py: 1.5,
-                  borderRadius: 3,
-                  bgcolor: activeMainContentTab === 'genre' ? '#0891b2' : 'transparent',
-                  color: activeMainContentTab === 'genre' ? 'white' : '#0891b2',
+                  borderRadius: 0,
+                  borderBottom: activeMainContentTab === 'genre' ? 2 : 0,
                   borderColor: '#0891b2',
+                  color: activeMainContentTab === 'genre' ? '#0891b2' : 'text.secondary',
                   '&:hover': {
-                    bgcolor: activeMainContentTab === 'genre' ? '#0e7490' : alpha('#0891b2', 0.1),
+                    bgcolor: 'transparent',
+                    color: '#0891b2'
                   },
-                  border: activeMainContentTab !== 'genre' ? 1 : 0,
+                  fontWeight: activeMainContentTab === 'genre' ? 600 : 400,
+                  textTransform: 'uppercase',
+                  fontSize: '0.85rem',
                 }}
               >
                 Genres
@@ -661,6 +687,7 @@ export default function ClassLessons() {
                         <Button
                           variant="outlined"
                           startIcon={<Plus size={16} />}
+                          onClick={() => navigate('/teacher/create-quiz')}
                           sx={{ 
                             mt: 'auto', 
                             alignSelf: 'flex-start',
@@ -725,469 +752,15 @@ export default function ClassLessons() {
             {/* Genres Tab Content */}
             {activeMainContentTab === 'genre' && (
               <Box sx={{ mb: 4 }}>
-                <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3, px: 1 }} className="text-gray-800 dark:text-white">
-                  Filipino Literary Genres
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Tula</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Dula</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Maikling Kwento</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Nobela</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Sanaysay</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Awit</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Korido</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Epiko</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Bugtong</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Salawikain</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Talumpati</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Mitolohiya</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Alamat</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Parabula</Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'cyan.100',
-                      cursor: 'pointer',
-                      minWidth: 'calc(25% - 18px)',
-                      minHeight: 200,
-                      transition: 'box-shadow 0.2s',
-                      '&:hover': { 
-                        boxShadow: 6,
-                        bgcolor: '#FFF9C4'
-                      },
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'black' }}>Pabula</Typography>
-                  </Paper>
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="h5" fontWeight="bold" gutterBottom className="text-gray-800 dark:text-white">
+                    Filipino Literary Genres
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Browse Stories by Genre
+                  </Typography>
                 </Box>
-
-                <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3, px: 1 }} className="text-gray-800 dark:text-white">
-                  Quick Actions
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 3, mb: 4 }}>
-                  <Paper
-                    onClick={handleAddStudentDialogOpen}
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'white',
-                      cursor: 'pointer',
-                      minWidth: 220,
-                      minHeight: 180,
-                      transition: 'box-shadow 0.2s, background-color 0.3s',
-                      '&:hover': { 
-                        boxShadow: 6, 
-                        bgcolor: isDarkMode ? theme.palette.grey[600] : alpha(theme.palette.grey[300], 0.2) 
-                      },
-                    }}
-                  >
-                    <UserPlus size={40} className="mb-4 text-cyan-600" />
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      Add Students
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Invite students to join this class
-                    </Typography>
-                  </Paper>
-                  <Paper
-                    onClick={() => setActiveTab('stories')}
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'white',
-                      cursor: 'pointer',
-                      minWidth: 220,
-                      minHeight: 180,
-                      transition: 'box-shadow 0.2s, background-color 0.3s',
-                      '&:hover': { 
-                        boxShadow: 6, 
-                        bgcolor: isDarkMode ? theme.palette.grey[600] : alpha(theme.palette.grey[300], 0.2) 
-                      },
-                    }}
-                  >
-                    <BookOpen size={40} className="mb-4 text-cyan-600" />
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      Browse Stories ({stories.length})
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Explore Filipino literary works
-                    </Typography>
-                  </Paper>
-                  <Paper
-                    sx={{
-                      p: 3,
-                      textAlign: 'center',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 2,
-                      boxShadow: 2,
-                      bgcolor: isDarkMode ? theme.palette.grey[700] : 'white',
-                      cursor: 'pointer',
-                      minWidth: 220,
-                      minHeight: 180,
-                      transition: 'box-shadow 0.2s, background-color 0.3s',
-                      '&:hover': { 
-                        boxShadow: 6, 
-                        bgcolor: isDarkMode ? theme.palette.grey[600] : alpha(theme.palette.grey[300], 0.2) 
-                      },
-                    }}
-                  >
-                    <ClipboardList size={40} className="mb-4 text-cyan-600" />
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      Create Quiz
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Create assessments for your class
-                    </Typography>
-                  </Paper>
-                </Box>
+                <GenreStories classId={classId} onViewStory={handleViewStory} />
               </Box>
             )}
 
@@ -1195,9 +768,14 @@ export default function ClassLessons() {
             {activeTab === 'stories' && (
               <Box sx={{ mt: 4 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                  <Typography variant="h5" fontWeight="bold" className="text-gray-800 dark:text-white">
-                    Class Stories
-                  </Typography>
+                  <Box>
+                    <Typography variant="h5" fontWeight="bold" className="text-gray-800 dark:text-white">
+                      Class Stories
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Recent stories from your class
+                    </Typography>
+                  </Box>
                   {user?.userRole === 'TEACHER' && (
                     <Button
                       variant="contained"
@@ -1209,109 +787,171 @@ export default function ClassLessons() {
                           bgcolor: '#0e7490',
                         },
                         color: 'white',
+                        borderRadius: '2rem',
+                        textTransform: 'none',
+                        px: 3,
                       }}
                     >
                       Create Story
                     </Button>
                   )}
                 </Box>
-                <Grid container spacing={3}>
-                  {stories.map((story) => (
-                    <Grid item xs={12} md={6} key={story.storyId}>
-                      <Paper
-                        sx={{
-                          p: 3,
-                          height: '100%',
-                          borderRadius: 2,
-                          boxShadow: 2,
-                          bgcolor: isDarkMode ? theme.palette.grey[800] : 'white',
-                          transition: 'transform 0.2s, box-shadow 0.2s',
-                          '&:hover': {
-                            transform: 'translateY(-4px)',
-                            boxShadow: 6,
-                          },
-                        }}
-                      >
-                        <Box sx={{ mb: 2 }}>
-                          <Typography variant="h6" fontWeight="bold" gutterBottom>
-                            {story.title}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                            Genre: {story.genre}
-                          </Typography>
-                          <Typography
-                            variant="body1"
+                
+                {stories.length > 0 ? (
+                  <Grid container spacing={2}>
+                    {stories.map((story) => {
+                      const genreOption = GENRE_OPTIONS.find(g => g.value === story.genre);
+                      const genreColor = genreOption ? genreOption.color : '#0891b2';
+                      const genreLabel = genreOption ? genreOption.label : story.genre;
+                      
+                      return (
+                        <Grid item xs={12} md={6} key={story.storyId}>
+                          <Paper
+                            elevation={1}
                             sx={{
-                              mb: 2,
-                              display: '-webkit-box',
-                              WebkitLineClamp: 3,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
+                              p: 3,
+                              borderRadius: 1,
+                              transition: 'transform 0.1s, box-shadow 0.1s',
+                              '&:hover': {
+                                boxShadow: 3,
+                                bgcolor: '#fafafa'
+                              },
                             }}
                           >
-                            {story.content}
-                          </Typography>
-                        </Box>
-
-                        {/* Questions Section */}
-                        <Box>
-                          <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
-                            Questions ({story.questions?.length || 0})
-                          </Typography>
-                          <Box sx={{ maxHeight: 200, overflowY: 'auto', pr: 2 }}>
-                            {story.questions?.map((question, index) => (
-                              <Paper
-                                key={question.questionId}
-                                sx={{
-                                  p: 2,
-                                  mb: 1,
-                                  bgcolor: isDarkMode ? theme.palette.grey[700] : theme.palette.grey[50],
+                            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                              <Box 
+                                sx={{ 
+                                  width: 48, 
+                                  height: 48, 
+                                  borderRadius: 1,
+                                  bgcolor: genreColor,
+                                  color: 'white',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '1.5rem',
+                                  fontWeight: 'bold'
                                 }}
                               >
-                                <Typography variant="subtitle2" fontWeight="bold">
-                                  {index + 1}. {question.title}
+                                {genreLabel.charAt(0)}
+                              </Box>
+                              <Box>
+                                <Typography variant="h6" fontWeight="500">
+                                  {story.title}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {question.questionText}
-                                </Typography>
-                              </Paper>
-                            ))}
-                          </Box>
-                        </Box>
+                                <Box 
+                                  sx={{ 
+                                    display: 'inline-block',
+                                    bgcolor: genreColor,
+                                    color: 'white',
+                                    py: 0.5,
+                                    px: 1,
+                                    borderRadius: 0.5,
+                                    fontSize: '0.75rem',
+                                    mt: 0.5
+                                  }}
+                                >
+                                  {genreLabel}
+                                </Box>
+                              </Box>
+                            </Box>
+                            
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{
+                                mb: 2,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                              }}
+                            >
+                              {story.content}
+                            </Typography>
 
-                        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Button
-                            variant="outlined"
-                            onClick={() => handleViewStory(story)}
-                            sx={{
-                              borderColor: '#0891b2',
-                              color: '#0891b2',
-                              '&:hover': {
-                                borderColor: '#0e7490',
-                                bgcolor: 'rgba(8, 145, 178, 0.04)',
-                              }
-                            }}
-                          >
-                            Read Story
-                          </Button>
-                          <Button
-                            variant="contained"
-                            sx={{
-                              bgcolor: '#0891b2',
-                              '&:hover': {
-                                bgcolor: '#0e7490',
-                              },
-                              color: 'white',
-                            }}
-                          >
-                            Take Quiz
-                          </Button>
-                        </Box>
-                      </Paper>
-                    </Grid>
-                  ))}
-                </Grid>
+                            {story.questions && story.questions.length > 0 && (
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" fontWeight="500" sx={{ mb: 1 }}>
+                                  {story.questions.length} Questions Available
+                                </Typography>
+                              </Box>
+                            )}
+
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                              <Button
+                                variant="outlined"
+                                onClick={() => handleViewStory(story)}
+                                sx={{
+                                  borderColor: '#0891b2',
+                                  color: '#0891b2',
+                                  '&:hover': {
+                                    borderColor: '#0e7490',
+                                    bgcolor: 'rgba(8, 145, 178, 0.04)',
+                                  },
+                                  borderRadius: '2rem',
+                                  textTransform: 'none',
+                                }}
+                              >
+                                Read Story
+                              </Button>
+                              {story.questions && story.questions.length > 0 && (
+                                <Button
+                                  variant="contained"
+                                  sx={{
+                                    bgcolor: '#0891b2',
+                                    '&:hover': {
+                                      bgcolor: '#0e7490',
+                                    },
+                                    color: 'white',
+                                    borderRadius: '2rem',
+                                    textTransform: 'none',
+                                  }}
+                                >
+                                  Take Quiz
+                                </Button>
+                              )}
+                            </Box>
+                          </Paper>
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
+                ) : (
+                  <Paper 
+                    elevation={0} 
+                    sx={{ 
+                      p: 4, 
+                      textAlign: 'center',
+                      bgcolor: '#f5f5f5',
+                      borderRadius: 1
+                    }}
+                  >
+                    <Typography variant="body1" color="text.secondary">
+                      No stories have been added to this class yet.
+                    </Typography>
+                    {user?.userRole === 'TEACHER' && (
+                      <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => setCreateStoryDialogOpen(true)}
+                        sx={{
+                          mt: 2,
+                          bgcolor: '#0891b2',
+                          '&:hover': {
+                            bgcolor: '#0e7490',
+                          },
+                          color: 'white',
+                          borderRadius: '2rem',
+                          textTransform: 'none',
+                        }}
+                      >
+                        Create Your First Story
+                      </Button>
+                    )}
+                  </Paper>
+                )}
               </Box>
             )}
           </div>
@@ -1364,159 +1004,222 @@ export default function ClassLessons() {
         </div>
       )}
 
-      {/* Delete Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteClose} PaperProps={{ className: 'dark:bg-gray-800' }}>
-        <DialogTitle className="text-gray-800 dark:text-white">Delete Class</DialogTitle>
-        <DialogContent>
-          <Typography className="text-gray-800 dark:text-white">Are you sure you want to delete this class?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteClose} disabled={isSubmitting} className="text-gray-800 dark:text-white">
-            Cancel
-          </Button>
-          <Button onClick={handleDelete} color="error" variant="contained" disabled={isSubmitting}>
-            {isSubmitting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Story View Dialog */}
+      {/* View Story Dialog */}
       <Dialog
         open={viewStoryDialogOpen}
         onClose={handleCloseStoryView}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            height: '90vh',
-            maxHeight: '90vh',
-            className: 'dark:bg-gray-800'
-          }
-        }}
+        PaperProps={{ sx: { minHeight: '80vh' } }}
       >
         <DialogContent sx={{ p: 0 }}>
-          {selectedStory && (
-            <StoryView
-              story={selectedStory}
-              onAttemptQuiz={() => {
-                handleCloseStoryView();
-              }}
-            />
-          )}
+          <StoryView story={selectedStory} />
         </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseStoryView}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={isSuccessDialogOpen} onClose={handleCloseResultDialog}>
+        <DialogContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <CheckCircle color="success" />
+            <Typography>{dialogMessage}</Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseResultDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Error Dialog */}
+      <Dialog open={isErrorDialogOpen} onClose={handleCloseResultDialog}>
+        <DialogContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <AlertCircle color="error" />
+            <Typography>{dialogMessage}</Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseResultDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Class Dialog */}
+      <Dialog open={editDialogOpen} onClose={handleEditClose}>
+        <DialogTitle>Edit Class</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              name="className"
+              label="Class Name"
+              value={form.className}
+              onChange={handleFormChange}
+              fullWidth
+              required
+            />
+            <TextField
+              name="description"
+              label="Description"
+              value={form.description}
+              onChange={handleFormChange}
+              multiline
+              rows={4}
+              fullWidth
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleEditClose}>Cancel</Button>
+          <Button
+            onClick={handleEditSubmit}
+            variant="contained"
+            disabled={isSubmitting || !form.className}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Class Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleDeleteClose}>
+        <DialogTitle>Delete Class</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this class? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteClose}>Cancel</Button>
+          <Button
+            onClick={handleDelete}
+            variant="contained"
+            color="error"
+            disabled={isSubmitting}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Student Dialog */}
+      <Dialog open={addStudentDialogOpen} onClose={handleAddStudentDialogClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Student to Class</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Enter student email to add them to this class
+            </Typography>
+            <TextField
+              value={studentEmail}
+              onChange={(e) => setStudentEmail(e.target.value)}
+              label="Student Email"
+              fullWidth
+              autoFocus
+            />
+            <TextField
+              value={studentNote}
+              onChange={(e) => setStudentNote(e.target.value)}
+              label="Note (Optional)"
+              placeholder="Add a welcome message or instructions"
+              multiline
+              rows={2}
+              fullWidth
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleAddStudentDialogClose}>Cancel</Button>
+          <Button
+            onClick={handleAddStudent}
+            variant="contained"
+            disabled={addingStudent || !studentEmail}
+          >
+            {addingStudent ? 'Adding...' : 'Add Student'}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Create Story Dialog */}
-      <Dialog 
-        open={createStoryDialogOpen} 
+      <Dialog
+        open={createStoryDialogOpen}
         onClose={() => setCreateStoryDialogOpen(false)}
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>
-          <div className="flex justify-between items-center">
-            <span className="text-xl font-semibold">Create New Story</span>
-            <IconButton onClick={() => setCreateStoryDialogOpen(false)} size="small">
-              <X size={20} />
-            </IconButton>
-          </div>
-        </DialogTitle>
+        <DialogTitle>Create New Story</DialogTitle>
         <DialogContent>
-          <div className="space-y-4 mt-4">
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
             <TextField
-              fullWidth
               label="Title"
               value={newStory.title}
-              onChange={(e) => setNewStory(prev => ({ ...prev, title: e.target.value }))}
+              onChange={(e) => setNewStory({ ...newStory, title: e.target.value })}
+              fullWidth
               required
             />
             <FormControl fullWidth required>
               <InputLabel>Genre</InputLabel>
               <Select
                 value={newStory.genre}
+                onChange={(e) => setNewStory({ ...newStory, genre: e.target.value })}
                 label="Genre"
-                onChange={(e) => setNewStory(prev => ({ ...prev, genre: e.target.value }))}
               >
-                {genreOptions.map((genre) => (
-                  <MenuItem key={genre} value={genre}>
-                    {genre}
+                {GENRE_OPTIONS.map(genre => (
+                  <MenuItem key={genre.value} value={genre.value}>
+                    {genre.label}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
             <TextField
-              fullWidth
               label="Content"
               value={newStory.content}
-              onChange={(e) => setNewStory(prev => ({ ...prev, content: e.target.value }))}
+              onChange={(e) => setNewStory({ ...newStory, content: e.target.value })}
               multiline
-              rows={6}
+              rows={8}
+              fullWidth
               required
             />
-            
-            {/* Add image upload section */}
-            <div className="mt-4">
-              <input
-                accept="image/*"
-                style={{ display: 'none' }}
-                id="cover-image-upload"
-                type="file"
-                onChange={handleImageSelect}
+            <input
+              accept="image/*"
+              type="file"
+              id="upload-story-image"
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="upload-story-image">
+              <Button
+                component="span"
+                variant="outlined"
+                startIcon={<Upload size={16} />}
+                sx={{ alignSelf: 'start' }}
+              >
+                Upload Cover Image
+              </Button>
+            </label>
+            {imagePreview && (
+              <Box
+                component="img"
+                src={imagePreview}
+                alt="Story cover preview"
+                sx={{
+                  width: '100%',
+                  maxHeight: 200,
+                  objectFit: 'contain'
+                }}
               />
-              <label htmlFor="cover-image-upload">
-                <Button
-                  variant="outlined"
-                  component="span"
-                  startIcon={<Upload />}
-                  sx={{
-                    borderColor: '#0891b2',
-                    color: '#0891b2',
-                    '&:hover': {
-                      borderColor: '#0e7490',
-                      bgcolor: 'rgba(8, 145, 178, 0.04)',
-                    }
-                  }}
-                >
-                  Upload Cover Image
-                </Button>
-              </label>
-              
-              {imagePreview && (
-                <div className="mt-2">
-                  <img
-                    src={imagePreview}
-                    alt="Cover preview"
-                    className="max-w-full h-auto max-h-48 rounded-lg"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+            )}
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={() => setCreateStoryDialogOpen(false)}
-            color="inherit"
-          >
-            Cancel
-          </Button>
+          <Button onClick={() => setCreateStoryDialogOpen(false)}>Cancel</Button>
           <Button
             onClick={handleCreateStory}
-            disabled={isCreatingStory || !newStory.title || !newStory.content || !newStory.genre}
             variant="contained"
-            sx={{
-              bgcolor: '#0891b2',
-              '&:hover': {
-                bgcolor: '#0e7490',
-              },
-              color: 'white',
-            }}
+            disabled={isCreatingStory || !newStory.title || !newStory.content || !newStory.genre}
           >
-            {isCreatingStory ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              'Create Story'
-            )}
+            {isCreatingStory ? 'Creating...' : 'Create Story'}
           </Button>
         </DialogActions>
       </Dialog>

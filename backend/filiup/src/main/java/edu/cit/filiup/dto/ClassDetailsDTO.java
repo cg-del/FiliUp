@@ -52,7 +52,7 @@ public class ClassDetailsDTO {
         private String content;
         private String genre;
         private String coverPictureType;
-        private byte[] coverPicture;
+        private String coverPictureUrl;
         private List<QuestionDTO> questions;
 
         // Getters and Setters
@@ -66,8 +66,8 @@ public class ClassDetailsDTO {
         public void setGenre(String genre) { this.genre = genre; }
         public String getCoverPictureType() { return coverPictureType; }
         public void setCoverPictureType(String coverPictureType) { this.coverPictureType = coverPictureType; }
-        public byte[] getCoverPicture() { return coverPicture; }
-        public void setCoverPicture(byte[] coverPicture) { this.coverPicture = coverPicture; }
+        public String getCoverPictureUrl() { return coverPictureUrl; }
+        public void setCoverPictureUrl(String coverPictureUrl) { this.coverPictureUrl = coverPictureUrl; }
         public List<QuestionDTO> getQuestions() { return questions; }
         public void setQuestions(List<QuestionDTO> questions) { this.questions = questions; }
 
@@ -75,10 +75,10 @@ public class ClassDetailsDTO {
             StoryDTO dto = new StoryDTO();
             dto.setStoryId(story.getStoryId());
             dto.setTitle(story.getTitle());
-            dto.setContent(story.getContent());
+            dto.setContent(story.getContent()); 
             dto.setGenre(story.getGenre());
             dto.setCoverPictureType(story.getCoverPictureType());
-            dto.setCoverPicture(story.getCoverPicture());
+            dto.setCoverPictureUrl(story.getCoverPictureUrl());
             return dto;
         }
     }

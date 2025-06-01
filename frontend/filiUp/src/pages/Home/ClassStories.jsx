@@ -72,7 +72,7 @@ export default function ClassStories() {
 
   const fetchStories = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/api/stories/class/${classId}`, {
+      const response = await fetch(`http://localhost:8080/api/story/class/${classId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },

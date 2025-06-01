@@ -16,4 +16,5 @@ public interface ClassRepository extends JpaRepository<ClassEntity, UUID> {
     boolean existsByClassNameAndTeacherUserId(String className, UUID teacherId);
     boolean existsByClassCode(String classCode);
     Optional<ClassEntity> findByClassCode(String classCode);
+    List<ClassEntity> findByClassCodeInAndIsActiveTrue(List<String> classCodes);
 }

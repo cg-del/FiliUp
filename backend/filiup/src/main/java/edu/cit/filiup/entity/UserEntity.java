@@ -25,6 +25,9 @@ public class UserEntity {
     @Column(name = "user_role", length = 20, nullable = false)
     private String userRole; // "STUDENT", "TEACHER", or "ADMIN"
 
+    @Column(name = "user_profile_picture_url")
+    private String userProfilePictureUrl;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -101,6 +104,14 @@ public class UserEntity {
 
     public void setUserRole(String userRole) {
         this.userRole = userRole;
+    }
+
+    public String getUserProfilePictureUrl() {
+        return userProfilePictureUrl;
+    }
+
+    public void setUserProfilePictureUrl(String userProfilePictureUrl) {
+        this.userProfilePictureUrl = userProfilePictureUrl;
     }
 
     public LocalDateTime getCreatedAt() {

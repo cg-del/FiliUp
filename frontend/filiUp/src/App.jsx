@@ -10,13 +10,17 @@ import StoryBank from './pages/Admin/StoryBank'
 import StoryQuestions from './pages/Admin/StoryQuestions'
 import UserManagement from './pages/Admin/UserManagement'
 import ClassLessons from './pages/ClassLessons/ClassLessons'
+import CreateStory from './pages/CreateStory/CreateStory'
+import CreateQuiz from './pages/CreateQuiz/CreateQuiz'
 import ClassGenres from './pages/Home/ClassGenres'
 import ClassStories from './pages/Home/ClassStories'
 import { default as Home, default as StudentDashboard } from './pages/Home/Home'
 import LandingPage from './pages/LandingPage/LandingPage'
+import StudentLeaderboard from './pages/Leaderboard/StudentLeaderboard'
 import Login from './pages/Login/Login'
 import SignUp from './pages/SignUp/SignUp'
 import TeacherHome from './pages/TeacherHome/TeacherHome'
+import PendingEnrollments from './pages/PendingEnrollments'
 
 const App = () => {
   return (
@@ -52,6 +56,18 @@ const App = () => {
           element={<PrivateRoute component={ClassStories} requireTeacher={false} />} 
         />
         <Route 
+          path="/leaderboard" 
+          element={<PrivateRoute component={StudentLeaderboard} requireTeacher={false} />} 
+        />
+        <Route 
+          path="/teacher/class/:classId/leaderboard" 
+          element={<PrivateRoute component={StudentLeaderboard} requireTeacher={true} />} 
+        />
+        <Route 
+          path="/class/:classId/leaderboard" 
+          element={<PrivateRoute component={StudentLeaderboard} requireTeacher={false} />} 
+        />
+        <Route 
           path="/admin" 
           element={<PrivateRoute component={AdminDashboard} requireAdmin={true} />} 
         />
@@ -76,6 +92,26 @@ const App = () => {
           element={<PrivateRoute component={ClassManagement} requireAdmin={true} />} 
         />
         <Route path="/admin/story-questions/:storyId/:storyType" element={<StoryQuestions />} />
+        <Route 
+          path="/teacher/create-story" 
+          element={<PrivateRoute component={CreateStory} requireTeacher={true} />} 
+        />
+        <Route 
+          path="/teacher/class/:classId/create-story" 
+          element={<PrivateRoute component={CreateStory} requireTeacher={true} />} 
+        />
+        <Route 
+          path="/teacher/create-quiz" 
+          element={<PrivateRoute component={CreateQuiz} requireTeacher={true} />} 
+        />
+        <Route 
+          path="/teacher/story/:storyId/create-quiz" 
+          element={<PrivateRoute component={CreateQuiz} requireTeacher={true} />} 
+        />
+        <Route 
+          path="/teacher/class/:classCode/pending-enrollments" 
+          element={<PrivateRoute component={PendingEnrollments} requireTeacher={true} />} 
+        />
       </Routes>
       </div>
     </UserProvider>

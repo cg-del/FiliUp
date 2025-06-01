@@ -5,7 +5,6 @@ import edu.cit.filiup.dto.StoryResponseDTO;
 import edu.cit.filiup.entity.ClassEntity;
 import edu.cit.filiup.entity.StoryEntity;
 import edu.cit.filiup.entity.UserEntity;
-import edu.cit.filiup.service.AIService;
 import edu.cit.filiup.service.CloudinaryService;
 import edu.cit.filiup.service.StoryService;
 import edu.cit.filiup.util.RequireRole;
@@ -15,12 +14,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.validation.Valid;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -28,14 +29,12 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"}, allowCredentials = "true")
 public class StoryController {
     private final StoryService storyService;
-    private final AIService aiService;
     private final CloudinaryService cloudinaryService;
     private final StoryMapper storyMapper;
 
     @Autowired
-    public StoryController(StoryService storyService, AIService aiService, CloudinaryService cloudinaryService, StoryMapper storyMapper) {
+    public StoryController(StoryService storyService, CloudinaryService cloudinaryService, StoryMapper storyMapper) {
         this.storyService = storyService;
-        this.aiService = aiService;
         this.cloudinaryService = cloudinaryService;
         this.storyMapper = storyMapper;
     }
@@ -47,13 +46,29 @@ public class StoryController {
             @Valid @RequestBody StoryCreateDTO storyCreateDTO,
             JwtAuthenticationToken jwtAuthToken) {
         try {
-            // Extract user email from JWT token
+            // Extract user email and role from JWT token
             String userEmail = jwtAuthToken.getToken().getClaim("sub");
+            String userRole = jwtAuthToken.getToken().getClaim("role");
             
             // Log incoming request
             System.out.println("Received story creation request:");
             System.out.println("Story DTO: " + storyCreateDTO);
+            System.out.println("Title: " + storyCreateDTO.getTitle());
+            System.out.println("Content length: " + (storyCreateDTO.getContent() != null ? storyCreateDTO.getContent().length() : "null"));
+            System.out.println("Genre: " + storyCreateDTO.getGenre());
+            System.out.println("ClassId: " + storyCreateDTO.getClassId());
+            System.out.println("Cover URL: " + storyCreateDTO.getCoverPictureUrl());
+            System.out.println("Cover Type: " + storyCreateDTO.getCoverPictureType());
             System.out.println("User Email: " + userEmail);
+            System.out.println("User Role: " + userRole);
+
+            // Validate user role
+            if (!"TEACHER".equals(userRole) && !"ADMIN".equals(userRole)) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Forbidden");
+                errorResponse.put("message", "Only teachers and admins can create stories");
+                return ResponseEntity.status(403).body(errorResponse);
+            }
 
             // Create the story using the email from JWT token
             StoryEntity createdStory = storyService.createStory(storyCreateDTO, userEmail);
@@ -74,6 +89,11 @@ public class StoryController {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "Failed to create story");
             errorResponse.put("message", e.getMessage());
+            
+            // Return 403 if it's a permission error, 400 otherwise
+            if (e.getMessage().contains("permission")) {
+                return ResponseEntity.status(403).body(errorResponse);
+            }
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
@@ -85,6 +105,15 @@ public class StoryController {
             @RequestParam("file") MultipartFile file,
             JwtAuthenticationToken jwtAuthToken) {
         try {
+            // Extract user email and role from JWT token
+            String userEmail = jwtAuthToken.getToken().getClaim("sub");
+            String userRole = jwtAuthToken.getToken().getClaim("role");
+            
+            // Log the request
+            System.out.println("Upload cover image request:");
+            System.out.println("User Email: " + userEmail);
+            System.out.println("User Role: " + userRole);
+            
             // Upload the image to Cloudinary
             Map<String, String> uploadResult = cloudinaryService.uploadImage(file, "story-covers");
             
@@ -111,7 +140,7 @@ public class StoryController {
     @PostMapping("/upload-cover/{storyId}")
     @RequireRole({"TEACHER", "ADMIN"})
     public ResponseEntity<?> uploadCoverImage(
-            @PathVariable Long storyId,
+            @PathVariable UUID storyId,
             @RequestParam("image") MultipartFile image,
             JwtAuthenticationToken jwtAuthToken) {
         try {
@@ -174,69 +203,6 @@ public class StoryController {
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
-    
-    // Generate a story using AI and create it
-    @PostMapping("/generate")
-    @RequireRole({"TEACHER", "ADMIN"})
-    public ResponseEntity<?> generateStory(
-            @RequestBody StoryCreateDTO request,
-            JwtAuthenticationToken jwtAuthToken) {
-        try {
-            // Extract user email from JWT token
-            String userEmail = jwtAuthToken.getToken().getClaim("sub");
-            
-            // Log incoming request
-            System.out.println("Received AI story generation request:");
-            System.out.println("Request: " + request);
-            System.out.println("User Email: " + userEmail);
-            
-            // Validate required fields
-            if (request.getPrompt() == null || request.getPrompt().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Prompt is required");
-            }
-            if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Title is required");
-            }
-            if (request.getGenre() == null || request.getGenre().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Genre is required");
-            }
-            if (request.getClassId() == null) {
-                return ResponseEntity.badRequest().body("Class ID is required");
-            }
-            
-            // Generate story content using AI
-            String generatedContent = aiService.generateStory(request.getPrompt());
-            
-            // Create a new story entity with the generated content
-            StoryEntity storyEntity = new StoryEntity();
-            storyEntity.setTitle(request.getTitle());
-            storyEntity.setContent(generatedContent);
-            storyEntity.setGenre(request.getGenre());
-            
-            // Set class entity
-            ClassEntity classEntity = new ClassEntity();
-            classEntity.setClassId(request.getClassId());
-            storyEntity.setClassEntity(classEntity);
-            
-            // Create the story
-            StoryEntity createdStory = storyService.createStory(storyEntity, userEmail);
-            
-            // Log success
-            System.out.println("AI-generated story created successfully: " + createdStory);
-            
-            return ResponseEntity.ok(createdStory);
-        } catch (RuntimeException e) {
-            // Log error
-            System.err.println("Error generating story: " + e.getMessage());
-            e.printStackTrace();
-            
-            // Return error response
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to generate story");
-            errorResponse.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
-    }
 
     // Get all active stories
     @GetMapping
@@ -276,7 +242,7 @@ public class StoryController {
 
     // Get story by ID
     @GetMapping("/{storyId}")
-    public ResponseEntity<StoryEntity> getStoryById(@PathVariable Long storyId) {
+    public ResponseEntity<StoryEntity> getStoryById(@PathVariable UUID storyId) {
         return storyService.getStoryById(storyId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -284,7 +250,7 @@ public class StoryController {
 
     // Get stories by class
     @GetMapping("/class/{classId}")
-    public ResponseEntity<List<StoryEntity>> getStoriesByClass(@PathVariable Long classId) {
+    public ResponseEntity<List<StoryEntity>> getStoriesByClass(@PathVariable UUID classId) {
         return ResponseEntity.ok(storyService.getStoriesByClass(classId));
     }
 
@@ -334,7 +300,7 @@ public class StoryController {
     @PutMapping("/update/{storyId}")
     @RequireRole({"TEACHER", "ADMIN"})
     public ResponseEntity<?> updateStory(
-            @PathVariable Long storyId,
+            @PathVariable UUID storyId,
             @RequestBody StoryEntity updatedStory,
             JwtAuthenticationToken jwtAuthToken) {
         try {
@@ -366,7 +332,7 @@ public class StoryController {
     @DeleteMapping("/delete/{storyId}")
     @RequireRole({"TEACHER", "ADMIN"})
     public ResponseEntity<?> deleteStory(
-            @PathVariable Long storyId,
+            @PathVariable UUID storyId,
             JwtAuthenticationToken jwtAuthToken) {
         try {
             // Extract user email from JWT token

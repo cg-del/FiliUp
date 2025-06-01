@@ -4,9 +4,11 @@ import edu.cit.filiup.dto.ClassDetailsDTO;
 import edu.cit.filiup.entity.ClassEntity;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.entity.QuestionBankEntity;
+import edu.cit.filiup.entity.EnrollmentEntity;
 import edu.cit.filiup.repository.ClassRepository;
 import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.repository.QuestionBankRepository;
+import edu.cit.filiup.repository.EnrollmentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,12 +27,18 @@ public class ClassService {
     private final ClassRepository classRepository;
     private final UserRepository userRepository;
     private final QuestionBankRepository questionBankRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Autowired
-    public ClassService(ClassRepository classRepository, UserRepository userRepository, QuestionBankRepository questionBankRepository) {
+    public ClassService(
+            ClassRepository classRepository, 
+            UserRepository userRepository, 
+            QuestionBankRepository questionBankRepository,
+            EnrollmentRepository enrollmentRepository) {
         this.classRepository = classRepository;
         this.userRepository = userRepository;
         this.questionBankRepository = questionBankRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     // Create
@@ -66,6 +74,19 @@ public class ClassService {
 
     public List<ClassEntity> getClassesByStudent(UUID studentId) {
         return classRepository.findByStudentsUserId(studentId);
+    }
+
+    public List<ClassEntity> getAcceptedClassesByStudent(UUID studentId) {
+        // Get all accepted enrollments for the student
+        List<EnrollmentEntity> acceptedEnrollments = enrollmentRepository.findByUserIdAndIsAccepted(studentId, true);
+        
+        // Get the class codes from accepted enrollments
+        List<String> acceptedClassCodes = acceptedEnrollments.stream()
+                .map(EnrollmentEntity::getClassCode)
+                .collect(Collectors.toList());
+        
+        // Return all active classes that match the accepted class codes
+        return classRepository.findByClassCodeInAndIsActiveTrue(acceptedClassCodes);
     }
 
     @Transactional(readOnly = true)
@@ -201,5 +222,10 @@ public class ClassService {
         dto.setStories(storyDTOs);
 
         return dto;
+    }
+
+    public void acceptEnrollment(String classCode, UUID studentId, UUID teacherId) {
+        // Implementation needed
+        throw new UnsupportedOperationException("Method not implemented");
     }
 }

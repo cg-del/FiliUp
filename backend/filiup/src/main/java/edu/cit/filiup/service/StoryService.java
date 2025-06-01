@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class StoryService {
@@ -58,16 +59,16 @@ public class StoryService {
         return storyRepository.findByIsActiveTrue();
     }
 
-    public Optional<StoryEntity> getStoryById(Long storyId) {
+    public Optional<StoryEntity> getStoryById(UUID storyId) {
         return storyRepository.findById(storyId)
                 .filter(StoryEntity::getIsActive);
     }
 
-    public List<StoryEntity> getStoriesByClass(Long classId) {
+    public List<StoryEntity> getStoriesByClass(UUID classId) {
         return storyRepository.findByClassEntityClassIdAndIsActiveTrue(classId);
     }
 
-    public List<StoryEntity> getStoriesByTeacher(int userId) {
+    public List<StoryEntity> getStoriesByTeacher(UUID userId) {
         return storyRepository.findByCreatedByUserId(userId);
     }
     
@@ -84,7 +85,7 @@ public class StoryService {
     }
 
     @Transactional
-    public StoryEntity updateStory(Long storyId, StoryEntity updatedStory) {
+    public StoryEntity updateStory(UUID storyId, StoryEntity updatedStory) {
         return storyRepository.findById(storyId)
                 .filter(StoryEntity::getIsActive)
                 .map(existingStory -> {
@@ -96,13 +97,17 @@ public class StoryService {
                         existingStory.setCoverPicture(updatedStory.getCoverPicture());
                         existingStory.setCoverPictureType(updatedStory.getCoverPictureType());
                     }
+                    // Update cover URL if provided
+                    if (updatedStory.getCoverPictureUrl() != null) {
+                        existingStory.setCoverPictureUrl(updatedStory.getCoverPictureUrl());
+                    }
                     return storyRepository.save(existingStory);
                 })
                 .orElseThrow(() -> new RuntimeException("Story not found"));
     }
 
     @Transactional
-    public void deleteStory(Long storyId) {
+    public void deleteStory(UUID storyId) {
         storyRepository.findById(storyId)
                 .ifPresent(story -> {
                     storyRepository.delete(story);
@@ -116,7 +121,7 @@ public class StoryService {
      * @param userRole the user's role
      * @return true if the user has permission, false otherwise
      */
-    public boolean hasPermission(Long storyId, String userEmail, String userRole) {
+    public boolean hasPermission(UUID storyId, String userEmail, String userRole) {
         // Admins have permission to modify any story
         if ("ADMIN".equals(userRole)) {
             return true;

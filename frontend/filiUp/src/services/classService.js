@@ -71,6 +71,18 @@ const classService = {
   getClassTeacher: async (classId) => {
     const response = await api.get(`/classes/${classId}/teacher`);
     return response.data;
+  },
+
+  // Get pending enrollments for a class
+  getPendingEnrollments: async (classCode) => {
+    const response = await api.get(`/enrollments/class/${classCode}`);
+    return response.data;
+  },
+
+  // Accept student enrollment
+  acceptEnrollment: async (classCode, userId) => {
+    const response = await api.post(`/enrollments/accept/${classCode}/${userId}`);
+    return response.data;
   }
 };
 
