@@ -4,13 +4,14 @@ import jakarta.persistence.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
 public class UserEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int userId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID userId;
 
     @Column(name = "user_name", length = 255, nullable = false, unique = true)
     private String userName;
@@ -52,7 +53,7 @@ public class UserEntity {
         this.createdAt = LocalDateTime.now();
     }
 
-    public UserEntity(int userId, String userName, String userPassword, String userEmail, String userRole) {
+    public UserEntity(UUID userId, String userName, String userPassword, String userEmail, String userRole) {
         this();
         this.userId = userId;
         this.userName = userName;
@@ -62,11 +63,11 @@ public class UserEntity {
     }
 
     // Getters and Setters
-    public int getUserId() {
+    public UUID getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(UUID userId) {
         this.userId = userId;
     }
 

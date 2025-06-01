@@ -6,13 +6,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface ClassRepository extends JpaRepository<ClassEntity, Long> {
+public interface ClassRepository extends JpaRepository<ClassEntity, UUID> {
     List<ClassEntity> findByIsActiveTrue();
-    List<ClassEntity> findByTeacherUserId(int teacherId);
-    List<ClassEntity> findByStudentsUserId(int studentId);
-    boolean existsByClassNameAndTeacherUserId(String className, int teacherId);
+    List<ClassEntity> findByTeacherUserId(UUID teacherId);
+    List<ClassEntity> findByStudentsUserId(UUID studentId);
+    boolean existsByClassNameAndTeacherUserId(String className, UUID teacherId);
     boolean existsByClassCode(String classCode);
     Optional<ClassEntity> findByClassCode(String classCode);
 }

@@ -1,11 +1,13 @@
 package edu.cit.filiup.service;
 
+import edu.cit.filiup.dto.StoryCreateDTO;
 import edu.cit.filiup.entity.StoryEntity;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.entity.ClassEntity;
 import edu.cit.filiup.repository.StoryRepository;
 import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.repository.ClassRepository;
+import edu.cit.filiup.mapper.StoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,35 +20,38 @@ public class StoryService {
     private final StoryRepository storyRepository;
     private final UserRepository userRepository;
     private final ClassRepository classRepository;
+    private final StoryMapper storyMapper;
 
     @Autowired
-    public StoryService(StoryRepository storyRepository, UserRepository userRepository, ClassRepository classRepository) {
+    public StoryService(StoryRepository storyRepository, UserRepository userRepository, ClassRepository classRepository, StoryMapper storyMapper) {
         this.storyRepository = storyRepository;
         this.userRepository = userRepository;
         this.classRepository = classRepository;
+        this.storyMapper = storyMapper;
     }
 
     @Transactional
-    public StoryEntity createStory(StoryEntity storyEntity, int userId) {
-        // Find the user (teacher)
-        UserEntity teacher = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("Teacher not found"));
+    public StoryEntity createStory(StoryCreateDTO storyCreateDTO, String userEmail) {
+        // Get the user who is creating the story
+        UserEntity user = userRepository.findByUserEmail(userEmail);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
 
-        // Find the class
-        ClassEntity classEntity = classRepository.findById(storyEntity.getClassEntity().getClassId())
+        // Get the class for the story
+        ClassEntity classEntity = classRepository.findById(storyCreateDTO.getClassId())
             .orElseThrow(() -> new RuntimeException("Class not found"));
 
-        // Set the relationships
-        storyEntity.setCreatedBy(teacher);
-        storyEntity.setClassEntity(classEntity);
-        storyEntity.setIsActive(true);
-    
-        // Save the story
-        try {
-            return storyRepository.save(storyEntity);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create story: " + e.getMessage());
+        // Verify that the user has permission to create stories in this class
+        if (!classEntity.getTeacher().getUserId().equals(user.getUserId())) {
+            throw new RuntimeException("User does not have permission to create stories in this class");
         }
+
+        // Convert DTO to entity
+        StoryEntity storyEntity = storyMapper.toEntity(storyCreateDTO, classEntity, user);
+
+        // Save and return the story
+        return storyRepository.save(storyEntity);
     }
 
     public List<StoryEntity> getAllStories() {
@@ -64,6 +69,14 @@ public class StoryService {
 
     public List<StoryEntity> getStoriesByTeacher(int userId) {
         return storyRepository.findByCreatedByUserId(userId);
+    }
+    
+    public List<StoryEntity> getStoriesByTeacher(String userEmail) {
+        UserEntity teacher = userRepository.findByUserEmail(userEmail);
+        if (teacher == null) {
+            throw new RuntimeException("Teacher not found with email: " + userEmail);
+        }
+        return storyRepository.findByCreatedByUserId(teacher.getUserId());
     }
 
     public List<StoryEntity> getStoriesByGenre(String genre) {
@@ -94,5 +107,32 @@ public class StoryService {
                 .ifPresent(story -> {
                     storyRepository.delete(story);
                 });
+    }
+    
+    /**
+     * Checks if a user has permission to modify a story
+     * @param storyId the story ID
+     * @param userEmail the user's email
+     * @param userRole the user's role
+     * @return true if the user has permission, false otherwise
+     */
+    public boolean hasPermission(Long storyId, String userEmail, String userRole) {
+        // Admins have permission to modify any story
+        if ("ADMIN".equals(userRole)) {
+            return true;
+        }
+        
+        // For teachers, check if they are the creator of the story
+        if ("TEACHER".equals(userRole)) {
+            Optional<StoryEntity> storyOpt = storyRepository.findById(storyId);
+            if (storyOpt.isPresent()) {
+                UserEntity creator = storyOpt.get().getCreatedBy();
+                if (creator != null && userEmail.equals(creator.getUserEmail())) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
 }

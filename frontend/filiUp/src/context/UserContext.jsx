@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services';
 
 const UserContext = createContext();
 
@@ -12,7 +13,7 @@ export function UserProvider({ children }) {
 
   // Check authentication status on mount
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       if (typeof window === 'undefined') {
         setLoading(false);
         return;
@@ -20,19 +21,26 @@ export function UserProvider({ children }) {
 
       try {
         const accessToken = localStorage.getItem('accessToken');
-        const storedUser = localStorage.getItem('user');
-        
-        if (accessToken && storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          if (parsedUser && parsedUser.userName) {
-            setUser(parsedUser);
-            setIsAuthenticated(true);
-          } else {
-            clearAuthData();
-          }
-        } else {
+        if (!accessToken) {
           clearAuthData();
+          return;
         }
+
+        // Verify token and get user info
+        const verifiedUser = await authService.verifyUser();
+        if (!verifiedUser) {
+          clearAuthData();
+          return;
+        }
+
+        const userInfo = await authService.getCurrentUser();
+        if (!userInfo?.data) {
+          clearAuthData();
+          return;
+        }
+
+        setUser(userInfo.data);
+        setIsAuthenticated(true);
       } catch (error) {
         console.error('Error checking auth:', error);
         clearAuthData();
@@ -50,6 +58,7 @@ export function UserProvider({ children }) {
     localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
+    setLoading(false);
   };
 
   // Updated login function: accepts tokens, fetches user info
@@ -61,29 +70,34 @@ export function UserProvider({ children }) {
       return;
     }
     
-    localStorage.setItem('accessToken', tokens.accessToken);
-    localStorage.setItem('refreshToken', tokens.refreshToken);
-
     try {
-      // Fetch user info using the access token
-      const res = await axios.get('http://localhost:8080/api/user/info', {
-        headers: { Authorization: `Bearer ${tokens.accessToken}` }
-      });
-      const userData = res.data;
-    setUser(userData);
-    setIsAuthenticated(true);
-    localStorage.setItem('user', JSON.stringify(userData));
+      // Store tokens
+      localStorage.setItem('accessToken', tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
+
+      // Get user info
+      const userInfo = await authService.getCurrentUser();
+      if (!userInfo?.data) {
+        throw new Error('Failed to get user info');
+      }
+
+      const userData = userInfo.data;
+      setUser(userData);
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(userData));
     
-    if (userData.userRole === 'ADMIN') {
-      navigate('/admin', { replace: true });
-    } else if (userData.userRole === 'TEACHER') {
-      navigate('/teacher', { replace: true });
-    } else {
-      navigate('/home', { replace: true });
-    }
+      // Navigate based on role
+      if (userData.userRole === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else if (userData.userRole === 'TEACHER') {
+        navigate('/teacher', { replace: true });
+      } else {
+        navigate('/home', { replace: true });
+      }
     } catch (error) {
-      console.error('Failed to fetch user info:', error);
+      console.error('Login error:', error);
       clearAuthData();
+      throw error;
     }
   };
 
@@ -110,29 +124,31 @@ export function UserProvider({ children }) {
               throw new Error('No refresh token available');
             }
 
-            // Call refresh token endpoint
-            const response = await axios.post('http://localhost:8080/api/user/refresh', {
-              refreshToken: refreshToken
-            });
+            // Try to refresh the token
+            const response = await authService.refreshToken(refreshToken);
+            if (!response?.data) {
+              throw new Error('Invalid refresh response');
+            }
 
             const { accessToken, refreshToken: newRefreshToken } = response.data;
-
-            // Update tokens in localStorage
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('refreshToken', newRefreshToken);
 
             // Update the original request with new token
-            originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
-
-            // Retry the original request
+            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
             return axios(originalRequest);
           } catch (refreshError) {
             console.error('Token refresh failed:', refreshError);
-            // If refresh token fails, logout the user
             clearAuthData();
             navigate('/sign-in', { replace: true });
             return Promise.reject(refreshError);
           }
+        }
+
+        // Only clear auth data and redirect for authentication-related 403 errors
+        if (error.response?.status === 403 && error.response?.data?.message?.includes('authentication')) {
+          clearAuthData();
+          navigate('/sign-in', { replace: true });
         }
 
         return Promise.reject(error);

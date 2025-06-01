@@ -2,13 +2,14 @@ package edu.cit.filiup.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "badges")
 public class BadgeEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long badgeId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID badgeId;
 
     @Column(name = "title", nullable = false, length = 100)
     private String title;
@@ -48,11 +49,11 @@ public class BadgeEntity {
     }
 
     // Getters and Setters
-    public Long getBadgeId() {
+    public UUID getBadgeId() {
         return badgeId;
     }
 
-    public void setBadgeId(Long badgeId) {
+    public void setBadgeId(UUID badgeId) {
         this.badgeId = badgeId;
     }
 

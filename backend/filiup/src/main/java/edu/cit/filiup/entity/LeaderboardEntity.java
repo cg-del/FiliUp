@@ -2,13 +2,14 @@ package edu.cit.filiup.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "leaderboard")
 public class LeaderboardEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long entryId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID entryId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
@@ -61,11 +62,11 @@ public class LeaderboardEntity {
     }
 
     // Getters and Setters
-    public Long getEntryId() {
+    public UUID getEntryId() {
         return entryId;
     }
 
-    public void setEntryId(Long entryId) {
+    public void setEntryId(UUID entryId) {
         this.entryId = entryId;
     }
 

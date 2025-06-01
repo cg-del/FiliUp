@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class EnrollmentService {
@@ -36,7 +37,7 @@ public class EnrollmentService {
      * @throws RuntimeException if the user or class is not found, or if the user is already enrolled
      */
     @Transactional
-    public EnrollmentEntity enrollStudent(int userId, String classCode) {
+    public EnrollmentEntity enrollStudent(UUID userId, String classCode) {
         // Verify the user exists and is a student
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -76,7 +77,7 @@ public class EnrollmentService {
      * @return list of enrollments
      * @throws RuntimeException if the user is not found
      */
-    public List<EnrollmentEntity> getEnrollmentsByStudent(int userId) {
+    public List<EnrollmentEntity> getEnrollmentsByStudent(UUID userId) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return enrollmentRepository.findByUserId(userId);
@@ -100,7 +101,7 @@ public class EnrollmentService {
      * @return true if the user is enrolled, false otherwise
      * @throws RuntimeException if the user is not found
      */
-    public boolean isStudentEnrolled(int userId, String classCode) {
+    public boolean isStudentEnrolled(UUID userId, String classCode) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return enrollmentRepository.existsByUserIdAndClassCode(userId, classCode);

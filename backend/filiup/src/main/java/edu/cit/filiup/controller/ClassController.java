@@ -1,20 +1,32 @@
 package edu.cit.filiup.controller;
 
+import edu.cit.filiup.dto.ClassDetailsDTO;
 import edu.cit.filiup.entity.ClassEntity;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.service.ClassService;
+import edu.cit.filiup.service.UserService;
+import edu.cit.filiup.util.RequireRole;
+import edu.cit.filiup.util.ResponseUtil;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/classes")
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"}, allowCredentials = "true")
 public class ClassController {
     private final ClassService classService;
+    
+    @Autowired
+    private UserService userService;
 
     @Autowired
     public ClassController(ClassService classService) {
@@ -23,109 +35,166 @@ public class ClassController {
 
     // Create a new class
     @PostMapping
-    public ResponseEntity<ClassEntity> createClass(
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> createClass(
             @RequestBody ClassEntity classEntity,
-            @RequestParam int teacherId) {
+            @RequestParam UUID teacherId) {
         try {
             ClassEntity createdClass = classService.createClass(classEntity, teacherId);
-            return ResponseEntity.ok(createdClass);
+            return ResponseUtil.success("Class created successfully", createdClass);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseUtil.badRequest("Failed to create class: " + e.getMessage());
         }
     }
 
     // Get all active classes
     @GetMapping
-    public ResponseEntity<List<ClassEntity>> getAllClasses() {
-        return ResponseEntity.ok(classService.getAllClasses());
+    public ResponseEntity<?> getAllClasses() {
+        try {
+            List<ClassEntity> classes = classService.getAllClasses();
+            return ResponseUtil.success("Classes retrieved successfully", classes);
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to retrieve classes: " + e.getMessage());
+        }
     }
 
     // Get class by ID
     @GetMapping("/{classId}")
-    public ResponseEntity<ClassEntity> getClassById(@PathVariable Long classId) {
-        return classService.getClassById(classId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getClassById(@PathVariable UUID classId) {
+        try {
+            ClassDetailsDTO classDetails = classService.getClassDetailsById(classId);
+            return ResponseUtil.success("Class retrieved successfully", classDetails);
+        } catch (EntityNotFoundException e) {
+            return ResponseUtil.notFound("Class with ID " + classId + " not found");
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to retrieve class: " + e.getMessage());
+        }
     }
 
     // Get classes by teacher
     @GetMapping("/teacher/{teacherId}")
-    public ResponseEntity<List<ClassEntity>> getClassesByTeacher(@PathVariable int teacherId) {
-        return ResponseEntity.ok(classService.getClassesByTeacher(teacherId));
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> getClassesByTeacher(@PathVariable UUID teacherId) {
+        try {
+            List<ClassEntity> classes = classService.getClassesByTeacher(teacherId);
+            return ResponseUtil.success("Classes retrieved successfully", classes);
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to retrieve classes: " + e.getMessage());
+        }
     }
 
-    // Get classes by student
-    @GetMapping("/student/{studentId}")
-    public ResponseEntity<List<ClassEntity>> getClassesByStudent(@PathVariable int studentId) {
-        return ResponseEntity.ok(classService.getClassesByStudent(studentId));
+    // Get classes for the authenticated student
+    @GetMapping("/myclasses")
+    @RequireRole("STUDENT")
+    public ResponseEntity<?> getMyClasses() {
+        try {
+            // Get the authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String userEmail = authentication.getName();
+            UserEntity user = userService.getUserByEmail(userEmail);
+            
+            if (user == null) {
+                return ResponseUtil.unauthorized("User not authenticated");
+            }
+            
+            // Verify the user is a student
+            if (!"STUDENT".equals(user.getUserRole())) {
+                return ResponseUtil.forbidden("Only students can access this endpoint");
+            }
+            
+            List<ClassEntity> classes = classService.getClassesByStudent(user.getUserId());
+            return ResponseUtil.success("Classes retrieved successfully", classes);
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to retrieve classes: " + e.getMessage());
+        }
     }
 
     // Update class
     @PutMapping("/{classId}")
-    public ResponseEntity<ClassEntity> updateClass(
-            @PathVariable Long classId,
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> updateClass(
+            @PathVariable UUID classId,
             @RequestBody ClassEntity updatedClass) {
         try {
             ClassEntity updated = classService.updateClass(classId, updatedClass);
-            return ResponseEntity.ok(updated);
+            return ResponseUtil.success("Class updated successfully", updated);
         } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseUtil.notFound("Class with ID " + classId + " not found: " + e.getMessage());
         }
     }
 
     // Delete class (hard delete)
     @DeleteMapping("/{classId}")
-    public ResponseEntity<?> deleteClass(@PathVariable Long classId) {
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> deleteClass(@PathVariable UUID classId) {
         try {
             classService.deleteClass(classId);
-            return ResponseEntity.ok().body("Class deleted successfully");
+            return ResponseUtil.success("Class deleted successfully");
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseUtil.badRequest("Failed to delete class: " + e.getMessage());
         }
     }
 
     // Add student to class
     @PostMapping("/{classId}/students/{studentId}")
-    public ResponseEntity<ClassEntity> addStudentToClass(
-            @PathVariable Long classId,
-            @PathVariable int studentId) {
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> addStudentToClass(
+            @PathVariable UUID classId,
+            @PathVariable UUID studentId) {
         try {
             ClassEntity updatedClass = classService.addStudentToClass(classId, studentId);
-            return ResponseEntity.ok(updatedClass);
+            return ResponseUtil.success("Student added to class successfully", updatedClass);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseUtil.badRequest("Failed to add student to class: " + e.getMessage());
         }
     }
 
     // Remove student from class
     @DeleteMapping("/{classId}/students/{studentId}")
-    public ResponseEntity<ClassEntity> removeStudentFromClass(
-            @PathVariable Long classId,
-            @PathVariable int studentId) {
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> removeStudentFromClass(
+            @PathVariable UUID classId,
+            @PathVariable UUID studentId) {
         try {
             ClassEntity updatedClass = classService.removeStudentFromClass(classId, studentId);
-            return ResponseEntity.ok(updatedClass);
+            return ResponseUtil.success("Student removed from class successfully", updatedClass);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseUtil.badRequest("Failed to remove student from class: " + e.getMessage());
         }
     }
 
     @PostMapping("/{classId}/regenerate-code")
-    public ResponseEntity<ClassEntity> regenerateClassCode(@PathVariable Long classId) {
-        ClassEntity updatedClass = classService.regenerateClassCode(classId);
-        return ResponseEntity.ok(updatedClass);
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> regenerateClassCode(@PathVariable UUID classId) {
+        try {
+            ClassEntity updatedClass = classService.regenerateClassCode(classId);
+            return ResponseUtil.success("Class code regenerated successfully", updatedClass);
+        } catch (Exception e) {
+            return ResponseUtil.badRequest("Failed to regenerate class code: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{classId}/students")
-    public ResponseEntity<List<UserEntity>> getStudentsByClass(@PathVariable Long classId) {
-        return classService.getClassById(classId)
-            .map(classEntity -> ResponseEntity.ok(classEntity.getStudents()))
-            .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getStudentsByClass(@PathVariable UUID classId) {
+        try {
+            Optional<ClassEntity> classOptional = classService.getClassById(classId);
+            if (classOptional.isPresent()) {
+                return ResponseUtil.success("Students retrieved successfully", classOptional.get().getStudents());
+            } else {
+                return ResponseUtil.notFound("Class with ID " + classId + " not found");
+            }
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to retrieve students: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{classId}/teacher")
-    public ResponseEntity<Map<String, String>> getClassTeacher(@PathVariable Long classId) {
-        Map<String, String> teacherInfo = classService.getClassTeacher(classId);
-        return ResponseEntity.ok(teacherInfo);
+    public ResponseEntity<?> getClassTeacher(@PathVariable UUID classId) {
+        try {
+            Map<String, String> teacherInfo = classService.getClassTeacher(classId);
+            return ResponseUtil.success("Teacher information retrieved successfully", teacherInfo);
+        } catch (Exception e) {
+            return ResponseUtil.notFound("Teacher for class ID " + classId + " not found: " + e.getMessage());
+        }
     }
 }

@@ -29,7 +29,7 @@ import {
   useTheme,
 } from '@mui/material';
 import axios from 'axios';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 import { CircleUserRound, BookOpen, GraduationCap, LogOut, User, Plus, X } from 'lucide-react';
@@ -61,31 +61,6 @@ api.interceptors.request.use(
   }
 );
 
-// Add page transition styles
-const pageTransitionStyles = `
-  @keyframes slideOut {
-    0% {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    100% {
-      transform: translateX(-100%);
-      opacity: 0;
-    }
-  }
-
-  .page-transition {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #7BD0A7;
-    animation: slideOut 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    z-index: 9999;
-  }
-`;
-
 export default function TeacherHome() {
   const theme = useTheme();
   const { user, logout } = useUser();
@@ -95,7 +70,7 @@ export default function TeacherHome() {
   const [form, setForm] = useState({ className: '', description: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [storyDialogOpen, setStoryDialogOpen] = useState(false);
-  const [activeItem, setActiveItem] = useState('my-classes'); // State for active sidebar item
+  const [activeItem, setActiveItem] = useState('my-classes');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedMode = localStorage.getItem('darkMode');
@@ -103,9 +78,9 @@ export default function TeacherHome() {
     }
     return false;
   });
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // State for success popup visibility
-  const [renderSuccessPopup, setRenderSuccessPopup] = useState(false); // State to control rendering
-  const [isAnimating, setIsAnimating] = useState(false); // State to control animation classes
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [renderSuccessPopup, setRenderSuccessPopup] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [storyForm, setStoryForm] = useState({
     title: '',
     content: '',
@@ -114,12 +89,9 @@ export default function TeacherHome() {
     coverPicturePreview: null,
   });
   const [selectedStoryClass, setSelectedStoryClass] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [openUserMenu, setOpenUserMenu] = useState(false); // State for the user profile dropdown menu
-  const userDropdownRef = useRef(null); // Ref for the user profile dropdown area
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [openUserMenu, setOpenUserMenu] = useState(false);
 
-  const classCardImage = 'https://img.freepik.com/free-vector/kids-education-concept_23-2148498370.jpg?size=626&ext=jpg'; // Define classCardImage
+  const classCardImage = 'https://img.freepik.com/free-vector/kids-education-concept_23-2148498370.jpg?size=626&ext=jpg';
 
   // Update effect to use html element for dark mode
   useEffect(() => {
@@ -149,7 +121,7 @@ export default function TeacherHome() {
     setOpenUserMenu(false); // Close the menu after logout
   };
 
-  const handleOpenDialog = (mode, classObj = null) => {
+  const handleOpenDialog = () => {
     setOpenDialog(true);
   };
 
@@ -172,22 +144,15 @@ export default function TeacherHome() {
 
     setIsSubmitting(true);
     try {
-      if (openDialog) {
-        const response = await api.post(`/api/classes?teacherId=${user.userId}`, {
-          className: form.className,
-          description: form.description,
-          isActive: true
-        });
-        setClasses([...classes, response.data]);
-        setOpenDialog(false); // Close create dialog
-        setShowSuccessPopup(true); // Open success popup
-      } else if (openDialog) {
-        const response = await api.put(`/api/classes/${selectedStoryClass.classId}`, {
-          className: form.className,
-          description: form.description,
-          isActive: selectedStoryClass.isActive
-        });
-        setClasses(classes.map(c => c.classId === selectedStoryClass.classId ? response.data : c));
+      const response = await api.post(`/api/classes?teacherId=${user.userId}`, {
+        className: form.className,
+        description: form.description,
+        isActive: true
+      });
+      if (response.data && response.data.data) {
+        setClasses([...classes, response.data.data]);
+        setOpenDialog(false);
+        setShowSuccessPopup(true);
       }
     } catch (error) {
       console.error('Error saving class:', error);
@@ -213,7 +178,9 @@ export default function TeacherHome() {
       
       try {
         const response = await api.get(`/api/classes/teacher/${user.userId}`);
-        setClasses(response.data);
+        if (response.data && response.data.data) {
+          setClasses(response.data.data);
+        }
       } catch (error) {
         console.error('Error fetching classes:', error);
         if (error.response?.status === 401) {
@@ -227,16 +194,6 @@ export default function TeacherHome() {
 
     fetchClasses();
   }, [user, logout]);
-
-  const getInitials = (name) => {
-    return name
-      ? name
-          .split(' ')
-          .map((n) => n[0])
-          .join('')
-          .toUpperCase()
-      : '?';
-  };
 
   // Handle class card click: navigate to lessons page
   const handleClassCardClick = (classObj) => {
@@ -296,34 +253,34 @@ export default function TeacherHome() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#95dfc1] dark:bg-gray-900 transition-colors duration-500">
+    <div className="min-h-screen w-full flex bg-gradient-to-br from-cyan-600 to-teal-600 dark:bg-gray-900 transition-colors duration-500">
       {/* Sidebar */}
-      <div className="w-56 flex flex-col items-center py-8 bg-[#7BD0A7] dark:bg-gray-900 transition-colors duration-500">
+      <div className="w-56 flex flex-col items-center py-8 bg-cyan-600 dark:bg-gray-900 transition-colors duration-500">
         <div className="bg-white dark:bg-gray-800 rounded-full shadow p-3 flex items-center justify-center mb-6 transition-colors duration-500" style={{ width: 96, height: 96 }}>
           <img src={logo} alt="FiliUp Logo" className="w-20 h-20 object-contain" />
         </div>
         <div className="flex flex-col gap-2 w-full px-2">
           {/* My Classes */}
           <div
-            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg font-semibold cursor-pointer transition-colors duration-500 ${activeItem === 'my-classes' ? 'bg-white dark:bg-gray-900 text-[#7BD0A7] dark:text-white' : 'text-black dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg font-semibold cursor-pointer transition-colors duration-500 ${activeItem === 'my-classes' ? 'bg-white dark:bg-gray-900 text-cyan-600 dark:text-white' : 'text-black dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             onClick={() => handleMenuItemClick('my-classes')}
           >
-            <GraduationCap size={22} color={activeItem === 'my-classes' ? "#7BD0A7" : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <GraduationCap size={22} color={activeItem === 'my-classes' ? "#0891b2" : (isDarkMode ? "#d1d5db" : "#6b7280")} />
             <span className="text-black dark:text-white">My Classes</span>
           </div>
           {/* Question Bank */}
           <div
-            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg font-semibold cursor-pointer transition-colors duration-500 ${activeItem === 'question-bank' ? 'bg-white dark:bg-gray-900 text-[#7BD0A7] dark:text-white' : 'text-black dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg font-semibold cursor-pointer transition-colors duration-500 ${activeItem === 'question-bank' ? 'bg-white dark:bg-gray-900 text-cyan-600 dark:text-white' : 'text-black dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             onClick={() => handleMenuItemClick('question-bank')}
           >
-            <BookOpen size={20} color={activeItem === 'question-bank' ? (isDarkMode ? "#d1d5db" : "#7BD0A7") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <BookOpen size={20} color={activeItem === 'question-bank' ? (isDarkMode ? "#d1d5db" : "#0891b2") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
             <span className="text-black dark:text-gray-300">Question Bank</span>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col bg-[#7BD0A7] dark:bg-gray-900 transition-colors duration-500 h-screen">
+      <div className="flex-1 flex flex-col bg-cyan-600 dark:bg-gray-900 transition-colors duration-500 h-screen">
         <div className="flex-1 flex justify-center items-start py-10 px-6 overflow-hidden">
           <div className="main-content w-full max-w-8xl bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 flex flex-col transition-colors duration-500 h-[calc(100vh-5rem)] overflow-y-scroll teacher-scrollbar">
             {/* Top Navigation */}
@@ -383,7 +340,7 @@ export default function TeacherHome() {
                       <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 transition-colors duration-500">Active Classes</h3>
                       <Button
                         variant="contained"
-                        onClick={() => handleOpenDialog(true)}
+                        onClick={() => handleOpenDialog()}
                         sx={{
                            bgcolor: '#7BD0A7',
                           '&:hover': {
@@ -402,15 +359,32 @@ export default function TeacherHome() {
                       </Button>
                     </div>
                     <div className="flex flex-col gap-6 w-full">
-                      {Array.isArray(classes) && classes.map((classObj, idx) => (
+                      {Array.isArray(classes) && classes.map((classObj) => (
                         <div
-                          key={classObj.classId || idx}
+                          key={classObj.classId}
                           onClick={() => handleClassCardClick(classObj)}
                           className="bg-white dark:bg-gray-700 rounded-xl shadow-sm cursor-pointer w-full overflow-hidden border border-gray-100 dark:border-gray-600 hover:shadow-md transition-all duration-300 ease-in-out transform hover:-translate-y-1 active:scale-[0.98] active:translate-y-0"
                         >
                           <div className="w-full h-36 bg-gray-200 dark:bg-gray-600 object-cover transition-transform duration-300 ease-in-out transform hover:scale-[1.02]" style={{backgroundImage: `url(${classCardImage})`, backgroundSize: 'cover', backgroundPosition: 'center', borderTopLeftRadius: '0.75rem', borderTopRightRadius: '0.75rem'}} />
-                          <div className="flex items-center justify-between px-6 py-6 bg-[#C8F2DF] dark:bg-gray-600 transition-colors duration-500" style={{ borderBottomLeftRadius: '0.75rem', borderBottomRightRadius: '0.75rem' }}>
-                            <h4 className="text-lg font-semibold text-gray-800 dark:text-white transition-colors duration-500">{classObj.className}</h4>
+                          <div className="flex flex-col px-6 py-6 bg-[#C8F2DF] dark:bg-gray-600 transition-colors duration-500" style={{ borderBottomLeftRadius: '0.75rem', borderBottomRightRadius: '0.75rem' }}>
+                            <h4 className="text-lg font-semibold text-gray-800 dark:text-white transition-colors duration-500 mb-2">{classObj.className}</h4>
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm text-gray-600 dark:text-gray-300">{classObj.description}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="px-3 py-1 bg-teal-100 dark:bg-teal-800 text-teal-800 dark:text-teal-100 rounded-full text-sm font-medium">
+                                  Code: {classObj.classCode}
+                                </span>
+                                {classObj.isActive ? (
+                                  <span className="px-3 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 rounded-full text-sm font-medium">
+                                    Active
+                                  </span>
+                                ) : (
+                                  <span className="px-3 py-1 bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-100 rounded-full text-sm font-medium">
+                                    Inactive
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -422,7 +396,7 @@ export default function TeacherHome() {
                     <p className="text-gray-500 dark:text-gray-400 mb-6 transition-colors duration-500">You haven't created any classes yet.</p>
                     <Button
                       variant="contained"
-                      onClick={() => handleOpenDialog(true)}
+                      onClick={() => handleOpenDialog()}
                       sx={{
                          bgcolor: '#7BD0A7',
                         '&:hover': {

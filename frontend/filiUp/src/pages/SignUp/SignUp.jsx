@@ -117,18 +117,18 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#95dfc1]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-600 to-teal-600">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-10 relative flex flex-col items-center">
-        {/* Green accent bar */}
-        <div className="absolute top-0 left-0 w-full h-2 rounded-t-2xl bg-[#5fcba4]" />
+        {/* Accent bar */}
+        <div className="absolute top-0 left-0 w-full h-2 rounded-t-2xl bg-teal-600" />
         {/* Logo and Title */}
         <div className="flex flex-col items-center mt-4 mb-6 w-full">
           <div className="bg-white rounded-full shadow p-1 flex items-center justify-center mb-2" style={{ width: 40, height: 40 }}>
             <img src={logo} alt="FiliUp Logo" className="w-12 h-12 object-contain" />
           </div>
-          <span className="text-2xl font-bold text-[#5fcba4] mb-1">FiliUp</span>
-          <h2 className="text-2xl font-bold text-gray-800 mb-1">Sign Up</h2>
-          <p className="text-gray-500 text-base">Create an account to start learning Filipino!</p>
+          <span className="text-2xl font-bold text-teal-600 mb-1">FiliUp</span>
+          <h2 className="text-2xl font-bold text-gray-800 mb-1">Create Account</h2>
+          <p className="text-gray-500 text-base">Join us today! Sign up to get started.</p>
         </div>
         {/* Form */}
         <form className="w-full" onSubmit={handleSubmit} noValidate>
@@ -147,7 +147,7 @@ export default function SignUp() {
                   required
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5fcba4] text-gray-800 text-base"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-gray-800 text-base"
                 />
               </div>
             </div>
@@ -165,7 +165,7 @@ export default function SignUp() {
                   required
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5fcba4] text-gray-800 text-base"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-gray-800 text-base"
                 />
               </div>
             </div>
@@ -181,10 +181,11 @@ export default function SignUp() {
                 name="email"
                 type="email"
                 autoComplete="email"
+                autoFocus
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5fcba4] text-gray-800 text-base"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-gray-800 text-base"
               />
             </div>
           </div>
@@ -202,7 +203,7 @@ export default function SignUp() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5fcba4] text-gray-800 text-base"
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-gray-800 text-base"
               />
               <button
                 type="button"
@@ -232,7 +233,7 @@ export default function SignUp() {
                 required
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5fcba4] text-gray-800 text-base"
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-gray-800 text-base"
               />
               <button
                 type="button"
@@ -258,7 +259,7 @@ export default function SignUp() {
                   value="STUDENT"
                   checked={formData.role === 'STUDENT'}
                   onChange={handleChange}
-                  className="accent-[#5fcba4] w-4 h-4 ring-0 focus:ring-0 outline-none border-0"
+                  className="accent-teal-600 w-4 h-4 ring-0 focus:ring-0 outline-none border-0"
                   style={{ boxShadow: 'none' }}
                 />
                 Student
@@ -270,7 +271,7 @@ export default function SignUp() {
                   value="TEACHER"
                   checked={formData.role === 'TEACHER'}
                   onChange={handleChange}
-                  className="accent-[#5fcba4] w-4 h-4 ring-0 focus:ring-0 outline-none border-0"
+                  className="accent-teal-600 w-4 h-4 ring-0 focus:ring-0 outline-none border-0"
                   style={{ boxShadow: 'none' }}
                 />
                 Teacher
@@ -284,18 +285,18 @@ export default function SignUp() {
           )}
           <button
             type="submit"
-            className="w-full bg-[#5fcba4] hover:bg-[#4bbd97] text-white font-semibold py-2 rounded-lg shadow transition-colors mb-2 text-base disabled:opacity-70"
+            className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-semibold py-2 rounded-lg shadow transition-colors mb-2 text-base disabled:opacity-70"
             disabled={loading}
           >
             {loading ? (
-              <span className="flex items-center justify-center"><svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>Signing Up...</span>
+              <span className="flex items-center justify-center"><svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>Creating Account...</span>
             ) : (
               'Sign Up'
             )}
           </button>
           <div className="text-center mt-2 text-gray-500 text-base">
             Already have an account?{' '}
-            <a href="/sign-in" className="text-[#5fcba4] font-semibold hover:underline">Sign In</a>
+            <a href="/sign-in" className="text-teal-600 font-semibold hover:underline">Sign In</a>
           </div>
         </form>
       </div>

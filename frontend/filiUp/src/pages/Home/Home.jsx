@@ -1,11 +1,9 @@
 "use client"
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  Menu,
   GraduationCap,
   BookOpen,
-  Plus,
   User,
   LogOut,
   X,
@@ -16,102 +14,119 @@ import {
 import { useUser } from "../../context/UserContext"
 import logo from '../../assets/logo.svg';
 import { Typography, Button } from "@mui/material"
+import { authService, classService } from "../../services"
 
 export default function StudentDashboard() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [joinClassModalOpen, setJoinClassModalOpen] = useState(false)
   const [classCode, setClassCode] = useState("")
   const [enrolledClasses, setEnrolledClasses] = useState([])
-  const [enrollmentError, setEnrollmentError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [myClassesOpen, setMyClassesOpen] = useState(true)
   const [activeItem, setActiveItem] = useState('my-classes');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedMode = localStorage.getItem('darkMode');
-      return savedMode ? JSON.parse(savedMode) : false; // Default to light mode if no preference is saved
-    } else {
-      return false; // Default to light mode on the server
+      return savedMode ? JSON.parse(savedMode) : false;
     }
+    return false;
   })
-  const dropdownRef = useRef(null)
   const modalRef = useRef(null)
-  const { user, isAuthenticated, loading, logout } = useUser()
+  const { user, logout } = useUser()
   const navigate = useNavigate()
   const classCardImage = 'https://img.freepik.com/free-vector/kids-education-concept_23-2148498370.jpg?size=626&ext=jpg';
   const [showStatusPopup, setShowStatusPopup] = useState(false);
   const [renderStatusPopup, setRenderStatusPopup] = useState(false);
   const [isStatusAnimating, setIsStatusAnimating] = useState(false);
   const [statusPopupMessage, setStatusPopupMessage] = useState('');
-  const [isSuccessStatus, setIsSuccessStatus] = useState(true); // true for success, false for error
+  const [isSuccessStatus, setIsSuccessStatus] = useState(true);
+
+  // Check authentication and verify user on mount
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      if (!authService.isAuthenticated()) {
+        navigate('/sign-in', { replace: true });
+        return;
+      }
+
+      try {
+        // First verify the token
+        const verifiedUser = await authService.verifyUser();
+        if (!verifiedUser) {
+          authService.logout();
+          navigate('/sign-in', { replace: true });
+          return;
+        }
+
+        // Then get current user info
+        const userInfo = await authService.getCurrentUser();
+        if (!userInfo || !userInfo.data) {
+          authService.logout();
+          navigate('/sign-in', { replace: true });
+          return;
+        }
+
+        // Check user role and redirect if necessary
+        const userData = userInfo.data;
+        if (userData.userRole === 'ADMIN') {
+          navigate('/admin', { replace: true });
+        } else if (userData.userRole === 'TEACHER') {
+          navigate('/teacher', { replace: true });
+        }
+      } catch (error) {
+        console.error('Authentication error:', error);
+        authService.logout();
+        navigate('/sign-in', { replace: true });
+      }
+    };
+
+    checkAuthentication();
+  }, [navigate]);
+
+  // Fetch enrolled classes when component mounts
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        setIsLoading(true);
+        const response = await classService.getMyClasses();
+        if (response.data) {
+          setEnrolledClasses(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching classes:', error);
+        setStatusPopupMessage("Failed to fetch classes. Please try again.");
+        setIsSuccessStatus(false);
+        setShowStatusPopup(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (authService.isAuthenticated()) {
+      fetchClasses();
+    }
+  }, []);
 
   // Effect to manage popup rendering and animation states
   useEffect(() => {
     if (showStatusPopup) {
-      setRenderStatusPopup(true); // Start rendering immediately
-      // Use a timeout to allow the component to be mounted before starting the animation
+      setRenderStatusPopup(true);
       const timeoutId = setTimeout(() => setIsStatusAnimating(true), 10);
       return () => clearTimeout(timeoutId);
     } else {
-      setIsStatusAnimating(false); // Start exit animation
+      setIsStatusAnimating(false);
     }
   }, [showStatusPopup]);
 
-  const toggleMyClasses = () => { setMyClassesOpen(!myClassesOpen); }
-
-  // Fetch enrolled classes when component mounts
-  useEffect(() => {
-    if (user?.userId) {
-      fetchEnrolledClasses()
-    }
-  }, [user])
-
-  const fetchEnrolledClasses = async () => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/classes/student/${user.userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        credentials: 'include'
-      })
-      if (response.ok) {
-        const classes = await response.json()
-        setEnrolledClasses(classes)
-      } else {
-        console.error('Failed to fetch enrolled classes:', await response.text())
-      }
-    } catch (error) {
-      console.error('Error fetching enrolled classes:', error)
-    }
-  }
-
-  // Manage dark mode class on html element and save preference
-  useEffect(() => {
-    const htmlElement = document.documentElement;
-    if (isDarkMode) {
-      htmlElement.classList.add('dark');
-    } else {
-      htmlElement.classList.remove('dark');
-    }
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-    }
-  }, [isDarkMode]);
-
-  const getInitials = () => {
-    if (!user?.userName) return "U"
-    try {
-      return user.userName.charAt(0) || "U"
-    } catch {
-      return "U"
-    }
-  }
+  const toggleMyClasses = () => {
+    setMyClassesOpen(!myClassesOpen);
+  };
 
   const handleLogout = () => {
-    logout()
-    setDropdownOpen(false)
+    authService.logout();
+    logout();
+    setDropdownOpen(false);
+    navigate('/login', { replace: true });
   }
 
   const toggleDarkMode = () => {
@@ -134,7 +149,7 @@ export default function StudentDashboard() {
     setJoinClassModalOpen(false)
   }
 
-  // Join class logic (original)
+  // Join class logic
   const handleJoinClass = async () => {
     if (!classCode.trim()) {
       setStatusPopupMessage("Please enter a class code");
@@ -167,7 +182,11 @@ export default function StudentDashboard() {
         throw new Error('Non-JSON response from server');
       }
       if (response.ok) {
-        await fetchEnrolledClasses();
+        // Fetch updated classes after successful enrollment
+        const updatedClasses = await classService.getMyClasses();
+        if (updatedClasses.data) {
+          setEnrolledClasses(updatedClasses.data);
+        }
         setJoinClassModalOpen(false);
         setClassCode("");
         setStatusPopupMessage("Class joined successfully!");
@@ -208,18 +227,27 @@ export default function StudentDashboard() {
     if (classItem) {
       navigate(`/class/${classId}/genres`, { state: { className: classItem.className } });
     } else {
-      // Fallback just in case the classItem isn't found in state (shouldn't happen if data is consistent)
       navigate(`/class/${classId}/genres`);
     }
   }
 
-  // Debug: log enrolledClasses before rendering
-  console.log('enrolledClasses:', enrolledClasses);
+  // Manage dark mode class on html element and save preference
+  useEffect(() => {
+    const htmlElement = document.documentElement;
+    if (isDarkMode) {
+      htmlElement.classList.add('dark');
+    } else {
+      htmlElement.classList.remove('dark');
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+    }
+  }, [isDarkMode]);
 
   return (
-    <div className="min-h-screen w-full flex bg-[#95dfc1] dark:bg-gray-900 transition-colors duration-500">
+    <div className="min-h-screen w-full flex bg-gradient-to-br from-cyan-600 to-teal-600 dark:bg-gray-900 transition-colors duration-500">
       {/* Sidebar */}
-      <div className="w-56 flex flex-col items-center py-8 bg-[#7BD0A7] dark:bg-gray-900 transition-colors duration-500">
+      <div className="w-56 flex flex-col items-center py-8 bg-cyan-600 dark:bg-gray-900 transition-colors duration-500">
         {/* Logo */}
         <div className="bg-white dark:bg-gray-800 rounded-full shadow p-3 flex items-center justify-center mb-6 transition-colors duration-500" style={{ width: 96, height: 96 }}>
           <img src={logo} alt="FiliUp Logo" className="w-20 h-20 object-contain" />
@@ -227,59 +255,53 @@ export default function StudentDashboard() {
         <div className="flex flex-col gap-2 w-full px-2">
           {/* My Classes */}
           <div
-            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg font-semibold cursor-pointer transition-colors duration-500 ${activeItem === 'my-classes' ? 'bg-white dark:bg-gray-700 text-[#7BD0A7] dark:text-white' : 'text-black dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg font-semibold cursor-pointer transition-colors duration-500 ${activeItem === 'my-classes' ? 'bg-white dark:bg-gray-700 text-cyan-600 dark:text-white' : 'text-black dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             onClick={() => handleMenuItemClick('my-classes')}
           >
-            <GraduationCap size={22} color={activeItem === 'my-classes' ? "#7BD0A7" : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <GraduationCap size={22} color={activeItem === 'my-classes' ? "#0891b2" : (isDarkMode ? "#d1d5db" : "#6b7280")} />
             <span className="text-black dark:text-white">My Classes</span>
           </div>
-          {/* Display Enrolled Classes */}
+          {/* Collapsible sub-items */}           
           {myClassesOpen && (
             <div className="flex flex-col gap-1 pl-6">
-              {enrolledClasses.length > 0 ? (
-                enrolledClasses.map((classItem) => (
-                  <div 
-                    key={classItem.classId} 
-                    className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-500"
-                    onClick={() => navigate(`/class/${classItem.classId}/genres`)} // Navigate to genres
-                  >
-                    <GraduationCap size={24} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
-                    <span className="font-semibold">{classItem.className}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="text-gray-500 dark:text-gray-400">No classes enrolled.</div>
-              )}
+              <div className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-500">
+                <GraduationCap size={24} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
+                <span className="font-semibold">Mga Pangunahing Salita</span>
+              </div>
+              <div className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-500">
+                <GraduationCap size={18} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
+                <span className="font-semibold">Mga Pangungusap</span>
+              </div>
             </div>
           )}
           {/* Study Area */}
           <div
-            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg cursor-pointer transition-colors duration-500 ${activeItem === 'study-area' ? 'text-[#7BD0A7] dark:text-white' : 'text-black dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg cursor-pointer transition-colors duration-500 ${activeItem === 'study-area' ? 'text-cyan-600 dark:text-white' : 'text-black dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
             onClick={() => handleMenuItemClick('study-area')}
           >
-            <BookOpen size={20} color={activeItem === 'study-area' ? (isDarkMode ? "#d1d5db" : "#7BD0A7") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <BookOpen size={20} color={activeItem === 'study-area' ? (isDarkMode ? "#d1d5db" : "#0891b2") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
             <span className="font-semibold">Study area</span>
           </div>
           {/* Playground */}
           <div
-            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg cursor-pointer transition-colors duration-500 ${activeItem === 'playground' ? 'text-[#7BD0A7] dark:text-white' : 'text-black dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg cursor-pointer transition-colors duration-500 ${activeItem === 'playground' ? 'text-cyan-600 dark:text-white' : 'text-black dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
             onClick={() => handleMenuItemClick('playground')}
           >
-            <Code size={20} color={activeItem === 'playground' ? (isDarkMode ? "#d1d5db" : "#7BD0A7") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <Code size={20} color={activeItem === 'playground' ? (isDarkMode ? "#d1d5db" : "#0891b2") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
             <span className="font-semibold">Playground</span>
           </div>
           {/* Certifications */}
           <div
-            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg cursor-pointer transition-colors duration-500 ${activeItem === 'certifications' ? 'text-[#7BD0A7] dark:text-white' : 'text-black dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg cursor-pointer transition-colors duration-500 ${activeItem === 'certifications' ? 'text-cyan-600 dark:text-white' : 'text-black dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
             onClick={() => handleMenuItemClick('certifications')}
           >
-            <Award size={20} color={activeItem === 'certifications' ? (isDarkMode ? "#d1d5db" : "#7BD0A7") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
+            <Award size={20} color={activeItem === 'certifications' ? (isDarkMode ? "#d1d5db" : "#0891b2") : (isDarkMode ? "#d1d5db" : "#6b7280")} />
             <span className="font-semibold">Certifications</span>
           </div>
         </div>
       </div>
       {/* Main Content White Box */}
-      <div className="flex-1 flex justify-center items-start py-10 px-6 bg-[#7BD0A7] dark:bg-gray-900 transition-colors duration-500 h-screen overflow-hidden">
+      <div className="flex-1 flex justify-center items-start py-10 px-6 bg-cyan-600 dark:bg-gray-900 transition-colors duration-500 h-screen overflow-hidden">
         <div className="w-full max-w-8xl bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 flex flex-col justify-start pb-16 transition-colors duration-500 h-full overflow-y-auto">
           {/* Top Navigation */}
           <div className="flex items-center justify-between mb-6 w-full">
@@ -342,7 +364,7 @@ export default function StudentDashboard() {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-200">Active Classes</h3>
                     <button
-                      className="bg-[#7BD0A7] text-white px-6 py-2 rounded-full font-medium hover:bg-[#5bbd8b] transition-colors"
+                      className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white px-6 py-2 rounded-full font-medium hover:from-cyan-700 hover:to-teal-700 transition-colors"
                       onClick={openJoinClassModal}
                     >
                       Join Class
@@ -356,9 +378,9 @@ export default function StudentDashboard() {
                         className="bg-white dark:bg-gray-700 rounded-xl shadow-sm cursor-pointer w-full overflow-hidden border border-gray-100 dark:border-gray-600 hover:shadow-md transition-colors duration-500"
                       >
                         <div className="w-full h-36 bg-gray-200 dark:bg-gray-600 object-cover" style={{backgroundImage: `url(${classCardImage})`, backgroundSize: 'cover', backgroundPosition: 'center', borderTopLeftRadius: '0.75rem', borderTopRightRadius: '0.75rem'}} />
-                        <div className="flex items-center justify-between px-6 py-6 bg-[#C8F2DF] dark:bg-gray-600 transition-colors duration-500" style={{ borderBottomLeftRadius: '0.75rem', borderBottomRightRadius: '0.75rem' }}>
+                        <div className="flex items-center justify-between px-6 py-6 bg-cyan-100 dark:bg-gray-600 transition-colors duration-500" style={{ borderBottomLeftRadius: '0.75rem', borderBottomRightRadius: '0.75rem' }}>
                           <h4 className="text-lg font-semibold text-gray-800 dark:text-white transition-colors duration-500">{classItem.className}</h4>
-                          <button className="bg-[#7BD0A7] w-8 h-8 rounded-full flex items-center justify-center text-white shadow hover:bg-[#5bbd8b] transition-colors">
+                          <button className="bg-gradient-to-r from-cyan-600 to-teal-600 w-8 h-8 rounded-full flex items-center justify-center text-white shadow hover:from-cyan-700 hover:to-teal-700 transition-colors">
                             <ChevronRight size={20} />
                           </button>
                         </div>
@@ -371,7 +393,7 @@ export default function StudentDashboard() {
                   <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-4 transition-colors duration-500">No classes yet</h3>
                   <p className="text-gray-500 dark:text-gray-400 mb-6 transition-colors duration-500">You are not enrolled in any classes. Join a class to get started!</p>
                   <button
-                    className="bg-[#7BD0A7] text-white px-6 py-3 rounded-full font-medium hover:bg-[#5bbd8b] transition-colors"
+                    className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white px-6 py-3 rounded-full font-medium hover:from-cyan-700 hover:to-teal-700 transition-colors"
                     onClick={openJoinClassModal}
                   >
                     Join Class
@@ -435,7 +457,7 @@ export default function StudentDashboard() {
             }}
           >
             {/* Status bar on the left */}
-            <div className={`w-1/4 ${isSuccessStatus ? 'bg-[#7BD0A7]' : 'bg-red-500'} dark:bg-gray-700 transition-colors duration-500`}></div>
+            <div className={`w-1/4 ${isSuccessStatus ? 'bg-cyan-600' : 'bg-red-500'} dark:bg-gray-700 transition-colors duration-500`}></div>
 
             {/* White box content on the right */}
             <div className="w-3/4 p-6 flex flex-col">

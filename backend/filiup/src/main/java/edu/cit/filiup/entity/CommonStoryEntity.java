@@ -3,14 +3,15 @@ package edu.cit.filiup.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.UUID;
 
 @Entity
 @Table(name = "common_stories")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CommonStoryEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long storyId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID storyId;
 
     @Column(name = "title", nullable = false, length = 200)
     private String title;
@@ -44,11 +45,11 @@ public class CommonStoryEntity {
     }
 
     // Getters and Setters
-    public Long getStoryId() {
+    public UUID getStoryId() {
         return storyId;
     }
 
-    public void setStoryId(Long storyId) {
+    public void setStoryId(UUID storyId) {
         this.storyId = storyId;
     }
 

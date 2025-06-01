@@ -16,9 +16,9 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 @Table(name = "classes")
 public class ClassEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @JsonProperty("classId")
-    private Long classId;
+    private UUID classId;
 
     @Column(name = "class_name", nullable = false, length = 100)
     private String className;
@@ -68,11 +68,11 @@ public class ClassEntity {
     }
 
     // Getters and Setters
-    public Long getClassId() {
+    public UUID getClassId() {
         return classId;
     }
 
-    public void setClassId(Long classId) {
+    public void setClassId(UUID classId) {
         this.classId = classId;
     }
 

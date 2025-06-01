@@ -17,20 +17,17 @@ import {
     Snackbar,
     TextField,
     Typography,
-    alpha,
-    useTheme,
 } from '@mui/material';
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.svg';
 import { useUser } from '../../context/UserContext';
 import { Mail, Lock } from 'lucide-react';
+import { authService } from '../../services';
 
 export default function Login() {
-  const theme = useTheme();
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useUser();
+  const { login } = useUser();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -39,19 +36,39 @@ export default function Login() {
     password: '',
   });
 
-  // Redirect if already authenticated
+  // Check if user is already logged in on component mount
   useEffect(() => {
-    if (isAuthenticated) {
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (user?.userRole === 'ADMIN') {
-        navigate('/admin', { replace: true });
-      } else if (user?.userRole === 'TEACHER') {
-        navigate('/teacher', { replace: true });
-      } else {
-        navigate('/home', { replace: true });
+    const checkAuth = async () => {
+      try {
+        // Check if access token exists and is valid
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          const verifiedUser = await authService.verifyUser();
+          if (verifiedUser) {
+            const userInfo = await authService.getCurrentUser();
+            if (userInfo?.data) {
+              const userData = userInfo.data;
+              if (userData.userRole === 'ADMIN') {
+                navigate('/admin', { replace: true });
+              } else if (userData.userRole === 'TEACHER') {
+                navigate('/teacher', { replace: true });
+              } else {
+                navigate('/home', { replace: true });
+              }
+              return;
+            }
+          }
+          // If verification fails, clear auth data
+          authService.logout();
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        authService.logout();
       }
-    }
-  }, [isAuthenticated, navigate]);
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -59,6 +76,8 @@ export default function Login() {
       ...prevData,
       [name]: value,
     }));
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
   const handleSubmit = async (event) => {
@@ -80,24 +99,28 @@ export default function Login() {
         userPassword: formData.password,
       };
 
-      // Make API call to login
-      const response = await axios.post('http://localhost:8080/api/user/login', loginData);
+      // Use authService for login
+      const response = await authService.login(loginData);
 
-      if (response.data) {
+      if (response?.data) {
         const { accessToken, refreshToken } = response.data;
-        // Check if response has the required fields
         if (!accessToken || !refreshToken) {
           throw new Error('Invalid response data');
         }
-        // Use the login function from context with tokens only
+
+        // Use the login function from context with tokens
         await login({ accessToken, refreshToken });
+
+        // Navigation is handled by the login function in UserContext
+      } else {
+        throw new Error('Invalid response data');
       }
     } catch (err) {
       console.error('Login error:', err);
       setError(
         err.response?.status === 401
           ? 'Incorrect email or password.'
-          : err.message === 'Invalid response data'
+          : err.response?.data?.message || err.message === 'Invalid response data'
           ? 'Server response error. Please try again.'
           : 'Error signing in. Please try again.'
       );
@@ -107,16 +130,16 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#95dfc1]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-600 to-teal-600">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-10 relative flex flex-col items-center">
-        {/* Green accent bar */}
-        <div className="absolute top-0 left-0 w-full h-2 rounded-t-2xl bg-[#5fcba4]" />
+        {/* Accent bar */}
+        <div className="absolute top-0 left-0 w-full h-2 rounded-t-2xl bg-teal-600" />
         {/* Logo and Title */}
         <div className="flex flex-col items-center mt-4 mb-6 w-full">
           <div className="bg-white rounded-full shadow p-1 flex items-center justify-center mb-2" style={{ width: 40, height: 40 }}>
             <img src={logo} alt="FiliUp Logo" className="w-12 h-12 object-contain" />
           </div>
-          <span className="text-2xl font-bold text-[#5fcba4] mb-1">FiliUp</span>
+          <span className="text-2xl font-bold text-teal-600 mb-1">FiliUp</span>
           <h2 className="text-2xl font-bold text-gray-800 mb-1">Sign In</h2>
           <p className="text-gray-500 text-base">Welcome back! Sign in to continue.</p>
         </div>
@@ -137,7 +160,7 @@ export default function Login() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5fcba4] text-gray-800 text-base"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-gray-800 text-base"
               />
             </div>
           </div>
@@ -155,7 +178,7 @@ export default function Login() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5fcba4] text-gray-800 text-base"
+                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 text-gray-800 text-base"
               />
               <button
                 type="button"
@@ -172,7 +195,7 @@ export default function Login() {
             </div>
           </div>
           <div className="flex justify-end mb-4">
-            <a href="/forgot-password" className="text-sm text-[#5fcba4] hover:underline">Forgot password?</a>
+            <a href="/forgot-password" className="text-sm text-teal-600 hover:underline">Forgot password?</a>
           </div>
           {error && (
             <div className="mb-3 w-full">
@@ -181,7 +204,7 @@ export default function Login() {
           )}
           <button
             type="submit"
-            className="w-full bg-[#5fcba4] hover:bg-[#4bbd97] text-white font-semibold py-2 rounded-lg shadow transition-colors mb-2 text-base disabled:opacity-70"
+            className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-semibold py-2 rounded-lg shadow transition-colors mb-2 text-base disabled:opacity-70"
             disabled={loading}
           >
             {loading ? (
@@ -192,10 +215,10 @@ export default function Login() {
           </button>
           <div className="text-center mt-2 text-gray-500 text-base">
             Don't have an account?{' '}
-            <a href="/sign-up" className="text-[#5fcba4] font-semibold hover:underline">Sign Up</a>
+            <a href="/sign-up" className="text-teal-600 font-semibold hover:underline">Sign Up</a>
           </div>
         </form>
       </div>
     </div>
   );
-} 
+}

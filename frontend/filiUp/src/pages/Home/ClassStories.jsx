@@ -49,7 +49,6 @@ export default function ClassStories() {
   const { classId, genre } = useParams()
   const navigate = useNavigate()
   const { user, logout } = useUser();
-  const [enrolledClasses, setEnrolledClasses] = useState([]);
 
   useEffect(() => {
     // Fetch user info from localStorage
@@ -70,33 +69,6 @@ export default function ClassStories() {
       localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
     }
   }, [isDarkMode]);
-
-  useEffect(() => {
-    const fetchEnrolledClasses = async () => {
-      const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-      const userId = userInfo.userId; // Assuming userId is stored in localStorage
-
-      try {
-        const response = await fetch(`http://localhost:8080/api/classes/student/${userId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          },
-          credentials: 'include'
-        });
-
-        if (response.ok) {
-          const classes = await response.json();
-          setEnrolledClasses(classes); // Set the enrolled classes
-        } else {
-          console.error('Failed to fetch enrolled classes:', await response.text());
-        }
-      } catch (error) {
-        console.error('Error fetching enrolled classes:', error);
-      }
-    };
-
-    fetchEnrolledClasses(); // Call the function to fetch enrolled classes
-  }, []); // Empty dependency array to run once on mount
 
   const fetchStories = async () => {
     try {
@@ -198,22 +170,17 @@ export default function ClassStories() {
             <GraduationCap size={22} color={activeItem === 'my-classes' ? "#7BD0A7" : (isDarkMode ? "#d1d5db" : "#6b7280")} />
             <span className="text-black dark:text-white font-semibold">My Classes</span>
           </div>
+          {/* Collapsible sub-items */}
           {myClassesOpen && (
             <div className="flex flex-col gap-1 pl-6">
-              {enrolledClasses.length > 0 ? (
-                enrolledClasses.map((classItem) => (
-                  <div 
-                    key={classItem.classId} 
-                    className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-500"
-                    onClick={() => navigate(`/class/${classItem.classId}/genres`)}
-                  >
-                    <GraduationCap size={24} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
-                    <span className="font-semibold">{classItem.className}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="text-gray-500 dark:text-gray-400">No classes enrolled.</div>
-              )}
+              <div className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-300">
+                <GraduationCap size={24} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
+                <span className="font-semibold">Mga Pangunahing Salita</span>
+              </div>
+              <div className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-gray-800 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-300">
+                <GraduationCap size={18} color={isDarkMode ? "#d1d5db" : "#6b7280"} />
+                <span className="font-semibold">Mga Pangungusap</span>
+              </div>
             </div>
           )}
           {/* Study Area */}

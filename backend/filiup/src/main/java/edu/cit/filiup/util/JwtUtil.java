@@ -1,6 +1,5 @@
 package edu.cit.filiup.util;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -8,49 +7,39 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.SignatureException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.crypto.SecretKey;
-import java.nio.file.Paths;
+import jakarta.annotation.PostConstruct;
 
+@Component
 public class JwtUtil {
-    private static final Dotenv dotenv;
-    private static final String SECRET_KEY;
     private static final long EXPIRATION_TIME = 3600000L; // 1 hour
     private static final long REFRESH_EXPIRATION_TIME = 604800000L; // 7 days
-    private static final SecretKey key;
     private static final SignatureAlgorithm ALGORITHM = SignatureAlgorithm.HS256;
-
-    static {
-        System.out.println("Initializing JwtUtil...");
-        try {
-            dotenv = Dotenv.load();
-            System.out.println("Dotenv loaded successfully");
-            
-            SECRET_KEY = dotenv.get("JWT_SECRET_KEY");
-            if (SECRET_KEY == null || SECRET_KEY.isEmpty() || SECRET_KEY.length() < 32) {
-                throw new RuntimeException("JWT_SECRET_KEY must be at least 32 characters long");
-            }
-            
-            try {
-                key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
-                System.out.println("Key generated successfully");
-            } catch (Exception e) {
-                System.err.println("Error generating key: " + e.getMessage());
-                throw new RuntimeException("Failed to generate key from secret", e);
-            }
-            
-            System.out.println("JwtUtil initialized successfully");
-        } catch (Exception e) {
-            System.err.println("Error initializing JwtUtil: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Failed to initialize JwtUtil", e);
-        }
+    
+    private static SecretKey secretKey;
+    
+    @Value("${JWT_SECRET_KEY}")
+    private String secretKeyString;
+    
+    @PostConstruct
+    public void init() {
+        secretKey = Keys.hmacShaKeyFor(secretKeyString.getBytes());
+        System.out.println("JwtUtil initialized successfully with key");
     }
 
-    public static Map<String, String> generateTokens(String subject) {
+    public static Map<String, String> generateTokens(String subject, String role) {
+        if (secretKey == null) {
+            throw new IllegalStateException("JWT Secret Key not initialized");
+        }
+        
         try {
             String jti = UUID.randomUUID().toString();
             Date now = new Date();
@@ -64,7 +53,8 @@ public class JwtUtil {
                     .expiration(accessExpiration)
                     .claim("type", "access")
                     .claim("jti", jti)
-                    .signWith(key, ALGORITHM)
+                    .claim("role", role)
+                    .signWith(secretKey, ALGORITHM)
                     .compact();
 
             // Generate refresh token
@@ -74,7 +64,8 @@ public class JwtUtil {
                     .expiration(refreshExpiration)
                     .claim("type", "refresh")
                     .claim("jti", jti)
-                    .signWith(key, ALGORITHM)
+                    .claim("role", role)
+                    .signWith(secretKey, ALGORITHM)
                     .compact();
 
             Map<String, String> tokens = new HashMap<>();
@@ -88,10 +79,20 @@ public class JwtUtil {
         }
     }
 
+    // Overload for backward compatibility
+    public static Map<String, String> generateTokens(String subject) {
+        return generateTokens(subject, "STUDENT"); // Default role
+    }
+
     public static boolean validateToken(String token) {
+        if (secretKey == null) {
+            System.err.println("JWT Secret Key not initialized");
+            return false;
+        }
+        
         try {
             Claims claims = Jwts.parser()
-                .verifyWith(key)
+                .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -119,9 +120,14 @@ public class JwtUtil {
     }
 
     public static String extractUsername(String token) {
+        if (secretKey == null) {
+            System.err.println("JWT Secret Key not initialized");
+            return null;
+        }
+        
         try {
             Claims claims = Jwts.parser()
-                .verifyWith(key)
+                .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -132,10 +138,33 @@ public class JwtUtil {
         }
     }
 
-    public static boolean isTokenExpired(String token) {
+    public static String extractRole(String token) {
+        if (secretKey == null) {
+            System.err.println("JWT Secret Key not initialized");
+            return null;
+        }
+        
         try {
             Claims claims = Jwts.parser()
-                .verifyWith(key)
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+            return claims.get("role", String.class);
+        } catch (Exception e) {
+            System.err.println("Error extracting role from token: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public static boolean isTokenExpired(String token) {
+        if (secretKey == null) {
+            return true;
+        }
+        
+        try {
+            Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
