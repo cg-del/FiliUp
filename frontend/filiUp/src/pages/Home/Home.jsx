@@ -34,7 +34,6 @@ export default function StudentDashboard() {
   const modalRef = useRef(null)
   const { user, logout } = useUser()
   const navigate = useNavigate()
-  const classCardImage = 'https://img.freepik.com/free-vector/kids-education-concept_23-2148498370.jpg?size=626&ext=jpg';
   const [showStatusPopup, setShowStatusPopup] = useState(false);
   const [renderStatusPopup, setRenderStatusPopup] = useState(false);
   const [isStatusAnimating, setIsStatusAnimating] = useState(false);
@@ -323,8 +322,9 @@ export default function StudentDashboard() {
                   </svg>
                 )}
               </button>
-              <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-300 text-gray-600 dark:text-gray-400 flex items-center">
+              <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-300 text-gray-600 dark:text-gray-400 flex items-center relative">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 7.165 6 9.388 6 12v2.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">3</span>
               </button>
               <div className="relative">
                 <div
@@ -359,14 +359,68 @@ export default function StudentDashboard() {
           {/* Dashboard Content */}
           <div className="flex flex-col items-center w-full mt-2">
             <div className="w-full max-w-6xl">
+              {/* Quick Stats Dashboard */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-gradient-to-r from-cyan-500 to-teal-500 rounded-xl p-4 text-white shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-white/80 text-sm">Total Classes</p>
+                      <p className="text-3xl font-bold">{enrolledClasses.length}</p>
+                    </div>
+                    <div className="bg-white/20 p-3 rounded-full">
+                      <GraduationCap size={24} color="white" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 text-white shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-white/80 text-sm">Assignments</p>
+                      <p className="text-3xl font-bold">{Math.floor(Math.random() * 15)}</p>
+                    </div>
+                    <div className="bg-white/20 p-3 rounded-full">
+                      <BookOpen size={24} color="white" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-4 text-white shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-white/80 text-sm">Quizzes</p>
+                      <p className="text-3xl font-bold">{Math.floor(Math.random() * 10)}</p>
+                    </div>
+                    <div className="bg-white/20 p-3 rounded-full">
+                      <Award size={24} color="white" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl p-4 text-white shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-white/80 text-sm">Average Grade</p>
+                      <p className="text-3xl font-bold">B+</p>
+                    </div>
+                    <div className="bg-white/20 p-3 rounded-full">
+                      <Code size={24} color="white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               {enrolledClasses.length > 0 ? (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-200">Active Classes</h3>
                     <button
-                      className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white px-6 py-2 rounded-full font-medium hover:from-cyan-700 hover:to-teal-700 transition-colors"
+                      className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white px-6 py-2 rounded-full font-medium hover:from-cyan-700 hover:to-teal-700 transition-colors flex items-center gap-2"
                       onClick={openJoinClassModal}
                     >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                      </svg>
                       Join Class
                     </button>
                   </div>
@@ -375,14 +429,61 @@ export default function StudentDashboard() {
                       <div
                         key={classItem.classId}
                         onClick={() => handleClassClick(classItem.classId)}
-                        className="bg-white dark:bg-gray-700 rounded-xl shadow-sm cursor-pointer w-full overflow-hidden border border-gray-100 dark:border-gray-600 hover:shadow-md transition-colors duration-500"
+                        className="bg-white dark:bg-gray-700 rounded-xl shadow-md hover:shadow-lg cursor-pointer w-full overflow-hidden border border-gray-100 dark:border-gray-600 transition-all duration-300"
                       >
-                        <div className="w-full h-36 bg-gray-200 dark:bg-gray-600 object-cover" style={{backgroundImage: `url(${classCardImage})`, backgroundSize: 'cover', backgroundPosition: 'center', borderTopLeftRadius: '0.75rem', borderTopRightRadius: '0.75rem'}} />
-                        <div className="flex items-center justify-between px-6 py-6 bg-cyan-100 dark:bg-gray-600 transition-colors duration-500" style={{ borderBottomLeftRadius: '0.75rem', borderBottomRightRadius: '0.75rem' }}>
-                          <h4 className="text-lg font-semibold text-gray-800 dark:text-white transition-colors duration-500">{classItem.className}</h4>
-                          <button className="bg-gradient-to-r from-cyan-600 to-teal-600 w-8 h-8 rounded-full flex items-center justify-center text-white shadow hover:from-cyan-700 hover:to-teal-700 transition-colors">
-                            <ChevronRight size={20} />
-                          </button>
+                        <div className="flex flex-col md:flex-row">
+                          {/* Left section with gradient and course info */}
+                          <div className="w-full md:w-2/3 p-6 bg-gradient-to-r from-cyan-500 to-teal-500 dark:from-cyan-600 dark:to-teal-600">
+                            <div className="flex flex-col h-full">
+                              <div className="flex items-center mb-2">
+                                <span className="px-3 py-1 bg-white/20 text-white text-xs font-medium rounded-full">
+                                  {classItem.classId.toString().slice(0, 6).toUpperCase()}
+                                </span>
+                              </div>
+                              <h4 className="text-2xl font-bold text-white mb-2">{classItem.className}</h4>
+                              <p className="text-white/80 text-sm mb-3">{classItem.description || 'Learn about Filipino language and culture'}</p>
+                              <div className="flex items-center mt-auto">
+                                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
+                                  <GraduationCap size={20} />
+                                </div>
+                                <div className="ml-3">
+                                  <p className="text-white text-sm font-medium">{classItem.teacherName || 'Teacher'}</p>
+                                  <p className="text-white/70 text-xs">Instructor</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Right section with stats */}
+                          <div className="w-full md:w-1/3 p-6 bg-white dark:bg-gray-700">
+                            <div className="flex flex-col h-full">
+                              <div className="mb-4">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Course Progress</p>
+                                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                  <div 
+                                    className="bg-gradient-to-r from-cyan-500 to-teal-500 h-2 rounded-full" 
+                                    style={{ width: `${Math.floor(Math.random() * 100)}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <p className="text-xl font-bold text-gray-800 dark:text-white">{Math.floor(Math.random() * 12)}/{Math.floor(Math.random() * 20 + 12)}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Assignments</p>
+                                </div>
+                                <div>
+                                  <p className="text-xl font-bold text-gray-800 dark:text-white">{classItem.currentGrade || 'B+'}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Current Grade</p>
+                                </div>
+                              </div>
+                              
+                              <button className="mt-auto bg-gradient-to-r from-cyan-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:from-cyan-700 hover:to-teal-700 transition-colors flex items-center justify-center">
+                                <span>View Class</span>
+                                <ChevronRight size={16} className="ml-1" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -390,14 +491,22 @@ export default function StudentDashboard() {
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center w-full py-24">
-                  <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-4 transition-colors duration-500">No classes yet</h3>
-                  <p className="text-gray-500 dark:text-gray-400 mb-6 transition-colors duration-500">You are not enrolled in any classes. Join a class to get started!</p>
-                  <button
-                    className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white px-6 py-3 rounded-full font-medium hover:from-cyan-700 hover:to-teal-700 transition-colors"
-                    onClick={openJoinClassModal}
-                  >
-                    Join Class
-                  </button>
+                  <div className="bg-white/50 dark:bg-gray-700/50 p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
+                    <div className="bg-gradient-to-r from-cyan-500 to-teal-500 w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center">
+                      <GraduationCap size={36} color="white" />
+                    </div>
+                    <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-4 transition-colors duration-500">No classes yet</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6 transition-colors duration-500">You are not enrolled in any classes. Join a class using a class code provided by your teacher to get started!</p>
+                    <button
+                      className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white px-6 py-3 rounded-full font-medium hover:from-cyan-700 hover:to-teal-700 transition-colors flex items-center gap-2 mx-auto"
+                      onClick={openJoinClassModal}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                      </svg>
+                      Join Class
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -408,32 +517,59 @@ export default function StudentDashboard() {
       {joinClassModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div ref={modalRef} className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md shadow-xl transition-colors duration-500">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600 transition-colors duration-500">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white transition-colors duration-500">Join Class</h3>
-              <button className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-500" onClick={closeJoinClassModal}>
-                <X size={18} color="#ef4444" />
-              </button>
+            <div className="bg-gradient-to-r from-cyan-600 to-teal-600 p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-full">
+                    <GraduationCap size={24} color="white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Join a Class</h3>
+                </div>
+                <button 
+                  className="bg-white/20 p-1 rounded-full hover:bg-white/30 transition-colors duration-300" 
+                  onClick={closeJoinClassModal}
+                >
+                  <X size={18} color="white" />
+                </button>
+              </div>
             </div>
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-6 transition-colors duration-500">Enter the class code given to you by your teacher.</h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">Enter the class code given to you by your teacher to join their class.</p>
               <div className="mb-6">
+                <label htmlFor="classCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Class Code</label>
                 <input
+                  id="classCode"
                   type="text"
-                  placeholder="Class Code"
+                  placeholder="Enter 6-digit code"
                   value={classCode}
                   onChange={(e) => setClassCode(e.target.value)}
-                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md text-gray-800 dark:text-white focus:outline-none focus:border-7BD0A7 dark:focus:border-[#95dfc1] transition-colors duration-500"
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md text-gray-800 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 dark:focus:ring-teal-400 transition-colors duration-300"
                   autoFocus
                 />
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-3">
                 <button
-                  className="px-6 py-2 rounded-full font-medium text-white hover:opacity-90 disabled:opacity-70 transition-opacity"
-                  style={{ backgroundColor: isDarkMode ? '#4b5563' : '#7BD0A7' }}
+                  className="px-5 py-2 rounded-full font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  onClick={closeJoinClassModal}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-6 py-2 rounded-full font-medium text-white bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 disabled:opacity-70 transition-colors flex items-center gap-2"
                   onClick={handleJoinClass}
                   disabled={isLoading || !classCode.trim()}
                 >
-                  {isLoading ? "Joining..." : "Join Class"}
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Joining...
+                    </>
+                  ) : (
+                    <>Join Class</>
+                  )}
                 </button>
               </div>
             </div>
@@ -456,32 +592,31 @@ export default function StudentDashboard() {
               }
             }}
           >
-            {/* Status bar on the left */}
-            <div className={`w-1/4 ${isSuccessStatus ? 'bg-cyan-600' : 'bg-red-500'} dark:bg-gray-700 transition-colors duration-500`}></div>
+            {/* Status icon on the left */}
+            <div className={`w-1/4 ${isSuccessStatus ? 'bg-gradient-to-b from-cyan-500 to-teal-500' : 'bg-gradient-to-b from-red-500 to-pink-600'} flex items-center justify-center`}>
+              <div className="bg-white/20 p-4 rounded-full">
+                {isSuccessStatus ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </div>
+            </div>
 
-            {/* White box content on the right */}
+            {/* Content on the right */}
             <div className="w-3/4 p-6 flex flex-col">
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{isSuccessStatus ? 'Success!' : 'Error'}</h2>
-              <Typography variant="body2" sx={{ mb: 3 }} className="text-gray-600 dark:text-gray-300">
-                {statusPopupMessage}
-              </Typography>
-              <Button
-                variant="contained"
+              <p className="text-gray-600 dark:text-gray-300 mb-6">{statusPopupMessage}</p>
+              <button
                 onClick={() => setShowStatusPopup(false)}
-                sx={{
-                  bgcolor: isSuccessStatus ? '#7BD0A7' : '#ef4444',
-                  '&:hover': { bgcolor: isSuccessStatus ? '#5bbd8b' : '#dc2626' },
-                  borderRadius: '10px',
-                  px: 3,
-                  py: 1,
-                  fontSize: '1rem',
-                  color: 'white',
-                  fontWeight: 'medium',
-                  textTransform: 'none',
-                }}
+                className={`px-6 py-2 rounded-full font-medium text-white ${isSuccessStatus ? 'bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700' : 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700'} transition-colors self-end`}
               >
                 Close
-              </Button>
+              </button>
             </div>
           </div>
         </div>

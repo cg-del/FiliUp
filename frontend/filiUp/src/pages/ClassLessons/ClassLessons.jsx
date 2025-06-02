@@ -134,7 +134,10 @@ export default function ClassLessons() {
     })
       .then(res => {
         const classData = res.data.data;
-        setClassInfo(classData);
+        setClassInfo({
+          ...classData,
+          pendingCount: classData.pendingCount || 0  // Make sure pendingCount is initialized
+        });
         setForm({ className: classData.className, description: classData.description });
         setStudents(classData.students || []);
         setStories(classData.stories || []);
@@ -612,11 +615,78 @@ export default function ClassLessons() {
             {/* Dashboard Tab Content */}
             {activeMainContentTab === 'dashboard' && (
               <Box sx={{ mb: 4 }}>
-                <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3, px: 1 }} className="text-gray-800 dark:text-white">
-                  Class Overview
-                </Typography>
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                  <Grid item xs={12} md={4}>
+                <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box>
+                    <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 0 }} className="text-gray-800 dark:text-white">
+                      Class Overview
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Manage your class content and track student progress
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box sx={{ 
+                  bgcolor: 'white', 
+                  p: 3, 
+                  borderRadius: 2,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  mb: 3,
+                  border: '1px solid',
+                  borderColor: 'divider'
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Plus size={18} color="#4CAF50" />
+                    <Typography variant="h6" fontWeight="600">
+                      Add New Content
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Create new learning materials for your students
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<Upload className="h-4 w-4" />}
+                      onClick={() => navigate(`/teacher/class/${classId}/create-story`)}
+                      sx={{
+                        bgcolor: '#0ca678',
+                        '&:hover': {
+                          bgcolor: '#099268',
+                        },
+                        color: 'white',
+                        textTransform: 'none',
+                        fontWeight: 500,
+                        px: 2,
+                        py: 1
+                      }}
+                    >
+                      Create Story
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<ClipboardList className="h-4 w-4" />}
+                      onClick={() => navigate('/teacher/create-quiz')}
+                      sx={{ 
+                        borderColor: '#1e88e5',
+                        color: '#1e88e5',
+                        textTransform: 'none',
+                        fontWeight: 500,
+                        px: 2,
+                        py: 1,
+                        '&:hover': {
+                          borderColor: '#1976d2',
+                          bgcolor: 'rgba(25, 118, 210, 0.04)',
+                        }
+                      }}
+                    >
+                      Create Quiz
+                    </Button>
+                  </Box>
+                </Box>
+
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6} md={3}>
                     <Paper
                       sx={{
                         p: 3,
@@ -624,19 +694,24 @@ export default function ClassLessons() {
                         display: 'flex',
                         flexDirection: 'column',
                         borderRadius: 2,
-                        boxShadow: 2,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        border: '1px solid',
+                        borderColor: 'divider'
                       }}
                     >
-                      <Typography variant="h6" fontWeight="bold" gutterBottom>
-                        Students
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
-                        <Users size={24} />
-                        <Typography variant="h4" fontWeight="bold">
-                          {classInfo?.studentCount || 0}
+                      <Box sx={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', bgcolor: '#4CAF50' }} />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Users size={18} color="#666" />
+                        <Typography variant="subtitle1" fontWeight="600">
+                          Students
                         </Typography>
                       </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      <Typography variant="h3" fontWeight="bold" sx={{ my: 2 }}>
+                        {classInfo?.studentCount || 0}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                         Total enrolled students
                       </Typography>
                       {user?.userRole === 'TEACHER' && (
@@ -647,12 +722,14 @@ export default function ClassLessons() {
                           sx={{ 
                             mt: 'auto', 
                             alignSelf: 'flex-start',
-                            borderColor: '#0891b2',
-                            color: '#0891b2',
+                            borderColor: '#9e9e9e',
+                            color: '#757575',
                             '&:hover': {
-                              borderColor: '#0e7490',
-                              bgcolor: 'rgba(8, 145, 178, 0.04)',
-                            }
+                              borderColor: '#757575',
+                              bgcolor: 'rgba(0, 0, 0, 0.04)',
+                            },
+                            fontSize: '0.8125rem',
+                            textTransform: 'none'
                           }}
                         >
                           Add Students
@@ -660,7 +737,8 @@ export default function ClassLessons() {
                       )}
                     </Paper>
                   </Grid>
-                  <Grid item xs={12} md={4}>
+                  
+                  <Grid item xs={12} sm={6} md={3}>
                     <Paper
                       sx={{
                         p: 3,
@@ -668,19 +746,76 @@ export default function ClassLessons() {
                         display: 'flex',
                         flexDirection: 'column',
                         borderRadius: 2,
-                        boxShadow: 2,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        border: '1px solid',
+                        borderColor: 'divider'
                       }}
                     >
-                      <Typography variant="h6" fontWeight="bold" gutterBottom>
-                        Quizzes
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
-                        <ClipboardList size={24} />
-                        <Typography variant="h4" fontWeight="bold">
-                          {quizzes.length || 0}
+                      <Box sx={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', bgcolor: '#FF9800' }} />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <UserCheck size={18} color="#666" />
+                        <Typography variant="subtitle1" fontWeight="600">
+                          Pending Enrollments
                         </Typography>
                       </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      <Typography variant="h3" fontWeight="bold" sx={{ my: 2 }}>
+                        {classInfo?.pendingCount || 0}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Students waiting approval
+                      </Typography>
+                      {user?.userRole === 'TEACHER' && (
+                        <Button
+                          variant="outlined"
+                          startIcon={<CheckCircle size={16} />}
+                          onClick={() => navigate(`/teacher/class/${classInfo?.classCode}/pending-enrollments`)}
+                          sx={{ 
+                            mt: 'auto', 
+                            alignSelf: 'flex-start',
+                            borderColor: '#9e9e9e',
+                            color: '#757575',
+                            '&:hover': {
+                              borderColor: '#757575',
+                              bgcolor: 'rgba(0, 0, 0, 0.04)',
+                            },
+                            fontSize: '0.8125rem',
+                            textTransform: 'none'
+                          }}
+                        >
+                          Review Enrollments
+                        </Button>
+                      )}
+                    </Paper>
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Paper
+                      sx={{
+                        p: 3,
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        borderRadius: 2,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        border: '1px solid',
+                        borderColor: 'divider'
+                      }}
+                    >
+                      <Box sx={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', bgcolor: '#2196F3' }} />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <ClipboardList size={18} color="#666" />
+                        <Typography variant="subtitle1" fontWeight="600">
+                          Quizzes
+                        </Typography>
+                      </Box>
+                      <Typography variant="h3" fontWeight="bold" sx={{ my: 2 }}>
+                        {quizzes.length || 0}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                         Quizzes created
                       </Typography>
                       {user?.userRole === 'TEACHER' && (
@@ -691,12 +826,13 @@ export default function ClassLessons() {
                           sx={{ 
                             mt: 'auto', 
                             alignSelf: 'flex-start',
-                            borderColor: '#0891b2',
-                            color: '#0891b2',
+                            borderColor: '#9e9e9e',
+                            color: '#757575',
                             '&:hover': {
-                              borderColor: '#0e7490',
-                              bgcolor: 'rgba(8, 145, 178, 0.04)',
-                            }
+                              borderColor: '#757575',
+                            },
+                            fontSize: '0.8125rem',
+                            textTransform: 'none'
                           }}
                         >
                           Create Quiz
@@ -704,7 +840,8 @@ export default function ClassLessons() {
                       )}
                     </Paper>
                   </Grid>
-                  <Grid item xs={12} md={4}>
+                  
+                  <Grid item xs={12} sm={6} md={3}>
                     <Paper
                       sx={{
                         p: 3,
@@ -712,19 +849,24 @@ export default function ClassLessons() {
                         display: 'flex',
                         flexDirection: 'column',
                         borderRadius: 2,
-                        boxShadow: 2,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        border: '1px solid',
+                        borderColor: 'divider'
                       }}
                     >
-                      <Typography variant="h6" fontWeight="bold" gutterBottom>
-                        Average Score
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
-                        <Award size={24} />
-                        <Typography variant="h4" fontWeight="bold">
-                          {averageScore ? `${averageScore}%` : 'N/A'}
+                      <Box sx={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', bgcolor: '#9C27B0' }} />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Award size={18} color="#666" />
+                        <Typography variant="subtitle1" fontWeight="600">
+                          Average Score
                         </Typography>
                       </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      <Typography variant="h3" fontWeight="bold" sx={{ my: 2, color: '#7E57C2' }}>
+                        {averageScore ? `${averageScore}%` : 'N/A'}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                         Class average quiz score
                       </Typography>
                       <Button
@@ -733,12 +875,13 @@ export default function ClassLessons() {
                         sx={{ 
                           mt: 'auto', 
                           alignSelf: 'flex-start',
-                          borderColor: '#0891b2',
-                          color: '#0891b2',
+                          borderColor: '#9e9e9e',
+                          color: '#757575',
                           '&:hover': {
-                            borderColor: '#0e7490',
-                            bgcolor: 'rgba(8, 145, 178, 0.04)',
-                          }
+                            borderColor: '#757575',
+                          },
+                          fontSize: '0.8125rem',
+                          textTransform: 'none'
                         }}
                       >
                         View Statistics
@@ -746,6 +889,83 @@ export default function ClassLessons() {
                     </Paper>
                   </Grid>
                 </Grid>
+
+                {/* Ready to get started section */}
+                {(!classInfo?.studentCount || classInfo?.studentCount === 0) && (
+                  <Paper
+                    sx={{
+                      p: 4,
+                      mt: 3,
+                      borderRadius: 2,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      border: '1px solid',
+                      borderColor: 'divider'
+                    }}
+                  >
+                    <Box 
+                      sx={{ 
+                        width: 80, 
+                        height: 80, 
+                        borderRadius: '50%', 
+                        bgcolor: '#F5F5F5', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        mb: 2
+                      }}
+                    >
+                      <BookOpen size={40} color="#9e9e9e" />
+                    </Box>
+                    <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
+                      Ready to get started?
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 500 }}>
+                      Your class is set up and ready to go. Add some students and create your first learning content to begin.
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Button
+                        variant="contained"
+                        startIcon={<UserPlus size={16} />}
+                        onClick={handleAddStudentDialogOpen}
+                        sx={{
+                          bgcolor: '#26A69A',
+                          '&:hover': {
+                            bgcolor: '#00897B',
+                          },
+                          color: 'white',
+                          textTransform: 'none',
+                          fontWeight: 500,
+                          px: 3,
+                          py: 1
+                        }}
+                      >
+                        Add Students
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        startIcon={<Plus size={16} />}
+                        onClick={() => setCreateStoryDialogOpen(true)}
+                        sx={{
+                          borderColor: '#9e9e9e',
+                          color: '#757575',
+                          '&:hover': {
+                            borderColor: '#757575',
+                          },
+                          textTransform: 'none',
+                          fontWeight: 500,
+                          px: 3,
+                          py: 1
+                        }}
+                      >
+                        Create Content
+                      </Button>
+                    </Box>
+                  </Paper>
+                )}
               </Box>
             )}
 
@@ -763,197 +983,7 @@ export default function ClassLessons() {
                 <GenreStories classId={classId} onViewStory={handleViewStory} />
               </Box>
             )}
-
-            {/* Stories Tab Content */}
-            {activeTab === 'stories' && (
-              <Box sx={{ mt: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                  <Box>
-                    <Typography variant="h5" fontWeight="bold" className="text-gray-800 dark:text-white">
-                      Class Stories
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Recent stories from your class
-                    </Typography>
-                  </Box>
-                  {user?.userRole === 'TEACHER' && (
-                    <Button
-                      variant="contained"
-                      startIcon={<AddIcon />}
-                      onClick={() => setCreateStoryDialogOpen(true)}
-                      sx={{
-                        bgcolor: '#0891b2',
-                        '&:hover': {
-                          bgcolor: '#0e7490',
-                        },
-                        color: 'white',
-                        borderRadius: '2rem',
-                        textTransform: 'none',
-                        px: 3,
-                      }}
-                    >
-                      Create Story
-                    </Button>
-                  )}
-                </Box>
-                
-                {stories.length > 0 ? (
-                  <Grid container spacing={2}>
-                    {stories.map((story) => {
-                      const genreOption = GENRE_OPTIONS.find(g => g.value === story.genre);
-                      const genreColor = genreOption ? genreOption.color : '#0891b2';
-                      const genreLabel = genreOption ? genreOption.label : story.genre;
-                      
-                      return (
-                        <Grid item xs={12} md={6} key={story.storyId}>
-                          <Paper
-                            elevation={1}
-                            sx={{
-                              p: 3,
-                              borderRadius: 1,
-                              transition: 'transform 0.1s, box-shadow 0.1s',
-                              '&:hover': {
-                                boxShadow: 3,
-                                bgcolor: '#fafafa'
-                              },
-                            }}
-                          >
-                            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                              <Box 
-                                sx={{ 
-                                  width: 48, 
-                                  height: 48, 
-                                  borderRadius: 1,
-                                  bgcolor: genreColor,
-                                  color: 'white',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: '1.5rem',
-                                  fontWeight: 'bold'
-                                }}
-                              >
-                                {genreLabel.charAt(0)}
-                              </Box>
-                              <Box>
-                                <Typography variant="h6" fontWeight="500">
-                                  {story.title}
-                                </Typography>
-                                <Box 
-                                  sx={{ 
-                                    display: 'inline-block',
-                                    bgcolor: genreColor,
-                                    color: 'white',
-                                    py: 0.5,
-                                    px: 1,
-                                    borderRadius: 0.5,
-                                    fontSize: '0.75rem',
-                                    mt: 0.5
-                                  }}
-                                >
-                                  {genreLabel}
-                                </Box>
-                              </Box>
-                            </Box>
-                            
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{
-                                mb: 2,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 3,
-                                WebkitBoxOrient: 'vertical',
-                              }}
-                            >
-                              {story.content}
-                            </Typography>
-
-                            {story.questions && story.questions.length > 0 && (
-                              <Box sx={{ mb: 2 }}>
-                                <Typography variant="body2" fontWeight="500" sx={{ mb: 1 }}>
-                                  {story.questions.length} Questions Available
-                                </Typography>
-                              </Box>
-                            )}
-
-                            <Box sx={{ display: 'flex', gap: 2 }}>
-                              <Button
-                                variant="outlined"
-                                onClick={() => handleViewStory(story)}
-                                sx={{
-                                  borderColor: '#0891b2',
-                                  color: '#0891b2',
-                                  '&:hover': {
-                                    borderColor: '#0e7490',
-                                    bgcolor: 'rgba(8, 145, 178, 0.04)',
-                                  },
-                                  borderRadius: '2rem',
-                                  textTransform: 'none',
-                                }}
-                              >
-                                Read Story
-                              </Button>
-                              {story.questions && story.questions.length > 0 && (
-                                <Button
-                                  variant="contained"
-                                  sx={{
-                                    bgcolor: '#0891b2',
-                                    '&:hover': {
-                                      bgcolor: '#0e7490',
-                                    },
-                                    color: 'white',
-                                    borderRadius: '2rem',
-                                    textTransform: 'none',
-                                  }}
-                                >
-                                  Take Quiz
-                                </Button>
-                              )}
-                            </Box>
-                          </Paper>
-                        </Grid>
-                      );
-                    })}
-                  </Grid>
-                ) : (
-                  <Paper 
-                    elevation={0} 
-                    sx={{ 
-                      p: 4, 
-                      textAlign: 'center',
-                      bgcolor: '#f5f5f5',
-                      borderRadius: 1
-                    }}
-                  >
-                    <Typography variant="body1" color="text.secondary">
-                      No stories have been added to this class yet.
-                    </Typography>
-                    {user?.userRole === 'TEACHER' && (
-                      <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => setCreateStoryDialogOpen(true)}
-                        sx={{
-                          mt: 2,
-                          bgcolor: '#0891b2',
-                          '&:hover': {
-                            bgcolor: '#0e7490',
-                          },
-                          color: 'white',
-                          borderRadius: '2rem',
-                          textTransform: 'none',
-                        }}
-                      >
-                        Create Your First Story
-                      </Button>
-                    )}
-                  </Paper>
-                )}
-              </Box>
-            )}
+          
           </div>
         </div>
       </div>
@@ -1148,22 +1178,27 @@ export default function ClassLessons() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Create New Story</DialogTitle>
+        <DialogTitle>
+          <Typography variant="h5" fontWeight="bold">Lumikha ng Bagong Kwento</Typography>
+        </DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
             <TextField
-              label="Title"
+              label="Pamagat ng Kwento"
               value={newStory.title}
               onChange={(e) => setNewStory({ ...newStory, title: e.target.value })}
               fullWidth
               required
+              InputProps={{
+                sx: { fontSize: '1.1rem', py: 0.5 }
+              }}
             />
             <FormControl fullWidth required>
-              <InputLabel>Genre</InputLabel>
+              <InputLabel>Uri ng Kwento</InputLabel>
               <Select
                 value={newStory.genre}
                 onChange={(e) => setNewStory({ ...newStory, genre: e.target.value })}
-                label="Genre"
+                label="Uri ng Kwento"
               >
                 {GENRE_OPTIONS.map(genre => (
                   <MenuItem key={genre.value} value={genre.value}>
@@ -1173,14 +1208,66 @@ export default function ClassLessons() {
               </Select>
             </FormControl>
             <TextField
-              label="Content"
+              label="Nilalaman ng Kwento"
               value={newStory.content}
               onChange={(e) => setNewStory({ ...newStory, content: e.target.value })}
               multiline
               rows={8}
               fullWidth
               required
+              placeholder="Isulat ang iyong kwento dito... Hayaan ang iyong imahinasyon at lumikha ng isang kahanga-hangang kwento!"
             />
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>Larawan ng Pabalat</Typography>
+              {!imagePreview ? (
+                <Box 
+                  sx={{
+                    border: '2px dashed',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    p: 3,
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    '&:hover': { borderColor: 'primary.main' }
+                  }}
+                  onClick={() => document.getElementById('upload-story-image').click()}
+                >
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <Typography>Mag-upload ng Larawan ng Pabalat</Typography>
+                  <Typography variant="caption" color="text.secondary">PNG, JPG, GIF hanggang 5MB</Typography>
+                </Box>
+              ) : (
+                <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                  <img
+                    src={imagePreview}
+                    alt="Story cover preview"
+                    style={{
+                      width: '200px',
+                      height: '200px',
+                      objectFit: 'cover',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    sx={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      bgcolor: 'error.main',
+                      color: 'white',
+                      '&:hover': { bgcolor: 'error.dark' }
+                    }}
+                    onClick={() => {
+                      setImagePreview(null);
+                      setSelectedImage(null);
+                    }}
+                  >
+                    <X size={16} />
+                  </IconButton>
+                </Box>
+              )}
+            </Box>
             <input
               accept="image/*"
               type="file"
@@ -1188,38 +1275,29 @@ export default function ClassLessons() {
               onChange={handleImageSelect}
               style={{ display: 'none' }}
             />
-            <label htmlFor="upload-story-image">
-              <Button
-                component="span"
-                variant="outlined"
-                startIcon={<Upload size={16} />}
-                sx={{ alignSelf: 'start' }}
-              >
-                Upload Cover Image
-              </Button>
-            </label>
-            {imagePreview && (
-              <Box
-                component="img"
-                src={imagePreview}
-                alt="Story cover preview"
-                sx={{
-                  width: '100%',
-                  maxHeight: 200,
-                  objectFit: 'contain'
-                }}
-              />
-            )}
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateStoryDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button 
+            onClick={() => setCreateStoryDialogOpen(false)} 
+            variant="outlined"
+            sx={{ borderRadius: '0.5rem', px: 3, py: 1 }}
+          >
+            Kanselahin
+          </Button>
           <Button
             onClick={handleCreateStory}
             variant="contained"
             disabled={isCreatingStory || !newStory.title || !newStory.content || !newStory.genre}
+            sx={{
+              bgcolor: '#0891b2',
+              '&:hover': { bgcolor: '#0e7490' },
+              borderRadius: '0.5rem',
+              px: 3,
+              py: 1
+            }}
           >
-            {isCreatingStory ? 'Creating...' : 'Create Story'}
+            {isCreatingStory ? 'Nililikha...' : 'I-publish ang Kwento'}
           </Button>
         </DialogActions>
       </Dialog>
