@@ -1,9 +1,9 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Book, User, LogOut, ChevronLeft, GraduationCap, BookOpen, Code, Award, BookText, Clock, CheckCircle2, BarChart3 } from "lucide-react"
+import { BookOpen, Award, Play, Users, Home, FileText, Target, User, Bell, Settings, ChevronLeft, LogOut, GraduationCap, Code } from "lucide-react"
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
-import { Button, Typography, Box } from '@mui/material'
+import { Button, Typography } from '@mui/material'
 import logo from '../../assets/logo.svg'
 import { useUser } from '../../context/UserContext'
 
@@ -37,9 +37,8 @@ export default function ClassStories() {
     if (typeof window !== 'undefined') {
       const savedMode = localStorage.getItem('darkMode');
       return savedMode ? JSON.parse(savedMode) : false;
-    } else {
-      return false;
     }
+    return false;
   })
   const [openUserMenu, setOpenUserMenu] = useState(false)
   const [myClassesOpen, setMyClassesOpen] = useState(true)
@@ -49,10 +48,8 @@ export default function ClassStories() {
   const { logout } = useUser()
 
   useEffect(() => {
-    // Fetch user info from localStorage
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
     setUserName(userInfo.userName || '');
-
     fetchStories()
   }, [classId, genre])
 
@@ -82,15 +79,12 @@ export default function ClassStories() {
       }
 
       const data = await response.json()
-      
-      // Filter stories by genre if specified
       const filteredStories = genre 
         ? data.filter(story => story.genre === genre)
         : data
       
       setStories(filteredStories)
       
-      // Set class name if we have stories
       if (data.length > 0 && data[0].classEntity) {
         setClassName(data[0].classEntity.className)
       }
@@ -104,10 +98,8 @@ export default function ClassStories() {
 
   const handleBack = () => {
     if (genre) {
-      // If we're viewing stories of a specific genre, go back to genres view
       navigate(`/class/${classId}/genres`, { state: { className: className } });
     } else {
-      // Otherwise go back to home
       navigate(-1)
     }
   }
@@ -124,10 +116,6 @@ export default function ClassStories() {
   const closeModal = () => {
     setModalOpen(false)
     setSelectedStory(null)
-  }
-
-  const toggleUserMenu = () => {
-    setOpenUserMenu(prev => !prev)
   }
 
   const toggleMyClasses = () => { 
@@ -247,7 +235,7 @@ export default function ClassStories() {
               <div className="relative">
                 <div
                   className="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-1 cursor-pointer transition-colors duration-300"
-                  onClick={toggleUserMenu}
+                  onClick={() => setOpenUserMenu(!openUserMenu)}
                 >
                   <div className="flex flex-col items-end mr-2">
                     <span className="font-bold text-gray-800 dark:text-white leading-tight text-md">{userName}</span>
@@ -282,129 +270,98 @@ export default function ClassStories() {
               <h3 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2 transition-colors duration-500">
                 Explore {genre ? getGenreLabel(genre) : "Stories"}
               </h3>
-              <p className="text-gray-600 dark:text-gray-300 transition-colors duration-500 mb-4">
+              <p className="text-gray-600 dark:text-gray-300 transition-colors duration-500">
                 Choose a story that sparks your curiosity and imagination—let the adventure begin!
               </p>
-              
-              {/* Filter buttons */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                <button className="bg-emerald-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-emerald-600 transition-colors flex items-center gap-1">
-                  <span>Created by FiliUp</span>
-                </button>
-                <button className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-1">
-                  <span>Created by Teacher</span>
-                </button>
-              </div>
             </div>
 
             {/* Stories Grid */}
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
               </div>
             ) : error ? (
-              <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-                <p className="font-medium">{error}</p>
-                <p className="text-sm mt-1">Please try refreshing the page or contact support if the problem persists.</p>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 p-4 rounded-lg">
+                {error}
               </div>
             ) : stories.length === 0 ? (
-              <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-8 text-center">
-                <BookText size={48} className="mx-auto mb-4 text-gray-400 dark:text-gray-500" />
-                <h4 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No stories available</h4>
-                <p className="text-gray-500 dark:text-gray-400">
-                  {genre 
-                    ? `No stories available for ${getGenreLabel(genre)}`
-                    : 'No stories available for this class yet.'
-                  }
+              <div className="text-center py-12">
+                <BookOpen className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No stories available</h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {genre ? `No stories found for ${getGenreLabel(genre)}` : 'No stories available for this class yet.'}
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {stories.map((story, index) => (
-                  <div
-                    key={story.storyId}
-                    className="bg-white dark:bg-gray-700 rounded-xl shadow-md hover:shadow-lg overflow-hidden border border-gray-100 dark:border-gray-600 transition-all duration-300"
-                  >
-                    <div className="bg-emerald-500 text-white px-4 py-2 text-sm font-medium">
-                      <div className="flex justify-between items-center">
-                        <div>Story {index + 1}</div>
-                        <div className="bg-white/20 px-2 py-0.5 rounded-full text-xs">Created by FiliUp</div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
-                        {story.title}
-                      </h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Left column - Story Details */}
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Story Details</h4>
-                          
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                              <Clock size={16} />
-                              <span>Date & Time Started:</span>
-                              <span className="text-gray-800 dark:text-white">--</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                              <CheckCircle2 size={16} />
-                              <span>Date & Time Finished:</span>
-                              <span className="text-gray-800 dark:text-white">--</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                              <BarChart3 size={16} />
-                              <span>Score:</span>
-                              <span className="text-gray-800 dark:text-white">--/12</span>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-4">
-                            <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Progress</h4>
-                            <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mb-1">
-                              <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '0%' }}></div>
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">0% Complete</div>
-                          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 p-4">
+                {stories.map((story) => (
+                  <div key={story.storyId} className="book-wrapper perspective-1000">
+                    {/* Book Container */}
+                    <div className="book-container">
+                      {/* Front Cover */}
+                      <div className="book-front">
+                        {/* Spine */}
+                        <div className="book-spine">
+                          <div className="spine-title">{story.title}</div>
                         </div>
                         
-                        {/* Right column - Story Preview */}
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">Story Preview</h4>
-                          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md text-sm text-gray-700 dark:text-gray-300 mb-3 italic">
-                            "{story.content?.substring(0, 100)}..."
+                        {/* Cover */}
+                        <div className="book-cover">
+                          {/* Genre Badge */}
+                          <div className="absolute top-4 left-4 z-10">
+                            <span className="bg-emerald-900/90 backdrop-blur-sm text-white text-sm px-3 py-1 rounded-full border border-white/20">
+                              {getGenreLabel(story.genre)}
+                            </span>
                           </div>
-                          
-                          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
-                            <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Learning Objectives</h5>
-                            <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-                              <li>Understand Filipino poetry structure</li>
-                              <li>Identify literary devices used</li>
-                              <li>Comprehend emotional themes</li>
-                              <li>Analyze cultural context</li>
-                            </ul>
+
+                          {/* Cover Image & Overlay */}
+                          <div className="w-full h-full relative overflow-hidden rounded-r-lg">
+                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/90 via-emerald-800/80 to-emerald-900/90 z-[1]" />
+                            <div className="absolute inset-0 bg-[url('/patterns/filipino-pattern.png')] opacity-40 z-[2]" />
+                            <img
+                              src={story.coverPictureUrl || 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'}
+                              alt={story.title}
+                              className="w-full h-full object-cover"
+                            />
+                            
+                            {/* Content Overlay */}
+                            <div className="absolute inset-0 flex flex-col justify-end p-6 z-10">
+                              {/* Decorative Line */}
+                              <div className="w-16 h-1 bg-white/30 mb-4 rounded-full" />
+                              
+                              {/* Title */}
+                              <h2 className="text-2xl font-bold text-white mb-3 font-serif">{story.title}</h2>
+                              
+                              
+
+                              {/* Action Button */}
+                              <button
+                                onClick={() => openModal(story)}
+                                className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-lg py-3 flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm hover:scale-105"
+                              >
+                                <BookOpen className="w-4 h-4" />
+                                Buksan ang Libro
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      
-                      <div className="mt-6 flex justify-between">
-                        <button 
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                          onClick={() => openModal(story)}
-                        >
-                          <BookOpen size={18} />
-                          Read Story
-                        </button>
-                        
-                        <button 
-                          className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                        >
-                          <Award size={18} />
-                          Attempt Quiz
-                        </button>
+
+                      {/* Back Cover (Details Panel) */}
+                      <div className="book-back">
+                        <div className="p-6 bg-emerald-900/95 backdrop-blur-md h-full rounded-lg border border-white/10">
+                          <h3 className="text-lg font-bold text-white mb-3">Tungkol sa Kwento</h3>
+                          <p className="text-white/80 text-sm line-clamp-6 mb-4">{story.content}</p>
+                          <div className="absolute bottom-6 left-6 right-6">
+                            <button
+                              onClick={() => openModal(story)}
+                              className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-lg py-3 flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-sm"
+                            >
+                              <BookOpen className="w-4 h-4" />
+                              Simulan ang Pagbabasa
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -416,56 +373,135 @@ export default function ClassStories() {
       </div>
 
       {/* Story Modal */}
-      <Dialog 
-        open={modalOpen} 
-        onClose={closeModal} 
-        maxWidth="md" 
-        fullWidth 
-        className="dark:bg-gray-800"
+      <Dialog
+        open={modalOpen}
+        onClose={closeModal}
+        maxWidth="md"
+        fullWidth
         PaperProps={{
-          style: {
-            borderRadius: '12px',
-            padding: '16px',
-          }
+          className: "dark:bg-gray-800",
+          style: { borderRadius: '12px' }
         }}
       >
-        <DialogTitle className="text-gray-800 dark:text-white text-2xl font-bold">
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
           {selectedStory?.title}
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body1" className="text-gray-800 dark:text-white" sx={{ whiteSpace: 'pre-line', lineHeight: 1.8 }}>
+          <Typography
+            variant="body1"
+            className="text-gray-700 dark:text-gray-300"
+            style={{ whiteSpace: 'pre-line', lineHeight: 1.8 }}
+          >
             {selectedStory?.content}
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={closeModal} 
-            sx={{ 
-              bgcolor: 'transparent', 
-              color: '#10b981',
-              '&:hover': { bgcolor: '#f3f4f6' },
-              borderRadius: '8px',
-              fontWeight: 'bold'
-            }}
+        <DialogActions className="p-4 border-t dark:border-gray-700">
+          <button
+            onClick={closeModal}
+            className="px-4 py-2 text-emerald-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
           >
-            Close
-          </Button>
-          <Button 
-            onClick={() => {/* Handle Attempt Quiz logic */}} 
-            sx={{ 
-              bgcolor: '#10b981', 
-              color: 'white',
-              '&:hover': { bgcolor: '#059669' },
-              borderRadius: '8px',
-              fontWeight: 'bold'
-            }}
-          >
-            Attempt Quiz
-          </Button>
+            Isara
+          </button>
+          <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">
+            Simulan ang Quiz
+          </button>
         </DialogActions>
       </Dialog>
 
       <style jsx="true">{`
+        .perspective-1000 {
+          perspective: 1000px;
+          height: 480px;
+        }
+
+        .book-container {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transform-style: preserve-3d;
+          transition: transform 1s;
+        }
+
+        .book-wrapper:hover .book-container {
+          transform: rotateY(-180deg);
+        }
+
+        .book-front,
+        .book-back {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          backface-visibility: hidden;
+          transform-style: preserve-3d;
+        }
+
+        .book-front {
+          display: flex;
+          transform: translateZ(20px);
+        }
+
+        .book-back {
+          transform: rotateY(180deg);
+        }
+
+        .book-spine {
+          width: 40px;
+          background: linear-gradient(to right, #064e3b, #065f46);
+          border-radius: 4px 0 0 4px;
+          display: flex;
+          align-items: center;
+          padding: 20px 0;
+          box-shadow: inset -2px 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .spine-title {
+          writing-mode: vertical-rl;
+          transform: rotate(180deg);
+          color: white;
+          font-weight: bold;
+          text-align: center;
+          width: 100%;
+          font-size: 0.9rem;
+          opacity: 0.9;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .book-cover {
+          flex: 1;
+          background: #065f46;
+          border-radius: 0 4px 4px 0;
+          overflow: hidden;
+          position: relative;
+          box-shadow: 
+            0 10px 20px rgba(0, 0, 0, 0.2),
+            0 6px 6px rgba(0, 0, 0, 0.1),
+            inset -1px 0 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .book-container::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 40px;
+          width: calc(100% - 40px);
+          height: 100%;
+          background: linear-gradient(to right, rgba(0, 0, 0, 0.1) 0%, transparent 5%);
+          z-index: 2;
+          pointer-events: none;
+        }
+
+        .book-wrapper::after {
+          content: '';
+          position: absolute;
+          bottom: -20px;
+          left: 10%;
+          width: 80%;
+          height: 20px;
+          background: rgba(0, 0, 0, 0.2);
+          filter: blur(10px);
+          border-radius: 50%;
+        }
+
         .teacher-scrollbar::-webkit-scrollbar {
           width: 6px;
         }

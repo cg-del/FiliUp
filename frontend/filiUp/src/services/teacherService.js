@@ -11,6 +11,23 @@ const teacherService = {
     }
   },
 
+  // Upload story cover image
+  uploadCoverImage: async (imageFile) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', imageFile);
+      
+      const response = await api.post('/story/upload-cover', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
   // Get all stories for a class
   getClassStories: async (classId) => {
     try {

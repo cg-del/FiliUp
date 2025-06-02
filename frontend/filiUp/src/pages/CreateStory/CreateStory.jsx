@@ -45,10 +45,10 @@ export default function CreateStory() {
     content: '',
     genre: '',
     difficultyLevel: 'BEGINNER',
-    coverPicture: null,
-    coverPictureType: ''
+    coverPictureUrl: null
   });
   
+  const [coverImage, setCoverImage] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -86,14 +86,10 @@ export default function CreateStory() {
         return;
       }
 
+      setCoverImage(file);
+      
       const reader = new FileReader();
       reader.onload = (e) => {
-        const base64String = e.target.result.split(',')[1];
-        setFormData(prev => ({
-          ...prev,
-          coverPicture: base64String,
-          coverPictureType: file.type
-        }));
         setCoverPreview(e.target.result);
       };
       reader.readAsDataURL(file);
@@ -102,10 +98,10 @@ export default function CreateStory() {
 
   const removeCoverImage = () => {
     setCoverPreview(null);
+    setCoverImage(null);
     setFormData(prev => ({
       ...prev,
-      coverPicture: null,
-      coverPictureType: ''
+      coverPictureUrl: null
     }));
   };
 
@@ -133,12 +129,28 @@ export default function CreateStory() {
     setSuccess('');
     
     try {
-      const storyData = {
+      let storyData = {
         ...formData,
-        classId: classId || null, // Include classId if provided
+        classId: classId || null,
         teacherId: user.userId
       };
       
+      // Upload cover image if exists
+      if (coverImage) {
+        try {
+          const uploadResponse = await teacherService.uploadCoverImage(coverImage);
+          if (uploadResponse && uploadResponse.url) {
+            storyData.coverPictureUrl = uploadResponse.url;
+          }
+        } catch (imageError) {
+          console.error('Error uploading cover image:', imageError);
+          setError(imageError.message || 'Hindi matagumpay ang pag-upload ng larawan. Pakisubukang muli.');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Create story with image URL
       await teacherService.createStory(storyData);
       
       setSuccess('Matagumpay na nalikha ang kwento!');

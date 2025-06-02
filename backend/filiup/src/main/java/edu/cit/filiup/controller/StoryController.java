@@ -99,7 +99,7 @@ public class StoryController {
     }
     
     // Upload cover image without story ID (for initial story creation)
-    @PostMapping("/upload-cover")
+    @PostMapping(value = "/upload-cover", consumes = "multipart/form-data")
     @RequireRole({"TEACHER", "ADMIN"})
     public ResponseEntity<?> uploadCoverImage(
             @RequestParam("file") MultipartFile file,
@@ -113,6 +113,28 @@ public class StoryController {
             System.out.println("Upload cover image request:");
             System.out.println("User Email: " + userEmail);
             System.out.println("User Role: " + userRole);
+            System.out.println("File name: " + file.getOriginalFilename());
+            System.out.println("File size: " + file.getSize());
+            System.out.println("Content type: " + file.getContentType());
+            
+            // Validate file type
+            String contentType = file.getContentType();
+            if (contentType == null || !(contentType.equals("image/jpeg") || 
+                                         contentType.equals("image/png") || 
+                                         contentType.equals("image/gif"))) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Invalid file type");
+                errorResponse.put("message", "Only JPG, PNG, and GIF files are allowed");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            // Validate file size (5MB = 5 * 1024 * 1024 bytes)
+            if (file.getSize() > 5 * 1024 * 1024) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "File too large");
+                errorResponse.put("message", "Maximum file size is 5MB");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
             
             // Upload the image to Cloudinary
             Map<String, String> uploadResult = cloudinaryService.uploadImage(file, "story-covers");
@@ -137,7 +159,7 @@ public class StoryController {
     }
     
     // Upload cover image for a story
-    @PostMapping("/upload-cover/{storyId}")
+    @PostMapping(value = "/upload-cover/{storyId}", consumes = "multipart/form-data")
     @RequireRole({"TEACHER", "ADMIN"})
     public ResponseEntity<?> uploadCoverImage(
             @PathVariable UUID storyId,
@@ -147,6 +169,33 @@ public class StoryController {
             // Extract user email and role from JWT token
             String userEmail = jwtAuthToken.getToken().getClaim("sub");
             String userRole = jwtAuthToken.getToken().getClaim("role");
+            
+            // Log the request
+            System.out.println("Upload cover image request for story " + storyId + ":");
+            System.out.println("User Email: " + userEmail);
+            System.out.println("User Role: " + userRole);
+            System.out.println("File name: " + image.getOriginalFilename());
+            System.out.println("File size: " + image.getSize());
+            System.out.println("Content type: " + image.getContentType());
+            
+            // Validate file type
+            String contentType = image.getContentType();
+            if (contentType == null || !(contentType.equals("image/jpeg") || 
+                                         contentType.equals("image/png") || 
+                                         contentType.equals("image/gif"))) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Invalid file type");
+                errorResponse.put("message", "Only JPG, PNG, and GIF files are allowed");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            // Validate file size (5MB = 5 * 1024 * 1024 bytes)
+            if (image.getSize() > 5 * 1024 * 1024) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "File too large");
+                errorResponse.put("message", "Maximum file size is 5MB");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
             
             // Check if user has permission to update this story
             if (!storyService.hasPermission(storyId, userEmail, userRole)) {

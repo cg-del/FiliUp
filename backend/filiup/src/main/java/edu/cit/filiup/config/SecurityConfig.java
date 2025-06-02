@@ -17,6 +17,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import javax.crypto.SecretKey;
 import io.jsonwebtoken.security.Keys;
@@ -72,6 +73,8 @@ public class SecurityConfig {
                     "/api/user/verify",
                     "/api/user/refresh"
                 ).permitAll()
+                // Allow preflight requests for all endpoints
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Admin only endpoints
                 .requestMatchers(
                     "/api/user/getAllUser",
