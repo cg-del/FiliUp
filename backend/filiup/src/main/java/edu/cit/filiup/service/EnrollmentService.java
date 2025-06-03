@@ -34,6 +34,14 @@ public interface EnrollmentService {
     List<EnrollmentResponseDTO> getEnrollmentsByClassCode(String classCode);
 
     /**
+     * Gets all pending enrollments for a class by class ID
+     *
+     * @param classId the ID of the class
+     * @return list of pending enrollments (is_accepted = false) with detailed student information
+     */
+    List<EnrollmentResponseDTO> getPendingEnrollmentsByClassId(UUID classId);
+
+    /**
      * Accepts a student's enrollment request
      *
      * @param studentId the ID of the student to accept

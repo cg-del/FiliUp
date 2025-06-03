@@ -100,7 +100,20 @@ public class UserService {
         return null; // Login failed
     }
 
+    // Login Method by Username
+    public UserEntity loginUserByUsername(String username, String password) {
+        UserEntity user = urepo.findByUserName(username);
+        if (user != null && passwordEncoder.matches(password, user.getUserPassword())) {
+            return user; // Successful login
+        }
+        return null; // Login failed
+    }
+
     public UserEntity getUserByEmail(String email) {
         return urepo.findByUserEmail(email);
+    }
+
+    public UserEntity getUserByUsername(String username) {
+        return urepo.findByUserName(username);
     }
 }

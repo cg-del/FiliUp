@@ -14,6 +14,8 @@ public class StoryUpdateDto {
     
     private String genre;
     
+    private String fictionType;
+    
     private Long classId;
     
     private String coverPictureUrl;
@@ -47,6 +49,14 @@ public class StoryUpdateDto {
     
     public void setGenre(String genre) {
         this.genre = genre;
+    }
+    
+    public String getFictionType() {
+        return fictionType;
+    }
+    
+    public void setFictionType(String fictionType) {
+        this.fictionType = fictionType;
     }
     
     public Long getClassId() {

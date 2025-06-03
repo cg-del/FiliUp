@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,16 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Award, User, Play, Star } from 'lucide-react';
 import StudentEnrollment from '../components/StudentEnrollment';
+import { enrollmentService } from '@/lib/services/enrollmentService';
+import { classService } from '@/lib/services/classService';
+import type { Class } from '@/lib/services/types';
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
+  const [studentClasses, setStudentClasses] = useState<Class[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [userProgress] = useState({
     totalStories: 12,
     completedStories: 7,
@@ -26,6 +33,38 @@ const StudentDashboard = () => {
     ]
   });
 
+  // Fetch student's classes on component mount
+  useEffect(() => {
+    const fetchStudentClasses = async () => {
+      try {
+        setLoading(true);
+        const response = await classService.getMyClasses();
+        if (response.data) {
+          setStudentClasses(response.data);
+        }
+      } catch (err) {
+        setError('Failed to fetch classes');
+        console.error('Error fetching student classes:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentClasses();
+  }, []);
+
+  // Function to refresh classes after successful enrollment
+  const handleEnrollmentSuccess = async () => {
+    try {
+      const response = await classService.getMyClasses();
+      if (response.data) {
+        setStudentClasses(response.data);
+      }
+    } catch (err) {
+      console.error('Error refreshing classes:', err);
+    }
+  };
+
   const stories = [
     { id: 1, title: 'Ang Matalinong Langgam', difficulty: 'Easy', completed: true, stars: 3 },
     { id: 2, title: 'Ang Masipag na Bubuyog', difficulty: 'Easy', completed: true, stars: 2 },
@@ -34,8 +73,9 @@ const StudentDashboard = () => {
     { id: 5, title: 'Ang Pagkakaibigan', difficulty: 'Hard', completed: false, stars: 0 },
   ];
 
-  // If student is not enrolled or enrollment is pending, show enrollment form
-  if (user?.enrollmentStatus !== 'approved') {
+  // ENROLLMENT FLOW: If student has no accepted classes, show enrollment form
+  // This calls /api/classes/myclasses which only returns classes where enrollment isAccepted = true
+  if (loading || studentClasses.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
         {/* Header */}
@@ -73,14 +113,35 @@ const StudentDashboard = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Kumusta, {user?.name}! 👋
             </h1>
-            <p className="text-gray-600">
-              {user?.enrollmentStatus === 'pending' 
-                ? 'Your enrollment request is pending teacher approval.' 
-                : 'Join your class to start your Filipino learning journey!'}
-            </p>
+            {loading ? (
+              <div className="flex justify-center items-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-600 mr-3"></div>
+                <p className="text-gray-600">Loading your classes...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-4">
+                <p className="text-red-600 mb-2">Error loading classes. Please try again.</p>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  variant="outline"
+                  className="text-teal-600 border-teal-200 hover:bg-teal-50"
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <p className="text-gray-600 mb-2">
+                  You are not enrolled in any classes yet.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Join your class to start your Filipino learning journey!
+                </p>
+              </div>
+            )}
           </div>
 
-          <StudentEnrollment />
+          {!loading && !error && <StudentEnrollment onEnrollmentSuccess={handleEnrollmentSuccess} />}
         </div>
       </div>
     );
@@ -124,7 +185,24 @@ const StudentDashboard = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Kumusta, {user?.name}! 👋
           </h1>
-          <p className="text-gray-600">Ready na ba kayong mag-explore ng mga bagong kwento?</p>
+          <p className="text-gray-600">
+            Ready na ba kayong mag-explore ng mga bagong kwento? 
+            You're enrolled in {studentClasses.length} {studentClasses.length === 1 ? 'class' : 'classes'}.
+          </p>
+          
+          {/* Display enrolled classes */}
+          {studentClasses.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Your Classes:</h3>
+              <div className="flex flex-wrap gap-2">
+                {studentClasses.map((cls) => (
+                  <Badge key={cls.classId} variant="outline" className="px-3 py-1 text-sm">
+                    {cls.className} ({cls.classCode})
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Progress Overview */}

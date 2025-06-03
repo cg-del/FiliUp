@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,17 +8,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
-import { Plus, BookOpen, Upload, X } from 'lucide-react';
+import { Plus, BookOpen, Upload, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { STORY_GENRES } from '@/constants/storyGenres';
+import { classService } from '@/lib/services/classService';
+import { storyService } from '@/lib/services/storyService';
+import type { Class } from '@/lib/services/types';
 
 interface CreateStoryFormData {
   title: string;
   content: string;
   genre: string;
-  coverPictureUrl?: string;
-  isActive: boolean;
+  fictionType: string;
+  classId: string;
+}
+
+interface CreateStoryRequestData {
+  title: string;
+  content: string;
+  genre: string;
+  fictionType: string;
+  coverPictureUrl: string;
+  coverPictureType: string;
   classId: string;
 }
 
@@ -27,10 +38,20 @@ interface CreateStoryFormProps {
   selectedClass?: string;
 }
 
+interface SavedFormData extends CreateStoryFormData {
+  coverImagePreview?: string;
+}
+
+const STORAGE_KEY = 'create-story-form-data';
+
 const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -39,11 +60,122 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
       title: '',
       content: '',
       genre: '',
-      coverPictureUrl: '',
-      isActive: true,
-      classId: selectedClass || user?.classes?.[0] || ''
+      fictionType: 'Alamat',
+      classId: selectedClass || ''
     }
   });
+
+  // Save form data to localStorage
+  const saveFormData = (data: SavedFormData) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error('Failed to save form data to localStorage:', error);
+    }
+  };
+
+  // Load form data from localStorage
+  const loadFormData = (): SavedFormData | null => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch (error) {
+      console.error('Failed to load form data from localStorage:', error);
+      return null;
+    }
+  };
+
+  // Clear form data from localStorage
+  const clearFormData = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      console.error('Failed to clear form data from localStorage:', error);
+    }
+  };
+
+  // Load saved form data when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      const savedData = loadFormData();
+      if (savedData) {
+        // Restore form values
+        form.setValue('title', savedData.title);
+        form.setValue('content', savedData.content);
+        form.setValue('genre', savedData.genre);
+        form.setValue('fictionType', savedData.fictionType);
+        if (savedData.classId) {
+          form.setValue('classId', savedData.classId);
+        }
+        
+        // Restore cover image preview
+        if (savedData.coverImagePreview) {
+          setCoverImagePreview(savedData.coverImagePreview);
+        }
+
+        toast({
+          title: "Draft Restored",
+          description: "Your previous work has been restored.",
+        });
+      }
+    }
+  }, [isOpen, form, toast]);
+
+  // Watch form changes and save to localStorage
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const subscription = form.watch((value) => {
+      const formData: SavedFormData = {
+        title: value.title || '',
+        content: value.content || '',
+        genre: value.genre || '',
+        fictionType: value.fictionType || 'Alamat',
+        classId: value.classId || '',
+        coverImagePreview: coverImagePreview
+      };
+      
+      // Only save if there's actual content to prevent unnecessary storage
+      if (formData.title || formData.content || formData.genre || coverImagePreview) {
+        saveFormData(formData);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form, isOpen, coverImagePreview]);
+
+  // Fetch teacher's classes when component mounts or dialog opens
+  useEffect(() => {
+    const fetchClasses = async () => {
+      if (!isOpen) return;
+      
+      try {
+        setLoadingClasses(true);
+        const response = await classService.getClassesByTeacher();
+        if (response.data) {
+          setClasses(response.data);
+          // Set default class if none selected and no saved data
+          const savedData = loadFormData();
+          if (!selectedClass && !savedData?.classId && response.data.length > 0) {
+            form.setValue('classId', response.data[0].classId);
+          } else if (selectedClass && !savedData?.classId) {
+            form.setValue('classId', selectedClass);
+          }
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load classes. Please try again.",
+          variant: "destructive",
+        });
+        console.error('Error fetching classes:', error);
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+
+    fetchClasses();
+  }, [isOpen, selectedClass, form, toast]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -73,7 +205,15 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
-        setCoverImagePreview(e.target?.result as string);
+        const preview = e.target?.result as string;
+        setCoverImagePreview(preview);
+        
+        // Save the preview to localStorage
+        const currentFormData = form.getValues();
+        saveFormData({
+          ...currentFormData,
+          coverImagePreview: preview
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -82,63 +222,112 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
   const removeCoverImage = () => {
     setCoverImage(null);
     setCoverImagePreview('');
-    form.setValue('coverPictureUrl', '');
+    
+    // Update localStorage without cover image
+    const currentFormData = form.getValues();
+    saveFormData({
+      ...currentFormData,
+      coverImagePreview: undefined
+    });
+  };
+
+  const resetForm = () => {
+    form.reset();
+    setCoverImage(null);
+    setCoverImagePreview('');
+    clearFormData();
   };
 
   const onSubmit = async (data: CreateStoryFormData) => {
     try {
-      // Generate story ID (UUID simulation)
-      const storyId = crypto.randomUUID();
-      
-      // Simulate API call to create story
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const storyData = {
-        storyId,
+      setIsCreating(true);
+      let coverPictureUrl = '';
+      let coverPictureType = '';
+
+      // Step 1: Upload cover image if provided
+      if (coverImage) {
+        setIsUploading(true);
+        try {
+          const uploadResult = await storyService.uploadCoverImage(coverImage);
+          coverPictureUrl = uploadResult.url;
+          coverPictureType = coverImage.type;
+          toast({
+            title: "Cover Image Uploaded",
+            description: "Cover image uploaded successfully.",
+          });
+        } catch (error) {
+          toast({
+            title: "Upload Error",
+            description: error instanceof Error ? error.message : "Failed to upload cover image",
+            variant: "destructive",
+          });
+          return;
+        } finally {
+          setIsUploading(false);
+        }
+      }
+
+      // Step 2: Create the story
+      const storyData: CreateStoryRequestData = {
         title: data.title,
         content: data.content,
         genre: data.genre,
-        coverPicture: coverImage ? await convertFileToBytes(coverImage) : null,
-        coverPictureUrl: data.coverPictureUrl || '',
-        coverPictureType: coverImage?.type || '',
-        createdAt: new Date().toISOString(),
-        isActive: data.isActive,
-        classId: data.classId,
-        createdBy: user?.id
+        fictionType: data.fictionType,
+        coverPictureUrl,
+        coverPictureType,
+        classId: data.classId
       };
       
       console.log('Creating story:', storyData);
+      await storyService.createStoryWithDetails(storyData);
 
       toast({
         title: "Story Created Successfully!",
         description: `"${data.title}" has been created and is ready for students.`,
       });
 
-      // Reset form and close dialog
-      form.reset();
-      setCoverImage(null);
-      setCoverImagePreview('');
+      // Clear form and localStorage after successful creation
+      resetForm();
       setIsOpen(false);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create story. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create story. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsCreating(false);
+      setIsUploading(false);
     }
   };
 
-  const convertFileToBytes = (file: File): Promise<ArrayBuffer> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as ArrayBuffer);
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
-    });
+  const handleDialogClose = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      // Don't clear form data when closing - let it persist for next time
+      // User can manually clear if needed
+    }
   };
 
+  const handleCancel = () => {
+    const formData = form.getValues();
+    const hasContent = formData.title || formData.content || formData.genre || coverImagePreview;
+    
+    if (hasContent) {
+      // Keep the draft for later
+      toast({
+        title: "Draft Saved",
+        description: "Your work has been saved as a draft.",
+      });
+    }
+    
+    setIsOpen(false);
+  };
+
+  const isSubmitting = isUploading || isCreating;
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogTrigger asChild>
         <Card className="border-2 border-dashed border-teal-200 hover:border-teal-400 transition-colors cursor-pointer">
           <CardContent className="p-6 text-center">
@@ -149,7 +338,7 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
         </Card>
       </DialogTrigger>
       
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <BookOpen className="h-5 w-5 text-teal-600" />
@@ -162,171 +351,209 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Story Title</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="e.g., Ang Alamat ng Pinya" 
-                      {...field}
-                      className="focus:ring-teal-500 focus:border-teal-500"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column - All fields except Story Content */}
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pamagat ng Kuwento</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="e.g., Ang Alamat ng Pinya" 
+                          {...field}
+                          className="focus:ring-teal-500 focus:border-teal-500"
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="genre"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Genre</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="focus:ring-teal-500 focus:border-teal-500">
-                        <SelectValue placeholder="Select story genre" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {STORY_GENRES.map(genre => (
-                        <SelectItem key={genre.value} value={genre.value}>
-                          <div className="flex items-center space-x-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: genre.color }}
-                            />
-                            <span>{genre.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="genre"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Uri/Kategorya</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                        <FormControl>
+                          <SelectTrigger className="focus:ring-teal-500 focus:border-teal-500">
+                            <SelectValue placeholder="Piliin ang uri ng kuwento" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {STORY_GENRES.map(genre => (
+                            <SelectItem key={genre.value} value={genre.value}>
+                              <div className="flex items-center space-x-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: genre.color }}
+                                />
+                                <span>{genre.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Story Content</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Write your story here..."
-                      className="min-h-[200px] focus:ring-teal-500 focus:border-teal-500"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Write the complete story content that students will read.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="fictionType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Uri ng Kathang-Isip</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                        <FormControl>
+                          <SelectTrigger className="focus:ring-teal-500 focus:border-teal-500">
+                            <SelectValue placeholder="Piliin ang uri ng kathang-isip" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Alamat">Alamat</SelectItem>
+                          <SelectItem value="Pabula">Pabula</SelectItem>
+                          <SelectItem value="Kuwentong Bayan">Kuwentong Bayan</SelectItem>
+                          <SelectItem value="Mitolohiya">Mitolohiya</SelectItem>
+                          <SelectItem value="Maikling Kuwento">Maikling Kuwento</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            {/* Cover Image Upload */}
-            <div className="space-y-4">
-              <Label>Cover Image</Label>
-              {coverImagePreview ? (
-                <div className="relative">
-                  <img 
-                    src={coverImagePreview} 
-                    alt="Cover preview" 
-                    className="w-full h-48 object-cover rounded-lg border"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={removeCoverImage}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                {/* Cover Image Upload */}
+                <div className="space-y-4">
+                  <Label>Larawan sa Pabalat</Label>
+                  {coverImagePreview ? (
+                    <div className="relative">
+                      <img 
+                        src={coverImagePreview} 
+                        alt="Cover preview" 
+                        className="w-full h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={removeCoverImage}
+                        disabled={isSubmitting}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">Mag-upload ng larawan para sa inyong kuwento</p>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="cursor-pointer"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600">Upload a cover image for your story</p>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="cursor-pointer"
-                    />
-                  </div>
-                </div>
-              )}
+
+                <FormField
+                  control={form.control}
+                  name="classId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Itakda sa Klase</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || loadingClasses}>
+                        <FormControl>
+                          <SelectTrigger className="focus:ring-teal-500 focus:border-teal-500">
+                            <SelectValue placeholder={loadingClasses ? "Naglo-load ng mga klase..." : "Piliin ang klase"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {loadingClasses ? (
+                            <div className="flex items-center justify-center py-4">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              <span className="text-sm text-gray-500">Naglo-load ng mga klase...</span>
+                            </div>
+                          ) : classes.length > 0 ? (
+                            classes.map((classItem) => (
+                              <SelectItem key={classItem.classId} value={classItem.classId}>
+                                <div className="flex items-center justify-between w-full">
+                                  <span className="font-medium">{classItem.className}</span>
+                                  {classItem.students && (
+                                    <span className="text-sm text-gray-500 ml-4">
+                                      {classItem.students.length} mga estudyante
+                                    </span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="py-4 text-center text-sm text-gray-500">
+                              Walang nakitang klase. Mangyaring gumawa muna ng klase.
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Right Column - Story Content */}
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nilalaman ng Kuwento</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Isulat ang inyong kuwento dito..."
+                          className="min-h-[400px] focus:ring-teal-500 focus:border-teal-500"
+                          {...field}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Isulat ang kumpletong nilalaman ng kuwento na babasahin ng mga estudyante.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
-
-            <FormField
-              control={form.control}
-              name="coverPictureUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Or provide image URL (optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://example.com/image.jpg"
-                      {...field}
-                      className="focus:ring-teal-500 focus:border-teal-500"
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Alternative to uploading: provide a direct URL to an image.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="classId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Assign to Class</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="focus:ring-teal-500 focus:border-teal-500">
-                        <SelectValue placeholder="Select a class" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {user?.classes?.map((classId) => (
-                        <SelectItem key={classId} value={classId}>
-                          Grade {classId.charAt(0)} - {classId.split('-')[1]?.charAt(0)?.toUpperCase() + classId.split('-')[1]?.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <DialogFooter className="gap-2">
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => setIsOpen(false)}
+                onClick={handleCancel}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
                 className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
+                disabled={isSubmitting || loadingClasses || classes.length === 0}
               >
-                Create Story
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isUploading ? 'Uploading Image...' : isCreating ? 'Creating Story...' : 'Create Story'}
               </Button>
             </DialogFooter>
           </form>

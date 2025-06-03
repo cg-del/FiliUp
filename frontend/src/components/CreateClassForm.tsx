@@ -1,22 +1,26 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Plus, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { classService } from '@/lib/services/classService';
+
+const formSchema = z.object({
+  className: z.string().min(1, 'Class name is required').max(100, 'Class name must be less than 100 characters'),
+  description: z.string().min(10, 'Description must be at least 10 characters').max(1000, 'Description must be less than 1000 characters'),
+});
 
 interface CreateClassFormData {
   className: string;
-  section: string;
-  grade: string;
-  description?: string;
+  description: string;
 }
 
 const CreateClassForm = () => {
@@ -25,37 +29,38 @@ const CreateClassForm = () => {
   const { toast } = useToast();
   
   const form = useForm<CreateClassFormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       className: '',
-      section: '',
-      grade: '3',
       description: ''
     }
   });
 
   const onSubmit = async (data: CreateClassFormData) => {
     try {
-      // Generate class code
-      const classCode = `CLS-${data.grade}${data.section.substring(0, 2).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+      // Call the actual API to create class with the exact payload structure
+      const classData = {
+        className: data.className.trim(),
+        description: data.description.trim()
+      };
       
-      // Simulate API call to create class
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await classService.createClass(classData);
       
-      console.log('Creating class:', {
-        ...data,
-        classCode,
-        teacherId: user?.id
-      });
+      if (response.data) {
+        toast({
+          title: "Class Created Successfully!",
+          description: `Class "${response.data.className}" has been created with code: ${response.data.classCode}`,
+        });
 
-      toast({
-        title: "Class Created Successfully!",
-        description: `Class "${data.className}" has been created with code: ${classCode}`,
-      });
-
-      // Reset form and close dialog
-      form.reset();
-      setIsOpen(false);
+        // Reset form and close dialog
+        form.reset();
+        setIsOpen(false);
+        
+        // Optionally refresh the page or emit an event to update the class list
+        window.location.reload();
+      }
     } catch (error) {
+      console.error('Error creating class:', error);
       toast({
         title: "Error",
         description: "Failed to create class. Please try again.",
@@ -94,58 +99,14 @@ const CreateClassForm = () => {
               name="className"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Class Name</FormLabel>
+                  <FormLabel>Class Name *</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="e.g., Grade 3 Matatag" 
+                      placeholder="e.g., Rizal, English Literature, Filipino History" 
                       {...field}
                       className="focus:ring-teal-500 focus:border-teal-500"
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="section"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Section Name</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="e.g., Matatag, Masigla, Mabini" 
-                      {...field}
-                      className="focus:ring-teal-500 focus:border-teal-500"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="grade"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Grade Level</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="focus:ring-teal-500 focus:border-teal-500">
-                        <SelectValue placeholder="Select grade level" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="1">Grade 1</SelectItem>
-                      <SelectItem value="2">Grade 2</SelectItem>
-                      <SelectItem value="3">Grade 3</SelectItem>
-                      <SelectItem value="4">Grade 4</SelectItem>
-                      <SelectItem value="5">Grade 5</SelectItem>
-                      <SelectItem value="6">Grade 6</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -156,16 +117,17 @@ const CreateClassForm = () => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormLabel>Description *</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Brief description of the class" 
+                    <Textarea 
+                      placeholder="Provide a detailed description of the class, including objectives, topics covered, and what students will learn..."
                       {...field}
-                      className="focus:ring-teal-500 focus:border-teal-500"
+                      className="focus:ring-teal-500 focus:border-teal-500 min-h-[100px]"
+                      rows={4}
                     />
                   </FormControl>
                   <FormDescription>
-                    A short description to help identify this class.
+                    Describe the class content, objectives, and what students will learn.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

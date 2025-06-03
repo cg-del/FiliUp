@@ -85,8 +85,20 @@ public class StudentProfileServiceImpl implements StudentProfileService {
     @Override
     @Transactional
     public void incrementQuizzesTaken(UUID userId, Double quizScore) {
+        // Try to find existing profile, create one if it doesn't exist
         StudentProfileEntity profile = studentProfileRepository.findByUserUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Profile not found for user id: " + userId));
+                .orElse(null);
+        
+        if (profile == null) {
+            // Create a basic profile for the student
+            UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+            
+            profile = new StudentProfileEntity();
+            profile.setUser(user);
+            // Default values are set in the constructor
+            profile = studentProfileRepository.save(profile);
+        }
         
         int currentTakes = profile.getNumberOfQuizTakes();
         double currentAverage = profile.getAverageScore();
@@ -98,6 +110,34 @@ public class StudentProfileServiceImpl implements StudentProfileService {
         profile.setAverageScore(newAverage);
         profile.setUpdatedAt(LocalDateTime.now());
         studentProfileRepository.save(profile);
+    }
+
+    @Override
+    @Transactional
+    public StudentProfileDTO createBasicProfileIfNotExists(UUID userId) {
+        // Check if profile already exists
+        if (studentProfileRepository.existsByUserUserId(userId)) {
+            // Return existing profile
+            StudentProfileEntity existingProfile = studentProfileRepository.findByUserUserId(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("Profile not found for user id: " + userId));
+            return convertToDTO(existingProfile);
+        }
+
+        // Create a new basic profile
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+
+        if (!"STUDENT".equals(user.getUserRole())) {
+            throw new IllegalStateException("Can only create student profiles for users with STUDENT role");
+        }
+
+        StudentProfileEntity profile = new StudentProfileEntity();
+        profile.setUser(user);
+        // Default values are set in the constructor
+        // emailVerified is false by default, which is appropriate for auto-created profiles
+        
+        StudentProfileEntity savedProfile = studentProfileRepository.save(profile);
+        return convertToDTO(savedProfile);
     }
 
     private void updateProfileFromDTO(StudentProfileEntity profile, StudentProfileDTO dto, UserEntity user) {

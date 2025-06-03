@@ -50,12 +50,33 @@ public class StoryController {
             String userEmail = jwtAuthToken.getToken().getClaim("sub");
             String userRole = jwtAuthToken.getToken().getClaim("role");
             
+            // Fallback to other email claims if 'sub' is not an email
+            if (userEmail == null || !userEmail.contains("@")) {
+                String emailClaim = jwtAuthToken.getToken().getClaim("email");
+                if (emailClaim != null && emailClaim.contains("@")) {
+                    userEmail = emailClaim;
+                    System.out.println("Using 'email' claim instead of 'sub': " + userEmail);
+                }
+            }
+            
+            // Add detailed JWT debugging
+            System.out.println("=== DEBUG: JWT Token Claims ===");
+            System.out.println("All claims: " + jwtAuthToken.getToken().getClaims());
+            System.out.println("'sub' claim (userEmail): '" + userEmail + "'");
+            System.out.println("'role' claim: '" + userRole + "'");
+            System.out.println("Token subject: " + jwtAuthToken.getToken().getSubject());
+            
+            // Check for alternative email claims
+            String usernameClaim = jwtAuthToken.getToken().getClaim("username");
+            System.out.println("'username' claim: '" + usernameClaim + "'");
+            
             // Log incoming request
             System.out.println("Received story creation request:");
             System.out.println("Story DTO: " + storyCreateDTO);
             System.out.println("Title: " + storyCreateDTO.getTitle());
             System.out.println("Content length: " + (storyCreateDTO.getContent() != null ? storyCreateDTO.getContent().length() : "null"));
             System.out.println("Genre: " + storyCreateDTO.getGenre());
+            System.out.println("Fiction Type: " + storyCreateDTO.getFictionType());
             System.out.println("ClassId: " + storyCreateDTO.getClassId());
             System.out.println("Cover URL: " + storyCreateDTO.getCoverPictureUrl());
             System.out.println("Cover Type: " + storyCreateDTO.getCoverPictureType());
@@ -108,6 +129,15 @@ public class StoryController {
             // Extract user email and role from JWT token
             String userEmail = jwtAuthToken.getToken().getClaim("sub");
             String userRole = jwtAuthToken.getToken().getClaim("role");
+            
+            // Fallback to other email claims if 'sub' is not an email
+            if (userEmail == null || !userEmail.contains("@")) {
+                String emailClaim = jwtAuthToken.getToken().getClaim("email");
+                if (emailClaim != null && emailClaim.contains("@")) {
+                    userEmail = emailClaim;
+                    System.out.println("Using 'email' claim instead of 'sub': " + userEmail);
+                }
+            }
             
             // Log the request
             System.out.println("Upload cover image request:");
@@ -169,6 +199,15 @@ public class StoryController {
             // Extract user email and role from JWT token
             String userEmail = jwtAuthToken.getToken().getClaim("sub");
             String userRole = jwtAuthToken.getToken().getClaim("role");
+            
+            // Fallback to other email claims if 'sub' is not an email
+            if (userEmail == null || !userEmail.contains("@")) {
+                String emailClaim = jwtAuthToken.getToken().getClaim("email");
+                if (emailClaim != null && emailClaim.contains("@")) {
+                    userEmail = emailClaim;
+                    System.out.println("Using 'email' claim instead of 'sub': " + userEmail);
+                }
+            }
             
             // Log the request
             System.out.println("Upload cover image request for story " + storyId + ":");
@@ -264,6 +303,7 @@ public class StoryController {
                 storyMap.put("title", story.getTitle());
                 storyMap.put("content", story.getContent());
                 storyMap.put("genre", story.getGenre());
+                storyMap.put("fictionType", story.getFictionType());
                 storyMap.put("coverPicture", story.getCoverPicture());
                 storyMap.put("coverPictureType", story.getCoverPictureType());
                 storyMap.put("coverPictureUrl", story.getCoverPictureUrl());
@@ -304,15 +344,55 @@ public class StoryController {
     }
 
     // Get stories by teacher
-    @GetMapping("/teacher/{userEmail}")
-    public ResponseEntity<List<StoryEntity>> getStoriesByTeacher(@PathVariable String userEmail) {
-        return ResponseEntity.ok(storyService.getStoriesByTeacher(userEmail));
+    @GetMapping("/teacher")
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> getStoriesByTeacher(JwtAuthenticationToken jwtAuthToken) {
+        try {
+            // Extract user email from JWT token
+            String userEmail = jwtAuthToken.getToken().getClaim("sub");
+            
+            // Fallback to other email claims if 'sub' is not an email
+            if (userEmail == null || !userEmail.contains("@")) {
+                String emailClaim = jwtAuthToken.getToken().getClaim("email");
+                if (emailClaim != null && emailClaim.contains("@")) {
+                    userEmail = emailClaim;
+                    System.out.println("Using 'email' claim instead of 'sub': " + userEmail);
+                }
+            }
+            
+            if (userEmail == null) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "User email not found in token");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            // Log the request
+            System.out.println("Get stories by teacher request:");
+            System.out.println("User Email: " + userEmail);
+            
+            List<StoryEntity> stories = storyService.getStoriesByTeacher(userEmail);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            System.err.println("Error getting stories by teacher: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to get stories");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
     // Get stories by genre
     @GetMapping("/genre/{genre}")
     public ResponseEntity<List<StoryEntity>> getStoriesByGenre(@PathVariable String genre) {
         return ResponseEntity.ok(storyService.getStoriesByGenre(genre));
+    }
+
+    // Get stories by fiction type
+    @GetMapping("/fiction-type/{fictionType}")
+    public ResponseEntity<List<StoryEntity>> getStoriesByFictionType(@PathVariable String fictionType) {
+        return ResponseEntity.ok(storyService.getStoriesByFictionType(fictionType));
     }
 
     // Get all stories with teacher information
@@ -326,6 +406,7 @@ public class StoryController {
                 storyMap.put("title", story.getTitle());
                 storyMap.put("content", story.getContent());
                 storyMap.put("genre", story.getGenre());
+                storyMap.put("fictionType", story.getFictionType());
                 storyMap.put("coverPicture", story.getCoverPicture());
                 storyMap.put("coverPictureType", story.getCoverPictureType());
                 storyMap.put("coverPictureUrl", story.getCoverPictureUrl());
@@ -403,6 +484,55 @@ public class StoryController {
         } catch (RuntimeException e) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "Delete failed");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    // Debug endpoint to help troubleshoot user/JWT issues
+    @GetMapping("/debug/user-info")
+    public ResponseEntity<?> debugUserInfo(JwtAuthenticationToken jwtAuthToken) {
+        try {
+            Map<String, Object> debugInfo = new HashMap<>();
+            
+            // JWT Claims
+            String userEmail = jwtAuthToken.getToken().getClaim("sub");
+            String userRole = jwtAuthToken.getToken().getClaim("role");
+            String emailClaim = jwtAuthToken.getToken().getClaim("email");
+            String usernameClaim = jwtAuthToken.getToken().getClaim("username");
+            
+            debugInfo.put("jwtClaims", jwtAuthToken.getToken().getClaims());
+            debugInfo.put("subClaim", userEmail);
+            debugInfo.put("roleClaim", userRole);
+            debugInfo.put("emailClaim", emailClaim);
+            debugInfo.put("usernameClaim", usernameClaim);
+            
+            // User lookup attempts
+            Map<String, Object> userLookups = new HashMap<>();
+            
+            if (userEmail != null) {
+                try {
+                    StoryEntity testStory = storyService.getAllStories().stream().findFirst().orElse(null);
+                    userLookups.put("foundUserBySubClaim", storyService.getStoriesByTeacher(userEmail).size() + " stories found");
+                } catch (Exception e) {
+                    userLookups.put("foundUserBySubClaim", "Error: " + e.getMessage());
+                }
+            }
+            
+            if (emailClaim != null) {
+                try {
+                    userLookups.put("foundUserByEmailClaim", storyService.getStoriesByTeacher(emailClaim).size() + " stories found");
+                } catch (Exception e) {
+                    userLookups.put("foundUserByEmailClaim", "Error: " + e.getMessage());
+                }
+            }
+            
+            debugInfo.put("userLookupResults", userLookups);
+            
+            return ResponseEntity.ok(debugInfo);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Debug failed");
             errorResponse.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }

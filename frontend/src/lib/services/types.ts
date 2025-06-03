@@ -19,6 +19,17 @@ export interface User {
   role: 'STUDENT' | 'TEACHER' | 'ADMIN';
 }
 
+export interface LoginCredentials {
+  userName: string;
+  userPassword: string;
+}
+
+export interface RegisterData {
+  userName: string;
+  userPassword: string;
+  userEmail: string;
+}
+
 // Story types
 export interface Story {
   id: string;
@@ -46,11 +57,13 @@ export interface Question {
 
 // Class types
 export interface Class {
-  id: string;
-  name: string;
+  classId: string;
+  className: string;
   description: string;
-  teacherId: string;
-  students: string[];
+  classCode: string;
+  createdAt: string;
+  isActive: boolean;
+  students?: any[]; // Optional since it might not always be included
 }
 
 // Profile types
@@ -92,4 +105,4 @@ export interface LeaderboardEntry {
   username: string;
   points: number;
   rank: number;
-} 
+}

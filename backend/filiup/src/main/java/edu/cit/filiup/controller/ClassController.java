@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.util.List;
 import java.util.Map;
@@ -37,11 +38,35 @@ public class ClassController {
     // Create a new class
     @PostMapping
     @RequireRole({"TEACHER", "ADMIN"})
-    public ResponseEntity<?> createClass(
-            @RequestBody ClassEntity classEntity,
-            @RequestParam UUID teacherId) {
+    public ResponseEntity<?> createClass(@RequestBody ClassEntity classEntity) {
         try {
-            ClassEntity createdClass = classService.createClass(classEntity, teacherId);
+            // Get the authenticated teacher
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication == null) {
+                return ResponseUtil.unauthorized("No authentication found");
+            }
+            
+            String userIdentifier = authentication.getName();
+            UserEntity teacher = null;
+            
+            // Try to get user by email first
+            teacher = userService.getUserByEmail(userIdentifier);
+            if (teacher == null) {
+                // Fallback to username
+                teacher = userService.getUserByUsername(userIdentifier);
+            }
+            
+            if (teacher == null) {
+                return ResponseUtil.unauthorized("Teacher not found");
+            }
+            
+            // Verify the user is a teacher or admin
+            if (!"TEACHER".equals(teacher.getUserRole()) && !"ADMIN".equals(teacher.getUserRole())) {
+                return ResponseUtil.forbidden("Only teachers and admins can create classes");
+            }
+            
+            ClassEntity createdClass = classService.createClass(classEntity, teacher.getUserId());
             return ResponseUtil.success("Class created successfully", createdClass);
         } catch (RuntimeException e) {
             return ResponseUtil.badRequest("Failed to create class: " + e.getMessage());
@@ -73,11 +98,38 @@ public class ClassController {
     }
 
     // Get classes by teacher
-    @GetMapping("/teacher/{teacherId}")
+    @GetMapping("/teacher")
     @RequireRole({"TEACHER", "ADMIN"})
-    public ResponseEntity<?> getClassesByTeacher(@PathVariable UUID teacherId) {
+    public ResponseEntity<?> getClassesByTeacher() {
         try {
-            List<ClassEntity> classes = classService.getClassesByTeacher(teacherId);
+            // Get the authenticated user (consistent with other methods)
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication == null) {
+                return ResponseUtil.unauthorized("No authentication found");
+            }
+            
+            String userIdentifier = authentication.getName();
+            UserEntity user = null;
+            
+            // Try to get user by email first
+            user = userService.getUserByEmail(userIdentifier);
+            
+            if (user == null) {
+                // Fallback to username in case the authentication name is username
+                user = userService.getUserByUsername(userIdentifier);
+            }
+            
+            if (user == null) {
+                return ResponseUtil.unauthorized("User not found");
+            }
+            
+            // Verify the user is a teacher or admin
+            if (!"TEACHER".equals(user.getUserRole()) && !"ADMIN".equals(user.getUserRole())) {
+                return ResponseUtil.forbidden("Only teachers and admins can access their classes");
+            }
+            
+            List<ClassEntity> classes = classService.getClassesByTeacher(user.getUserId());
             return ResponseUtil.success("Classes retrieved successfully", classes);
         } catch (Exception e) {
             return ResponseUtil.serverError("Failed to retrieve classes: " + e.getMessage());
@@ -89,13 +141,26 @@ public class ClassController {
     @RequireRole("STUDENT")
     public ResponseEntity<?> getMyClasses() {
         try {
-            // Get the authenticated user
+            // Get the authenticated user (consistent with other methods)
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String userEmail = authentication.getName();
-            UserEntity user = userService.getUserByEmail(userEmail);
+            
+            if (authentication == null) {
+                return ResponseUtil.unauthorized("No authentication found");
+            }
+            
+            String userIdentifier = authentication.getName();
+            UserEntity user = null;
+            
+            // Try to get user by email first
+            user = userService.getUserByEmail(userIdentifier);
             
             if (user == null) {
-                return ResponseUtil.unauthorized("User not authenticated");
+                // Fallback to username in case the authentication name is username
+                user = userService.getUserByUsername(userIdentifier);
+            }
+            
+            if (user == null) {
+                return ResponseUtil.unauthorized("User not found");
             }
             
             // Verify the user is a student

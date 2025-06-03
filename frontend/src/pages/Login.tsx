@@ -7,15 +7,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BookOpen, User, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { userService } from '@/lib/services';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { logout, setUser } = useAuth();
 
   useState(() => {
     const type = searchParams.get('type');
@@ -29,14 +31,20 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const response = await userService.login(email, password);
-      const { token, user } = response.data;
+      const response = await userService.login({ userName: username, userPassword: password });
+      const { accessToken, refreshToken } = response.data;
       
-      // Store token
-      localStorage.setItem('token', token);
+      // Store tokens
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      
+      // Decode JWT to get user info
+      const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+      const userRole = tokenPayload.role;
+      const userName = tokenPayload.sub;
       
       // Check if user role matches selected type
-      if (user.role !== userType) {
+      if (userRole !== userType) {
         toast({
           title: "Hindi tama ang user type",
           description: "Pakipili ang tamang user type para sa inyong account.",
@@ -46,17 +54,32 @@ const Login = () => {
         return;
       }
 
+      // Create user object and store in localStorage
+      const user = {
+        id: tokenPayload.jti || Math.random().toString(36),
+        name: userName, // Use username directly
+        email: userName, // Keep email field for compatibility, using username value
+        type: userRole.toLowerCase() as 'student' | 'teacher',
+        ...(userRole === 'TEACHER' && { classes: ['3-matatag', '3-masigla', '3-mabini'] }),
+        ...(userRole === 'STUDENT' && { enrollmentStatus: 'none' as const })
+      };
+      
+      localStorage.setItem('filiup_user', JSON.stringify(user));
+
+      // Update AuthContext with the user data
+      setUser(user);
+
       toast({
         title: "Maligayang pagdating!",
-        description: `Successfully logged in as ${userType.toLowerCase()}`,
+        description: `Successfully logged in as ${userRole.toLowerCase()}`,
       });
 
-      // Navigate to correct dashboard
-      navigate(userType === 'STUDENT' ? '/student-dashboard' : '/teacher-dashboard');
+      // Navigate based on actual role from JWT
+      navigate(userRole === 'STUDENT' ? '/student-dashboard' : '/teacher-dashboard');
     } catch (error) {
       toast({
         title: "Hindi tama ang login",
-        description: "Pakicheck ang email at password.",
+        description: "Pakicheck ang username at password.",
         variant: "destructive",
       });
     } finally {
@@ -122,13 +145,13 @@ const Login = () => {
           <CardContent className="p-4 md:p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm md:text-base">Email</Label>
+                <Label htmlFor="username" className="text-sm md:text-base">Username</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="inyong-email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="username"
+                  type="text"
+                  placeholder="inyong-username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                   className="h-10 md:h-11 text-sm md:text-base"
                 />

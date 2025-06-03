@@ -14,6 +14,8 @@ public class StoryCreateDTO {
     @NotBlank(message = "Genre is required")
     private String genre;
 
+    private String fictionType;
+
     private String coverPictureUrl;
     private String coverPictureType;
 
@@ -46,6 +48,14 @@ public class StoryCreateDTO {
 
     public void setGenre(String genre) {
         this.genre = genre;
+    }
+
+    public String getFictionType() {
+        return fictionType;
+    }
+
+    public void setFictionType(String fictionType) {
+        this.fictionType = fictionType;
     }
 
     public String getCoverPictureUrl() {

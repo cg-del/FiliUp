@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,16 +14,54 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, X, Clock, Calendar, HelpCircle } from 'lucide-react';
+import { Plus, X, Clock, Calendar, HelpCircle, Minus, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { classService } from '@/lib/services/classService';
+import { storyService } from '@/lib/services/storyService';
+import type { Class } from '@/lib/services/types';
+
+interface QuizFormData {
+  title: string;
+  description: string;
+  category: string;
+  timeLimitMinutes: number;
+  opensAt: string;
+  closesAt: string;
+  storyId: string;
+}
+
+interface QuizQuestion {
+  questionText: string;
+  options: string[];
+  correctAnswer: string;
+  points: number;
+}
+
+interface CreateQuizRequestData {
+  title: string;
+  description: string;
+  category: string;
+  timeLimitMinutes: number;
+  opensAt: string;
+  closesAt: string;
+  isActive: boolean;
+  questions: QuizQuestion[];
+}
+
+interface Story {
+  id: string;
+  title: string;
+}
 
 const CreateQuizForm = ({ triggerClassName = "" }) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stories, setStories] = useState<Story[]>([]);
+  const [loadingStories, setLoadingStories] = useState(false);
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<QuizFormData>({
     title: '',
     description: '',
     category: '',
@@ -34,40 +71,64 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
     storyId: '',
   });
 
-  const [questions, setQuestions] = useState([
+  const [questions, setQuestions] = useState<QuizQuestion[]>([
     {
       questionText: '',
-      options: ['', '', '', ''],
+      options: ['', ''],
       correctAnswer: '',
       points: 5
     }
   ]);
 
-  // Mock stories for selection
-  const stories = [
-    { id: '1', title: 'Ang Alamat ng Pinya' },
-    { id: '2', title: 'Si Juan at ang Higanteng Tainga' },
-    { id: '3', title: 'Ang Matalinong Aso' },
-    { id: '4', title: 'Bugtong ni Lola' },
-  ];
-
   const categories = [
-    'Reading Comprehension',
-    'Grammar',
-    'Vocabulary',
-    'Literature',
-    'Filipino Culture',
-    'General Knowledge'
+    'Madali',
+    'Katamtaman',
+    'Mahirap',
+    'Pagsusuri ng Literatura',
+    'Pag-unawa sa Binasa',
+    'Bokabularyo',
+    'Balarila'
   ];
 
-  const handleInputChange = (field: string, value: any) => {
+  // Fetch teacher's stories when dialog opens
+  useEffect(() => {
+    const fetchStories = async () => {
+      if (!open) return;
+      
+      try {
+        setLoadingStories(true);
+        const response = await storyService.getAllStories();
+        if (response.data) {
+          // Transform the data to match our Story interface
+          const formattedStories = response.data.map(story => ({
+            id: story.id,
+            title: story.title
+          }));
+          setStories(formattedStories);
+        }
+      } catch (error) {
+        toast({
+          title: "Mali",
+          description: "Hindi nakuha ang mga kuwento. Subukang muli.",
+          variant: "destructive",
+        });
+        console.error('Error fetching stories:', error);
+      } finally {
+        setLoadingStories(false);
+      }
+    };
+
+    fetchStories();
+  }, [open]);
+
+  const handleInputChange = (field: keyof QuizFormData, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleQuestionChange = (index: number, field: string, value: any) => {
+  const handleQuestionChange = (index: number, field: keyof QuizQuestion, value: string | number | string[]) => {
     setQuestions(prev => prev.map((question, i) => 
       i === index ? { ...question, [field]: value } : question
     ));
@@ -84,10 +145,30 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
     ));
   };
 
+  const addOption = (questionIndex: number) => {
+    setQuestions(prev => prev.map((question, i) => 
+      i === questionIndex 
+        ? { ...question, options: [...question.options, ''] }
+        : question
+    ));
+  };
+
+  const removeOption = (questionIndex: number, optionIndex: number) => {
+    setQuestions(prev => prev.map((question, i) => 
+      i === questionIndex 
+        ? { 
+            ...question, 
+            options: question.options.filter((_, j) => j !== optionIndex),
+            correctAnswer: question.options[optionIndex] === question.correctAnswer ? '' : question.correctAnswer
+          }
+        : question
+    ));
+  };
+
   const addQuestion = () => {
     setQuestions(prev => [...prev, {
       questionText: '',
-      options: ['', '', '', ''],
+      options: ['', ''],
       correctAnswer: '',
       points: 5
     }]);
@@ -99,33 +180,60 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
     }
   };
 
+  const createQuiz = async (storyId: string, quizData: CreateQuizRequestData) => {
+    const response = await fetch(`/api/v1/quizzes/${storyId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify(quizData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Hindi nagawa ang pagsusulit');
+    }
+
+    return response.json();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
       // Validate required fields
-      if (!formData.title || !formData.description || !formData.category) {
-        throw new Error('Please fill in all required fields');
+      if (!formData.title || !formData.description || !formData.category || !formData.storyId) {
+        throw new Error('Pakikumpletuhin ang lahat ng kinakailangang patlang kasama ang pagpili ng kuwento');
       }
 
       // Validate questions
       for (let i = 0; i < questions.length; i++) {
         const question = questions[i];
         if (!question.questionText || !question.correctAnswer) {
-          throw new Error(`Question ${i + 1} is incomplete`);
+          throw new Error(`Tanong ${i + 1} ay hindi kumpleto`);
         }
-        if (question.options.some(option => !option.trim())) {
-          throw new Error(`Question ${i + 1} has empty options`);
+        
+        const validOptions = question.options.filter(option => option.trim());
+        if (validOptions.length < 2) {
+          throw new Error(`Tanong ${i + 1} ay dapat may hindi bababa sa 2 pagpipilian`);
         }
-        if (!question.options.includes(question.correctAnswer)) {
-          throw new Error(`Question ${i + 1} correct answer must match one of the options`);
+        
+        if (!validOptions.includes(question.correctAnswer)) {
+          throw new Error(`Tanong ${i + 1} - ang tamang sagot ay dapat tumugma sa isa sa mga pagpipilian`);
         }
       }
 
       // Create quiz data structure
-      const quizData = {
-        ...formData,
+      const quizData: CreateQuizRequestData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        timeLimitMinutes: formData.timeLimitMinutes,
+        opensAt: formData.opensAt,
+        closesAt: formData.closesAt,
+        isActive: true,
         questions: questions.map(q => ({
           ...q,
           options: q.options.filter(option => option.trim())
@@ -133,13 +241,11 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
       };
 
       console.log('Quiz Data:', quizData);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await createQuiz(formData.storyId, quizData);
 
       toast({
-        title: "Quiz Created Successfully!",
-        description: `"${formData.title}" has been created and is ready for students.`,
+        title: "Matagumpay na Nalikha ang Pagsusulit!",
+        description: `"${formData.title}" ay nalikha na at handa na para sa mga estudyante.`,
       });
 
       // Reset form
@@ -154,7 +260,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
       });
       setQuestions([{
         questionText: '',
-        options: ['', '', '', ''],
+        options: ['', ''],
         correctAnswer: '',
         points: 5
       }]);
@@ -162,8 +268,8 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
 
     } catch (error) {
       toast({
-        title: "Error Creating Quiz",
-        description: error.message,
+        title: "Mali sa Paggawa ng Pagsusulit",
+        description: error instanceof Error ? error.message : "Nagkaproblema sa hindi inaasahang dahilan",
         variant: "destructive",
       });
     } finally {
@@ -179,8 +285,8 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
         <Card className={`border-2 border-dashed border-teal-200 hover:border-teal-400 transition-colors cursor-pointer ${triggerClassName}`}>
           <CardContent className="p-6 text-center">
             <HelpCircle className="h-12 w-12 text-teal-500 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-900 mb-2">Create Quiz</h3>
-            <p className="text-sm text-gray-500">Design comprehension quizzes for your students</p>
+            <h3 className="font-semibold text-gray-900 mb-2">Gumawa ng Pagsusulit</h3>
+            <p className="text-sm text-gray-500">Magdisenyo ng mga pagsusulit sa pag-unawa para sa inyong mga estudyante</p>
           </CardContent>
         </Card>
       </DialogTrigger>
@@ -188,10 +294,10 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <HelpCircle className="h-5 w-5" />
-            <span>Create New Quiz</span>
+            <span>Gumawa ng Bagong Pagsusulit</span>
           </DialogTitle>
           <DialogDescription>
-            Create an interactive quiz for your students to test their comprehension and knowledge.
+            Gumawa ng interactive na pagsusulit para sa inyong mga estudyante upang subukin ang kanilang pag-unawa at kaalaman.
           </DialogDescription>
         </DialogHeader>
 
@@ -199,17 +305,17 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
           {/* Basic Information */}
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Quiz Title *</Label>
+              <Label htmlFor="title">Pamagat ng Pagsusulit *</Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="e.g., Reading Comprehension Quiz"
+                placeholder="hal., Komprehensibong Pagsusulit sa Alamat ng Pinya"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="category">Category *</Label>
+              <Label htmlFor="category">Kategorya *</Label>
               <select
                 id="category"
                 value={formData.category}
@@ -217,7 +323,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
               >
-                <option value="">Select Category</option>
+                <option value="">Piliin ang Kategorya</option>
                 {categories.map(category => (
                   <option key={category} value={category}>{category}</option>
                 ))}
@@ -226,15 +332,40 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="description">Paglalarawan *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Brief description of what this quiz covers..."
+              placeholder="Detalyadong pagsusulit na sumasaklaw sa lahat ng aspeto ng kuwento..."
               rows={3}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="storyId">Kaugnay na Kuwento *</Label>
+            <select
+              id="storyId"
+              value={formData.storyId}
+              onChange={(e) => handleInputChange('storyId', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+              required
+              disabled={loadingStories}
+            >
+              <option value="">
+                {loadingStories ? "Naglo-load ng mga kuwento..." : "Piliin ang kuwento"}
+              </option>
+              {stories.map(story => (
+                <option key={story.id} value={story.id}>{story.title}</option>
+              ))}
+            </select>
+            {loadingStories && (
+              <div className="flex items-center mt-2">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-sm text-gray-500">Naglo-load ng mga kuwento...</span>
+              </div>
+            )}
           </div>
 
           {/* Quiz Settings */}
@@ -242,7 +373,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
             <div className="space-y-2">
               <Label htmlFor="timeLimitMinutes" className="flex items-center space-x-1">
                 <Clock className="h-4 w-4" />
-                <span>Time Limit (minutes)</span>
+                <span>Limitasyon ng Oras (minuto)</span>
               </Label>
               <Input
                 id="timeLimitMinutes"
@@ -256,7 +387,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
             <div className="space-y-2">
               <Label htmlFor="opensAt" className="flex items-center space-x-1">
                 <Calendar className="h-4 w-4" />
-                <span>Opens At</span>
+                <span>Bubukas Sa</span>
               </Label>
               <Input
                 id="opensAt"
@@ -266,7 +397,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="closesAt">Closes At</Label>
+              <Label htmlFor="closesAt">Sasara Sa</Label>
               <Input
                 id="closesAt"
                 type="datetime-local"
@@ -276,31 +407,16 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="storyId">Related Story (Optional)</Label>
-            <select
-              id="storyId"
-              value={formData.storyId}
-              onChange={(e) => handleInputChange('storyId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="">No related story</option>
-              {stories.map(story => (
-                <option key={story.id} value={story.id}>{story.title}</option>
-              ))}
-            </select>
-          </div>
-
           {/* Questions Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Questions</h3>
+              <h3 className="text-lg font-semibold">Mga Tanong</h3>
               <div className="flex items-center space-x-4">
                 <Badge variant="outline" className="text-teal-600">
-                  {questions.length} question{questions.length !== 1 ? 's' : ''}
+                  {questions.length} tanong{questions.length !== 1 ? '' : ''}
                 </Badge>
                 <Badge variant="outline" className="text-cyan-600">
-                  {totalPoints} total points
+                  {totalPoints} kabuuang puntos
                 </Badge>
                 <Button
                   type="button"
@@ -309,7 +425,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
                   className="bg-teal-500 hover:bg-teal-600"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Question
+                  Magdagdag ng Tanong
                 </Button>
               </div>
             </div>
@@ -318,10 +434,10 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
               <Card key={questionIndex} className="border-teal-100">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Question {questionIndex + 1}</CardTitle>
+                    <CardTitle className="text-base">Tanong {questionIndex + 1}</CardTitle>
                     <div className="flex items-center space-x-2">
                       <div className="flex items-center space-x-2">
-                        <Label htmlFor={`points-${questionIndex}`} className="text-sm">Points:</Label>
+                        <Label htmlFor={`points-${questionIndex}`} className="text-sm">Puntos:</Label>
                         <Input
                           id={`points-${questionIndex}`}
                           type="number"
@@ -348,34 +464,58 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor={`question-${questionIndex}`}>Question Text *</Label>
+                    <Label htmlFor={`question-${questionIndex}`}>Teksto ng Tanong *</Label>
                     <Textarea
                       id={`question-${questionIndex}`}
                       value={question.questionText}
                       onChange={(e) => handleQuestionChange(questionIndex, 'questionText', e.target.value)}
-                      placeholder="Enter your question here..."
+                      placeholder="Ilagay ang inyong tanong dito..."
                       rows={2}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Answer Options *</Label>
-                    <div className="grid md:grid-cols-2 gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Mga Pagpipilian sa Sagot * (hindi bababa sa 2)</Label>
+                      <Button
+                        type="button"
+                        onClick={() => addOption(questionIndex)}
+                        size="sm"
+                        variant="outline"
+                        className="text-teal-600 border-teal-200"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Magdagdag ng Pagpipilian
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
                       {question.options.map((option, optionIndex) => (
-                        <Input
-                          key={optionIndex}
-                          value={option}
-                          onChange={(e) => handleOptionChange(questionIndex, optionIndex, e.target.value)}
-                          placeholder={`Option ${optionIndex + 1}`}
-                          required
-                        />
+                        <div key={optionIndex} className="flex items-center space-x-2">
+                          <Input
+                            value={option}
+                            onChange={(e) => handleOptionChange(questionIndex, optionIndex, e.target.value)}
+                            placeholder={`Pagpipilian ${optionIndex + 1}`}
+                            required
+                          />
+                          {question.options.length > 2 && (
+                            <Button
+                              type="button"
+                              onClick={() => removeOption(questionIndex, optionIndex)}
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 border-red-200 hover:bg-red-50 px-2"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`correct-${questionIndex}`}>Correct Answer *</Label>
+                    <Label htmlFor={`correct-${questionIndex}`}>Tamang Sagot *</Label>
                     <select
                       id={`correct-${questionIndex}`}
                       value={question.correctAnswer}
@@ -383,7 +523,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                       required
                     >
-                      <option value="">Select correct answer</option>
+                      <option value="">Piliin ang tamang sagot</option>
                       {question.options.filter(option => option.trim()).map((option, index) => (
                         <option key={index} value={option}>{option}</option>
                       ))}
@@ -401,14 +541,21 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Cancel
+              Kanselahin
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !formData.storyId || loadingStories}
               className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
             >
-              {isSubmitting ? 'Creating...' : 'Create Quiz'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Ginagawa...
+                </>
+              ) : (
+                'Gumawa ng Pagsusulit'
+              )}
             </Button>
           </div>
         </form>

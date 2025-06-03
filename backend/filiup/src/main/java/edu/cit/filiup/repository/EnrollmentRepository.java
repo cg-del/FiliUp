@@ -16,4 +16,5 @@ public interface EnrollmentRepository extends JpaRepository<EnrollmentEntity, UU
     List<EnrollmentEntity> findByUserIdAndIsAcceptedTrue(UUID userId);
     Optional<EnrollmentEntity> findByClassCodeAndUserId(String classCode, UUID userId);
     List<EnrollmentEntity> findByUserIdAndIsAccepted(UUID userId, Boolean isAccepted);
+    List<EnrollmentEntity> findByClassCodeAndIsAccepted(String classCode, Boolean isAccepted);
 }

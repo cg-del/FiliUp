@@ -31,6 +31,7 @@ interface AuthContextType {
   approveEnrollment: (requestId: string) => Promise<boolean>;
   rejectEnrollment: (requestId: string) => Promise<boolean>;
   getEnrollmentRequests: (classId: string) => EnrollmentRequest[];
+  setUser: (user: User) => void;
   isLoading: boolean;
 }
 
@@ -172,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       approveEnrollment, 
       rejectEnrollment, 
       getEnrollmentRequests, 
+      setUser,
       isLoading 
     }}>
       {children}

@@ -46,6 +46,9 @@ public class StoryEntity {
     @Column(name = "genre", nullable = false)
     private String genre;
 
+    @Column(name = "fiction_type")
+    private String fictionType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id", nullable = false)
     @JsonProperty("classEntity")
@@ -67,6 +70,14 @@ public class StoryEntity {
         this.title = title;
         this.content = content;
         this.genre = genre;
+    }
+
+    public StoryEntity(String title, String content, String genre, String fictionType) {
+        this();
+        this.title = title;
+        this.content = content;
+        this.genre = genre;
+        this.fictionType = fictionType;
     }
 
     // Getters and Setters
@@ -100,6 +111,14 @@ public class StoryEntity {
 
     public void setGenre(String genre) {
         this.genre = genre;
+    }
+
+    public String getFictionType() {
+        return fictionType;
+    }
+
+    public void setFictionType(String fictionType) {
+        this.fictionType = fictionType;
     }
 
     public byte[] getCoverPicture() {
@@ -165,6 +184,7 @@ public class StoryEntity {
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
                 ", genre='" + genre + '\'' +
+                ", fictionType='" + fictionType + '\'' +
                 ", coverPictureUrl='" + coverPictureUrl + '\'' +
                 ", classEntity=" + (classEntity != null ? classEntity.getClassId() : "null") +
                 ", createdBy=" + (createdBy != null ? createdBy.getUserId() : "null") +

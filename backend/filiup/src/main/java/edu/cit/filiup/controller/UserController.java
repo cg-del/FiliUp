@@ -77,6 +77,8 @@ public class UserController {
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody UserEntity user) {
         try {
+            // Automatically set user role to STUDENT for signup
+            user.setUserRole("STUDENT");
             UserEntity newUser = userv.registerUser(user);
             if (newUser != null) {
                 Map<String, String> tokens = JwtUtil.generateTokens(newUser.getUserEmail(), newUser.getUserRole());
@@ -91,12 +93,12 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody UserEntity user) {
         try {
-            UserEntity loggedInUser = userv.loginUser(user.getUserEmail(), user.getUserPassword());
+            UserEntity loggedInUser = userv.loginUserByUsername(user.getUserName(), user.getUserPassword());
             if (loggedInUser != null) {
-                Map<String, String> tokens = JwtUtil.generateTokens(loggedInUser.getUserEmail(), loggedInUser.getUserRole());
+                Map<String, String> tokens = JwtUtil.generateTokens(loggedInUser.getUserName(), loggedInUser.getUserRole());
                 return ResponseUtil.success("Login successful", tokens);
             } else {
-                return ResponseUtil.unauthorized("Invalid credentials");
+                return ResponseUtil.unauthorized("Invalid username or password");
             }
         } catch (Exception e) {
             return ResponseUtil.badRequest("Login failed: " + e.getMessage());

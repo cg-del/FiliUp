@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, User, Users } from 'lucide-react';
+import { BookOpen, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { userService } from '@/lib/services';
 
@@ -13,18 +13,9 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userType, setUserType] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { toast } = useToast();
-
-  useState(() => {
-    const type = searchParams.get('type');
-    if (type === 'teacher') {
-      setUserType('TEACHER');
-    }
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,15 +32,15 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      const response = await userService.register(username, email, password, userType);
+      const response = await userService.register(username, email, password);
       
       toast({
         title: "Maligayang pagdating!",
         description: "Successfully created your account. Please log in.",
       });
 
-      // Redirect to login page
-      navigate(`/login?type=${userType.toLowerCase()}`);
+      // Redirect to login page (always redirect to student login since all signups are students now)
+      navigate('/login?type=student');
     } catch (error) {
       toast({
         title: "Hindi matagumpay ang pag-sign up",
@@ -78,42 +69,17 @@ const Signup = () => {
 
         <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
           <CardHeader className="space-y-4 p-4 md:p-6">
-            <div className="flex justify-center space-x-2">
-              <Button
-                variant={userType === 'STUDENT' ? 'default' : 'outline'}
-                onClick={() => setUserType('STUDENT')}
-                className={`flex items-center space-x-2 text-sm md:text-base ${
-                  userType === 'STUDENT' 
-                    ? 'bg-gradient-to-r from-green-500 to-blue-500' 
-                    : 'border-green-500 text-green-600 hover:bg-green-50'
-                }`}
-                size="sm"
-              >
+            <div className="flex justify-center">
+              <div className="flex items-center space-x-2 text-sm md:text-base bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg">
                 <User className="h-4 w-4" />
-                <span>Estudyante</span>
-              </Button>
-              <Button
-                variant={userType === 'TEACHER' ? 'default' : 'outline'}
-                onClick={() => setUserType('TEACHER')}
-                className={`flex items-center space-x-2 text-sm md:text-base ${
-                  userType === 'TEACHER' 
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
-                    : 'border-purple-500 text-purple-600 hover:bg-purple-50'
-                }`}
-                size="sm"
-              >
-                <Users className="h-4 w-4" />
-                <span>Guro</span>
-              </Button>
+                <span>Student Registration</span>
+              </div>
             </div>
             <CardTitle className="text-xl md:text-2xl text-center">
-              {userType === 'STUDENT' ? 'Student Sign Up' : 'Teacher Sign Up'}
+              Student Sign Up
             </CardTitle>
             <CardDescription className="text-center text-sm md:text-base">
-              {userType === 'STUDENT' 
-                ? 'Gumawa ng account para magsimula ng inyong Filipino learning adventure!'
-                : 'Gumawa ng account para magturo at mag-guide ng mga estudyante.'
-              }
+              Gumawa ng account para magsimula ng inyong Filipino learning adventure!
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
@@ -168,11 +134,7 @@ const Signup = () => {
               </div>
               <Button
                 type="submit"
-                className={`w-full h-10 md:h-11 text-base md:text-lg ${
-                  userType === 'STUDENT'
-                    ? 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600'
-                    : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
-                }`}
+                className="w-full h-10 md:h-11 text-base md:text-lg bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
                 disabled={isLoading}
               >
                 {isLoading ? 'Creating account...' : 'Mag-sign up'}
@@ -183,7 +145,7 @@ const Signup = () => {
               <p className="text-sm text-gray-600">
                 May account na?{' '}
                 <Link 
-                  to={`/login?type=${userType.toLowerCase()}`}
+                  to="/login?type=student"
                   className="text-blue-600 hover:text-blue-800 font-medium"
                 >
                   Mag-login dito

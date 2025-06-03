@@ -51,6 +51,7 @@ public class ClassDetailsDTO {
         private String title;
         private String content;
         private String genre;
+        private String fictionType;
         private String coverPictureType;
         private String coverPictureUrl;
         private List<QuestionDTO> questions;
@@ -64,6 +65,8 @@ public class ClassDetailsDTO {
         public void setContent(String content) { this.content = content; }
         public String getGenre() { return genre; }
         public void setGenre(String genre) { this.genre = genre; }
+        public String getFictionType() { return fictionType; }
+        public void setFictionType(String fictionType) { this.fictionType = fictionType; }
         public String getCoverPictureType() { return coverPictureType; }
         public void setCoverPictureType(String coverPictureType) { this.coverPictureType = coverPictureType; }
         public String getCoverPictureUrl() { return coverPictureUrl; }
@@ -77,6 +80,7 @@ public class ClassDetailsDTO {
             dto.setTitle(story.getTitle());
             dto.setContent(story.getContent()); 
             dto.setGenre(story.getGenre());
+            dto.setFictionType(story.getFictionType());
             dto.setCoverPictureType(story.getCoverPictureType());
             dto.setCoverPictureUrl(story.getCoverPictureUrl());
             return dto;

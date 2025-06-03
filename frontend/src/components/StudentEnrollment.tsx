@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,9 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { GraduationCap, Loader2, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { enrollmentService } from '@/lib/services/enrollmentService';
 
-const StudentEnrollment = () => {
-  const { user, enrollInClass } = useAuth();
+interface StudentEnrollmentProps {
+  onEnrollmentSuccess?: () => void;
+}
+
+const StudentEnrollment = ({ onEnrollmentSuccess }: StudentEnrollmentProps) => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [classCode, setClassCode] = useState('');
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -25,18 +29,35 @@ const StudentEnrollment = () => {
     }
 
     setIsEnrolling(true);
-    const result = await enrollInClass(classCode.trim());
     
-    if (result.success) {
-      toast({
-        title: "Success!",
-        description: result.message,
-      });
-      setClassCode('');
-    } else {
+    try {
+      const response = await enrollmentService.enrollInClass(classCode.trim());
+      
+      if (response.data) {
+        toast({
+          title: "Success!",
+          description: response.data.message || "Enrollment request submitted successfully!",
+        });
+        setClassCode('');
+        
+        // Call the callback to refresh parent component
+        if (onEnrollmentSuccess) {
+          onEnrollmentSuccess();
+        } else {
+          // Fallback to reload if no callback provided
+          window.location.reload();
+        }
+      }
+    } catch (error: any) {
+      console.error('Enrollment error:', error);
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          "Failed to enroll in class. Please try again.";
+      
       toast({
         title: "Error",
-        description: result.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -88,7 +109,7 @@ const StudentEnrollment = () => {
               <div className="flex space-x-2">
                 <Input
                   id="classCode"
-                  placeholder="e.g., CLS-3MT-001"
+                  placeholder="e.g., Z309THUA"
                   value={classCode}
                   onChange={(e) => setClassCode(e.target.value)}
                   disabled={isEnrolling || user?.enrollmentStatus === 'pending'}

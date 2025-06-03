@@ -15,6 +15,9 @@ public class StoryMapper {
         entity.setTitle(dto.getTitle());
         entity.setContent(dto.getContent());
         entity.setGenre(dto.getGenre());
+        if (dto.getFictionType() != null && !dto.getFictionType().trim().isEmpty()) {
+            entity.setFictionType(dto.getFictionType());
+        }
         entity.setCoverPictureUrl(dto.getCoverPictureUrl());
         entity.setCoverPictureType(dto.getCoverPictureType());
         entity.setClassEntity(classEntity);
@@ -29,6 +32,7 @@ public class StoryMapper {
         dto.setTitle(entity.getTitle());
         dto.setContent(entity.getContent());
         dto.setGenre(entity.getGenre());
+        dto.setFictionType(entity.getFictionType());
         dto.setCoverPictureUrl(entity.getCoverPictureUrl());
         dto.setCoverPictureType(entity.getCoverPictureType());
         dto.setCreatedAt(entity.getCreatedAt());

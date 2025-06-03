@@ -12,6 +12,7 @@ public class StoryResponseDTO {
     private String title;
     private String content;
     private String genre;
+    private String fictionType;
     private String coverPictureUrl;
     private String coverPictureType;
     private LocalDateTime createdAt;
@@ -26,13 +27,14 @@ public class StoryResponseDTO {
     }
     
     // Constructor with all fields
-    public StoryResponseDTO(UUID storyId, String title, String content, String genre, String coverPictureUrl,
+    public StoryResponseDTO(UUID storyId, String title, String content, String genre, String fictionType, String coverPictureUrl,
                            String coverPictureType, LocalDateTime createdAt, Boolean isActive,
                            UUID classId, String className, UUID createdById, String createdByName) {
         this.storyId = storyId;
         this.title = title;
         this.content = content;
         this.genre = genre;
+        this.fictionType = fictionType;
         this.coverPictureUrl = coverPictureUrl;
         this.coverPictureType = coverPictureType;
         this.createdAt = createdAt;
@@ -74,6 +76,14 @@ public class StoryResponseDTO {
     
     public void setGenre(String genre) {
         this.genre = genre;
+    }
+    
+    public String getFictionType() {
+        return fictionType;
+    }
+    
+    public void setFictionType(String fictionType) {
+        this.fictionType = fictionType;
     }
     
     public String getCoverPictureUrl() {

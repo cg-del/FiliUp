@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Users, Award, TrendingUp, User, Menu } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BookOpen, Users, Award, TrendingUp, User, Menu, Copy, Check } from 'lucide-react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { TeacherSidebar } from '../components/TeacherSidebar';
 import ClassSelector from '../components/ClassSelector';
@@ -13,11 +14,19 @@ import CreateClassForm from '../components/CreateClassForm';
 import CreateStoryForm from '../components/CreateStoryForm';
 import CreateQuizForm from '../components/CreateQuizForm';
 import { getClassInfo } from '@/constants/classData';
+import { classService } from '@/lib/services/classService';
+import type { Class } from '@/lib/services/types';
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
   
-  // Mock data for multiple classes
+  // State for classes data from API
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [copiedClassCode, setCopiedClassCode] = useState(false);
+  
+  // Mock data for multiple classes (keeping as fallback for now)
   const [allClassesData] = useState({
     '3-matatag': {
       totalStudents: 25,
@@ -60,7 +69,40 @@ const TeacherDashboard = () => {
     }
   });
 
-  const [selectedClass, setSelectedClass] = useState(user?.classes?.[0] || '3-matatag');
+  // Fetch classes data when component mounts
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        setLoading(true);
+        const response = await classService.getClassesByTeacher();
+        if (response.data) {
+          setClasses(response.data);
+        }
+      } catch (err) {
+        setError('Failed to fetch classes');
+        console.error('Error fetching classes:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClasses();
+  }, []);
+
+  const [selectedClass, setSelectedClass] = useState(() => {
+    // Set initial selected class from API data or fallback to mock data
+    return classes.length > 0 ? classes[0].classId : (user?.classes?.[0] || '3-matatag');
+  });
+
+  // Update selected class when classes are loaded
+  useEffect(() => {
+    if (classes.length > 0 && !selectedClass) {
+      setSelectedClass(classes[0].classId);
+    }
+  }, [classes, selectedClass]);
+
+  // Get current class data
+  const currentClass = classes.find(cls => cls.classId === selectedClass);
   const classData = allClassesData[selectedClass] || allClassesData['3-matatag'];
   const selectedClassInfo = getClassInfo(selectedClass);
 
@@ -74,6 +116,16 @@ const TeacherDashboard = () => {
     if (progress >= 80) return 'Excellent';
     if (progress >= 60) return 'Good';
     return 'Needs Help';
+  };
+
+  const copyClassCode = async (classCode: string) => {
+    try {
+      await navigator.clipboard.writeText(classCode);
+      setCopiedClassCode(true);
+      setTimeout(() => setCopiedClassCode(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy class code:', err);
+    }
   };
 
   return (
@@ -106,153 +158,250 @@ const TeacherDashboard = () => {
                 <p className="text-gray-600">Monitor your students' progress and celebrate their achievements.</p>
               </div>
 
-              {/* Class Selector */}
-              {user?.classes && user.classes.length > 1 && (
-                <ClassSelector
-                  classes={user.classes}
-                  selectedClass={selectedClass}
-                  onClassChange={setSelectedClass}
-                  classData={allClassesData}
-                />
+              {/* Loading State */}
+              {loading && (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+                  <span className="ml-4 text-gray-600">Loading your classes...</span>
+                </div>
               )}
 
-              {/* Enrollment Management */}
-              <div className="mb-8">
-                <EnrollmentManagement selectedClass={selectedClass} />
-              </div>
-
-              {/* Class Overview */}
-              <div className="grid md:grid-cols-4 gap-6 mb-8">
-                <Card className="bg-gradient-to-r from-teal-400 to-cyan-600 text-white border-0">
+              {/* Error State */}
+              {error && (
+                <Card className="mb-8 border-red-200 bg-red-50">
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-teal-100">Total Students</p>
-                        <p className="text-2xl font-bold">{classData.totalStudents}</p>
-                      </div>
-                      <Users className="h-8 w-8 text-teal-100" />
+                    <div className="flex items-center space-x-2 text-red-600">
+                      <span className="font-semibold">Error:</span>
+                      <span>{error}</span>
                     </div>
                   </CardContent>
                 </Card>
+              )}
 
-                <Card className="bg-gradient-to-r from-cyan-400 to-teal-600 text-white border-0">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-cyan-100">Active Today</p>
-                        <p className="text-2xl font-bold">{classData.activeStudents}</p>
-                      </div>
-                      <TrendingUp className="h-8 w-8 text-cyan-100" />
+              {/* Content - Only show when not loading */}
+              {!loading && (
+                <>
+                  {/* Class Selector - Use dropdown */}
+                  {classes.length > 1 && (
+                    <div className="mb-8">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Select Class</CardTitle>
+                          <CardDescription>Choose a class to view detailed information</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <Select value={selectedClass} onValueChange={(value) => setSelectedClass(value)}>
+                            <SelectTrigger className="w-full max-w-md">
+                              <SelectValue placeholder="Select a class" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {classes.map((cls) => (
+                                <SelectItem key={cls.classId} value={cls.classId}>
+                                  <div className="flex items-center justify-between w-full">
+                                    <span className="font-medium">{cls.className}</span>
+                                    <span className="text-sm text-gray-500 ml-4">
+                                      {cls.students?.length || 0} students
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </CardContent>
+                      </Card>
                     </div>
-                  </CardContent>
-                </Card>
+                  )}
 
-                <Card className="bg-gradient-to-r from-teal-500 to-cyan-400 text-white border-0">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-teal-100">Avg Progress</p>
-                        <p className="text-2xl font-bold">{classData.averageProgress}%</p>
-                      </div>
-                      <Award className="h-8 w-8 text-teal-100" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-cyan-500 to-teal-400 text-white border-0">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-cyan-100">Stories Read</p>
-                        <p className="text-2xl font-bold">{classData.completedStories}</p>
-                      </div>
-                      <BookOpen className="h-8 w-8 text-cyan-100" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Student Progress Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-5 w-5" />
-                      <span>Student Progress - {selectedClassInfo?.name || selectedClass}</span>
-                    </div>
-                    {selectedClassInfo && (
-                      <Badge variant="outline" className="text-xs">
-                        {selectedClassInfo.code}
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription>
-                    Real-time tracking of your students' learning progress in Filipino comprehension.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {classData.students.map((student) => (
-                      <div key={student.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  {/* Display current class info */}
+                  {currentClass && (
+                    <Card className="mb-8 bg-gradient-to-r from-teal-500 to-cyan-600 text-white">
+                      <CardContent className="p-6">
+                        <h2 className="text-2xl font-bold mb-2">{currentClass.className}</h2>
+                        <p className="text-teal-100 mb-4">{currentClass.description}</p>
                         <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-gradient-to-r from-teal-400 to-cyan-400 rounded-full flex items-center justify-center text-white font-semibold">
-                            {student.name.split(' ').map(n => n[0]).join('')}
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{student.name}</h3>
-                            <p className="text-sm text-gray-500">Last active: {student.lastActive}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-6">
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500">Stories</p>
-                            <p className="font-semibold">{student.stories}</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500">Quizzes</p>
-                            <p className="font-semibold">{student.quizzes}</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500">Points</p>
-                            <p className="font-semibold">{student.points}</p>
-                          </div>
-                          <div className="w-32">
-                            <div className="flex items-center justify-between text-sm mb-1">
-                              <span>Progress</span>
-                              <span>{student.progress}%</span>
-                            </div>
-                            <Progress value={student.progress} className="h-2" />
-                            <Badge 
-                              variant="outline"
-                              className={`mt-1 text-xs ${getProgressColor(student.progress)} text-white border-0`}
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="secondary" className="bg-white text-teal-600">
+                              Class Code: {currentClass.classCode}
+                               <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyClassCode(currentClass.classCode)}
+                              className="h-6 w-6 p-0 text-black hover:bg-white/20"
+                              title={copiedClassCode ? "Copied!" : "Copy class code"}
                             >
-                              {getProgressLabel(student.progress)}
+                              {copiedClassCode ? (
+                                <Check className="h-3 w-3" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
                             </Badge>
+                           
                           </div>
+                          <Badge variant="secondary" className="bg-white text-teal-600">
+                            {currentClass.students?.length || 0} Students
+                          </Badge>
                         </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Show message if no classes */}
+                  {classes.length === 0 && !loading && (
+                    <Card className="mb-8">
+                      <CardContent className="p-6 text-center">
+                        <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Classes Found</h3>
+                        <p className="text-gray-600 mb-4">You don't have any classes assigned yet.</p>
+                        <CreateClassForm />
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Rest of the existing content */}
+                  {classes.length > 0 && (
+                    <>
+                      {/* Enrollment Management - Only show for real classes */}
+                      <div className="mb-8">
+                        <EnrollmentManagement selectedClassId={selectedClass} />
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
 
-              {/* Quick Actions */}
-              <div className="mt-8 grid md:grid-cols-4 gap-6">
-                <CreateClassForm />
-                
-                <CreateStoryForm selectedClass={selectedClass} />
+                      {/* Class Overview */}
+                      <div className="grid md:grid-cols-4 gap-6 mb-8">
+                        <Card className="bg-gradient-to-r from-teal-400 to-cyan-600 text-white border-0">
+                          <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-teal-100">Total Students</p>
+                                <p className="text-2xl font-bold">{currentClass?.students?.length || classData.totalStudents}</p>
+                              </div>
+                              <Users className="h-8 w-8 text-teal-100" />
+                            </div>
+                          </CardContent>
+                        </Card>
 
-                <CreateQuizForm />
+                        <Card className="bg-gradient-to-r from-cyan-400 to-teal-600 text-white border-0">
+                          <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-cyan-100">Active Today</p>
+                                <p className="text-2xl font-bold">{classData.activeStudents}</p>
+                              </div>
+                              <TrendingUp className="h-8 w-8 text-cyan-100" />
+                            </div>
+                          </CardContent>
+                        </Card>
 
-                <Card className="border-2 border-dashed border-cyan-200 hover:border-cyan-400 transition-colors cursor-pointer">
-                  <CardContent className="p-6 text-center">
-                    <TrendingUp className="h-12 w-12 text-cyan-500 mx-auto mb-4" />
-                    <h3 className="font-semibold text-gray-900 mb-2">View Reports</h3>
-                    <p className="text-sm text-gray-500">Generate detailed progress reports</p>
-                  </CardContent>
-                </Card>
-              </div>
+                        <Card className="bg-gradient-to-r from-teal-500 to-cyan-400 text-white border-0">
+                          <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-teal-100">Avg Progress</p>
+                                <p className="text-2xl font-bold">{classData.averageProgress}%</p>
+                              </div>
+                              <Award className="h-8 w-8 text-teal-100" />
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card className="bg-gradient-to-r from-cyan-500 to-teal-400 text-white border-0">
+                          <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-cyan-100">Stories Read</p>
+                                <p className="text-2xl font-bold">{classData.completedStories}</p>
+                              </div>
+                              <BookOpen className="h-8 w-8 text-cyan-100" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Student Progress Table */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Users className="h-5 w-5" />
+                              <span>Student Progress - {selectedClassInfo?.name || selectedClass}</span>
+                            </div>
+                            {selectedClassInfo && (
+                              <Badge variant="outline" className="text-xs">
+                                {selectedClassInfo.code}
+                              </Badge>
+                            )}
+                          </CardTitle>
+                          <CardDescription>
+                            Real-time tracking of your students' learning progress in Filipino comprehension.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {classData.students.map((student) => (
+                              <div key={student.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div className="flex items-center space-x-4">
+                                  <div className="w-12 h-12 bg-gradient-to-r from-teal-400 to-cyan-400 rounded-full flex items-center justify-center text-white font-semibold">
+                                    {student.name.split(' ').map(n => n[0]).join('')}
+                                  </div>
+                                  <div>
+                                    <h3 className="font-semibold text-gray-900">{student.name}</h3>
+                                    <p className="text-sm text-gray-500">Last active: {student.lastActive}</p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center space-x-6">
+                                  <div className="text-center">
+                                    <p className="text-sm text-gray-500">Stories</p>
+                                    <p className="font-semibold">{student.stories}</p>
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-sm text-gray-500">Quizzes</p>
+                                    <p className="font-semibold">{student.quizzes}</p>
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-sm text-gray-500">Points</p>
+                                    <p className="font-semibold">{student.points}</p>
+                                  </div>
+                                  <div className="w-32">
+                                    <div className="flex items-center justify-between text-sm mb-1">
+                                      <span>Progress</span>
+                                      <span>{student.progress}%</span>
+                                    </div>
+                                    <Progress value={student.progress} className="h-2" />
+                                    <Badge 
+                                      variant="outline"
+                                      className={`mt-1 text-xs ${getProgressColor(student.progress)} text-white border-0`}
+                                    >
+                                      {getProgressLabel(student.progress)}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Quick Actions */}
+                      <div className="mt-8 grid md:grid-cols-4 gap-6">
+                        <CreateClassForm />
+                        
+                        <CreateStoryForm selectedClass={selectedClass} />
+
+                        <CreateQuizForm />
+
+                        <Card className="border-2 border-dashed border-cyan-200 hover:border-cyan-400 transition-colors cursor-pointer">
+                          <CardContent className="p-6 text-center">
+                            <TrendingUp className="h-12 w-12 text-cyan-500 mx-auto mb-4" />
+                            <h3 className="font-semibold text-gray-900 mb-2">View Reports</h3>
+                            <p className="text-sm text-gray-500">Generate detailed progress reports</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </SidebarInset>

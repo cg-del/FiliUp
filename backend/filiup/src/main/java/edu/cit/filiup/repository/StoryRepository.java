@@ -13,4 +13,6 @@ public interface StoryRepository extends JpaRepository<StoryEntity, UUID> {
     List<StoryEntity> findByIsActiveTrue();
     List<StoryEntity> findByClassEntityClassIdAndIsActiveTrue(UUID classId);
     List<StoryEntity> findByGenre(String genre);
+    List<StoryEntity> findByFictionType(String fictionType);
+    List<StoryEntity> findByFictionTypeAndIsActiveTrue(String fictionType);
 }

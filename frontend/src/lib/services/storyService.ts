@@ -1,6 +1,16 @@
 import { api } from '../api';
 import type { ApiResponse, Story, PaginationParams } from './types';
 
+interface CreateStoryRequestData {
+  title: string;
+  content: string;
+  genre: string;
+  fictionType: string;
+  coverPictureUrl: string;
+  coverPictureType: string;
+  classId: string;
+}
+
 export const storyService = {
   getAllStories: async (params?: PaginationParams): Promise<ApiResponse<Story[]>> => {
     const response = await api.get('/stories', { params });
@@ -14,6 +24,23 @@ export const storyService = {
 
   createStory: async (data: Omit<Story, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Story>> => {
     const response = await api.post('/stories', data);
+    return response.data;
+  },
+
+  createStoryWithDetails: async (data: CreateStoryRequestData): Promise<ApiResponse<Story>> => {
+    const response = await api.post('/story/create', data);
+    return response.data;
+  },
+
+  uploadCoverImage: async (file: File): Promise<{ url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post('/story/upload-cover', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

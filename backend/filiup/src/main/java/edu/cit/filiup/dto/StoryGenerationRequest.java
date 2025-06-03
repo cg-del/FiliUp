@@ -5,6 +5,7 @@ public class StoryGenerationRequest {
     private Long classId;
     private String title;
     private String genre;
+    private String fictionType;
 
     // Getters and setters
     public String getPrompt() {
@@ -39,6 +40,14 @@ public class StoryGenerationRequest {
         this.genre = genre;
     }
 
+    public String getFictionType() {
+        return fictionType;
+    }
+
+    public void setFictionType(String fictionType) {
+        this.fictionType = fictionType;
+    }
+
     @Override
     public String toString() {
         return "StoryGenerationRequest{" +
@@ -46,6 +55,7 @@ public class StoryGenerationRequest {
                 ", classId=" + classId +
                 ", title='" + title + '\'' +
                 ", genre='" + genre + '\'' +
+                ", fictionType='" + fictionType + '\'' +
                 '}';
     }
 } 

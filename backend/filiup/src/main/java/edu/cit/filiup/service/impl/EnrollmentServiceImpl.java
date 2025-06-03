@@ -51,14 +51,6 @@ public class EnrollmentServiceImpl implements EnrollmentService {
             throw new IllegalStateException("Only students can enroll in classes");
         }
 
-        // Verify student profile exists and is verified
-        StudentProfileEntity profile = studentProfileRepository.findByUserUserId(studentId)
-                .orElseThrow(() -> new EntityNotFoundException("Student profile not found"));
-
-        if (!profile.getEmailVerified()) {
-            throw new IllegalStateException("Email must be verified before enrolling in classes");
-        }
-
         // Verify the class exists
         ClassEntity classEntity = classRepository.findByClassCode(classCode)
                 .orElseThrow(() -> new EntityNotFoundException("Class not found with code: " + classCode));
@@ -68,7 +60,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
             throw new IllegalStateException("You are already enrolled in this class");
         }
 
-        // Create new enrollment
+        // Create new enrollment - student profile is no longer required
         EnrollmentEntity enrollment = new EnrollmentEntity();
         enrollment.setUserId(studentId);
         enrollment.setClassCode(classCode);
@@ -88,6 +80,20 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Transactional(readOnly = true)
     public List<EnrollmentResponseDTO> getEnrollmentsByClassCode(String classCode) {
         return enrollmentRepository.findByClassCode(classCode)
+                .stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EnrollmentResponseDTO> getPendingEnrollmentsByClassId(UUID classId) {
+        // First get the class to find its class code
+        ClassEntity classEntity = classRepository.findById(classId)
+                .orElseThrow(() -> new EntityNotFoundException("Class not found with ID: " + classId));
+        
+        // Get all enrollments for this class that are not accepted (pending)
+        return enrollmentRepository.findByClassCodeAndIsAccepted(classEntity.getClassCode(), false)
                 .stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
@@ -139,13 +145,20 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         dto.setStudentEmail(user.getUserEmail());
         dto.setUserProfilePictureUrl(user.getUserProfilePictureUrl());
 
-        // Get student profile information
+        // Get student profile information if it exists, otherwise use default values
         StudentProfileEntity profile = studentProfileRepository.findByUserUserId(enrollment.getUserId())
-                .orElseThrow(() -> new EntityNotFoundException("Student profile not found"));
+                .orElse(null);
         
-        dto.setSection(profile.getSection());
-        dto.setAverageScore(profile.getAverageScore());
-        dto.setNumberOfQuizTakes(profile.getNumberOfQuizTakes());
+        if (profile != null) {
+            dto.setSection(profile.getSection());
+            dto.setAverageScore(profile.getAverageScore());
+            dto.setNumberOfQuizTakes(profile.getNumberOfQuizTakes());
+        } else {
+            // Use default values when profile doesn't exist
+            dto.setSection("Not specified");
+            dto.setAverageScore(0.0);
+            dto.setNumberOfQuizTakes(0);
+        }
 
         return dto;
     }

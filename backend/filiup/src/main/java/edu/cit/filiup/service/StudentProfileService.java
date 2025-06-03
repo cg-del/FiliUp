@@ -10,4 +10,11 @@ public interface StudentProfileService {
     StudentProfileDTO updateProfile(UUID profileId, StudentProfileDTO profileDTO);
     void deleteProfile(UUID profileId);
     void incrementQuizzesTaken(UUID userId, Double quizScore);
+    
+    /**
+     * Creates a basic student profile if one doesn't exist
+     * @param userId the user ID to create a profile for
+     * @return the created or existing profile DTO
+     */
+    StudentProfileDTO createBasicProfileIfNotExists(UUID userId);
 } 

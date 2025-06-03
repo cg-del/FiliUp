@@ -7,23 +7,23 @@ export const classService = {
     return response.data;
   },
 
-  getClassById: async (id: string): Promise<ApiResponse<Class>> => {
-    const response = await api.get(`/classes/${id}`);
+  getClassById: async (classId: string): Promise<ApiResponse<Class>> => {
+    const response = await api.get(`/classes/${classId}`);
     return response.data;
   },
 
-  createClass: async (data: Omit<Class, 'id'>): Promise<ApiResponse<Class>> => {
+  createClass: async (data: { className: string; description: string }): Promise<ApiResponse<Class>> => {
     const response = await api.post('/classes', data);
     return response.data;
   },
 
-  updateClass: async (id: string, data: Partial<Class>): Promise<ApiResponse<Class>> => {
-    const response = await api.put(`/classes/${id}`, data);
+  updateClass: async (classId: string, data: Partial<Class>): Promise<ApiResponse<Class>> => {
+    const response = await api.put(`/classes/${classId}`, data);
     return response.data;
   },
 
-  deleteClass: async (id: string): Promise<ApiResponse<void>> => {
-    const response = await api.delete(`/classes/${id}`);
+  deleteClass: async (classId: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/classes/${classId}`);
     return response.data;
   },
 
@@ -38,13 +38,20 @@ export const classService = {
     return response.data;
   },
 
-  getClassesByTeacher: async (teacherId: string): Promise<ApiResponse<Class[]>> => {
-    const response = await api.get(`/classes/teacher/${teacherId}`);
+  getClassesByTeacher: async (): Promise<ApiResponse<Class[]>> => {
+    const response = await api.get('/classes/teacher');
+    console.log(response.data);
     return response.data;
   },
 
   getClassesByStudent: async (studentId: string): Promise<ApiResponse<Class[]>> => {
     const response = await api.get(`/classes/student/${studentId}`);
+    return response.data;
+  },
+
+  // Get classes for the current authenticated student
+  getMyClasses: async (): Promise<ApiResponse<Class[]>> => {
+    const response = await api.get('/classes/myclasses');
     return response.data;
   },
 }; 
