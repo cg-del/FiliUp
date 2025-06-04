@@ -4,6 +4,9 @@ import edu.cit.filiup.dto.QuizAttemptDTO;
 import edu.cit.filiup.dto.QuizDTO;
 import edu.cit.filiup.dto.QuizSubmissionDTO;
 import edu.cit.filiup.dto.QuizSubmissionResultDTO;
+import edu.cit.filiup.dto.QuizEligibilityDTO;
+import edu.cit.filiup.dto.QuizProgressDTO;
+import edu.cit.filiup.dto.QuizLogDTO;
 import edu.cit.filiup.entity.QuizAttemptEntity;
 import edu.cit.filiup.entity.QuizEntity;
 import edu.cit.filiup.entity.QuizQuestionEntity;
@@ -16,6 +19,7 @@ import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.service.QuizScoringService;
 import edu.cit.filiup.service.QuizService;
 import edu.cit.filiup.service.StudentProfileService;
+import edu.cit.filiup.service.QuizTimerService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -43,6 +47,7 @@ public class QuizServiceImpl implements QuizService {
     private final StudentProfileService studentProfileService;
     private final QuizScoringService quizScoringService;
     private final ObjectMapper objectMapper;
+    private final QuizTimerService quizTimerService;
 
     @Autowired
     public QuizServiceImpl(QuizRepository quizRepository, 
@@ -51,7 +56,8 @@ public class QuizServiceImpl implements QuizService {
                           UserRepository userRepository,
                           StudentProfileService studentProfileService,
                           QuizScoringService quizScoringService,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          QuizTimerService quizTimerService) {
         this.quizRepository = quizRepository;
         this.quizAttemptRepository = quizAttemptRepository;
         this.storyRepository = storyRepository;
@@ -59,6 +65,7 @@ public class QuizServiceImpl implements QuizService {
         this.studentProfileService = studentProfileService;
         this.quizScoringService = quizScoringService;
         this.objectMapper = objectMapper;
+        this.quizTimerService = quizTimerService;
     }
 
     @Override
@@ -177,6 +184,9 @@ public class QuizServiceImpl implements QuizService {
         attempt.setQuiz(quiz);
         attempt.setStudent(student);
         attempt.setStartedAt(now);
+        // Calculate and set expiration time
+        LocalDateTime expiresAt = now.plusMinutes(quiz.getTimeLimitMinutes());
+        attempt.setExpiresAt(expiresAt);
         attempt.setIsCompleted(false);
         
         // Calculate max possible score
@@ -189,6 +199,10 @@ public class QuizServiceImpl implements QuizService {
         attempt.setMaxPossibleScore(maxScore);
         
         QuizAttemptEntity savedAttempt = quizAttemptRepository.save(attempt);
+        
+        // Schedule timeout notification and auto-submission
+        quizTimerService.scheduleQuizTimeout(savedAttempt.getAttemptId(), expiresAt, studentId);
+        
         return convertToAttemptDTO(savedAttempt);
     }
 
@@ -203,7 +217,16 @@ public class QuizServiceImpl implements QuizService {
             throw new IllegalStateException("Quiz attempt is already completed");
         }
         
+        // Check if the quiz has expired
+        LocalDateTime now = LocalDateTime.now();
+        if (attempt.getExpiresAt() != null && now.isAfter(attempt.getExpiresAt())) {
+            throw new IllegalStateException("Quiz submission time has expired");
+        }
+        
         QuizEntity quiz = attempt.getQuiz();
+        
+        // Cancel the scheduled timeout since quiz is being submitted
+        quizTimerService.cancelQuizTimeout(attemptId);
         
         // Calculate score and get detailed results
         QuizSubmissionResultDTO result = quizScoringService.calculateScore(quiz, attempt, submission);
@@ -272,6 +295,50 @@ public class QuizServiceImpl implements QuizService {
                 .orElseThrow(() -> new EntityNotFoundException("Quiz attempt not found with id: " + attemptId));
                 
         return convertToAttemptDTO(attempt);
+    }
+
+    @Override
+    @Transactional
+    public QuizSubmissionResultDTO autoSubmitExpiredQuiz(UUID attemptId) {
+        QuizAttemptEntity attempt = quizAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new EntityNotFoundException("Quiz attempt not found with id: " + attemptId));
+        
+        // Check if the attempt is already completed
+        if (attempt.getIsCompleted()) {
+            throw new IllegalStateException("Quiz attempt is already completed");
+        }
+        
+        QuizEntity quiz = attempt.getQuiz();
+        
+        // Create empty submission for expired quiz (no answers)
+        QuizSubmissionDTO expiredSubmission = new QuizSubmissionDTO();
+        expiredSubmission.setQuizId(quiz.getQuizId());
+        expiredSubmission.setAnswers(java.util.Collections.emptyList());
+        expiredSubmission.setTimeTakenMinutes(quiz.getTimeLimitMinutes());
+        
+        // Calculate score and get detailed results (will be 0 since no answers)
+        QuizSubmissionResultDTO result = quizScoringService.calculateScore(quiz, attempt, expiredSubmission);
+        
+        // Update the attempt with results
+        attempt.setIsCompleted(true);
+        attempt.setCompletedAt(LocalDateTime.now());
+        attempt.setScore(result.getScore());
+        attempt.setMaxPossibleScore(result.getMaxPossibleScore());
+        attempt.setTimeTakenMinutes(expiredSubmission.getTimeTakenMinutes());
+        
+        try {
+            // Store the responses as JSON
+            attempt.setResponses(objectMapper.writeValueAsString(result.getQuestionResults()));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error converting responses to JSON", e);
+        }
+        
+        quizAttemptRepository.save(attempt);
+        
+        // Update student profile statistics
+        studentProfileService.incrementQuizzesTaken(attempt.getStudent().getUserId(), result.getScorePercentage());
+        
+        return result;
     }
 
     private void updateQuizFromDTO(QuizEntity quiz, QuizDTO quizDTO) {
@@ -362,6 +429,7 @@ public class QuizServiceImpl implements QuizService {
         dto.setStudentId(attempt.getStudent().getUserId());
         dto.setStudentName(attempt.getStudent().getUserName());
         dto.setStartedAt(attempt.getStartedAt());
+        dto.setExpiresAt(attempt.getExpiresAt());
         dto.setCompletedAt(attempt.getCompletedAt());
         dto.setScore(attempt.getScore());
         dto.setMaxPossibleScore(attempt.getMaxPossibleScore());
@@ -382,5 +450,233 @@ public class QuizServiceImpl implements QuizService {
         }
         
         return dto;
+    }
+
+    // New methods for resume functionality
+    
+    @Override
+    public QuizEligibilityDTO checkQuizEligibility(UUID quizId, UUID studentId) {
+        QuizEntity quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new EntityNotFoundException("Quiz not found with id: " + quizId));
+        
+        UserEntity student = userRepository.findById(studentId)
+                .orElseThrow(() -> new EntityNotFoundException("Student not found with id: " + studentId));
+        
+        // Check for existing attempts
+        List<QuizAttemptEntity> existingAttempts = quizAttemptRepository
+                .findByQuizQuizIdAndStudentUserIdOrderByStartedAtDesc(quizId, studentId);
+        
+        // Check if student has already completed this quiz
+        boolean hasCompletedAttempt = existingAttempts.stream()
+                .anyMatch(attempt -> attempt.getIsCompleted());
+        
+        if (hasCompletedAttempt) {
+            return new QuizEligibilityDTO(false, "Quiz already completed", null, true, false);
+        }
+        
+        // Check for in-progress attempt
+        QuizAttemptEntity inProgressAttempt = existingAttempts.stream()
+                .filter(attempt -> !attempt.getIsCompleted())
+                .findFirst()
+                .orElse(null);
+        
+        if (inProgressAttempt != null) {
+            // Check if the attempt has expired
+            LocalDateTime now = LocalDateTime.now();
+            if (inProgressAttempt.getExpiresAt() != null && now.isAfter(inProgressAttempt.getExpiresAt())) {
+                // Attempt has expired, auto-submit it
+                autoSubmitExpiredQuiz(inProgressAttempt.getAttemptId());
+                return new QuizEligibilityDTO(false, "Previous attempt expired and was auto-submitted", null, true, false);
+            } else {
+                // Has valid in-progress attempt
+                QuizAttemptDTO existingAttemptDTO = convertToAttemptDTO(inProgressAttempt);
+                return new QuizEligibilityDTO(true, "Has in-progress attempt", existingAttemptDTO, false, true);
+            }
+        }
+        
+        // Verify the quiz is active and available for new attempts
+        if (!quiz.getIsActive()) {
+            return new QuizEligibilityDTO(false, "Quiz is not active", null, false, false);
+        }
+        
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(quiz.getOpensAt())) {
+            return new QuizEligibilityDTO(false, "Quiz is not open yet", null, false, false);
+        }
+        if (now.isAfter(quiz.getClosesAt())) {
+            return new QuizEligibilityDTO(false, "Quiz has already closed", null, false, false);
+        }
+        
+        // Can start new attempt
+        return new QuizEligibilityDTO(true, "Can start new attempt", null, false, false);
+    }
+    
+    @Override
+    @Transactional
+    public QuizAttemptDTO getOrCreateQuizAttempt(UUID quizId, UUID studentId) {
+        // First check eligibility
+        QuizEligibilityDTO eligibility = checkQuizEligibility(quizId, studentId);
+        
+        if (eligibility.getHasInProgressAttempt() && eligibility.getExistingAttempt() != null) {
+            // Return existing in-progress attempt
+            return eligibility.getExistingAttempt();
+        }
+        
+        if (!eligibility.getCanAttempt()) {
+            throw new IllegalStateException(eligibility.getReason());
+        }
+        
+        // Create new attempt
+        return startQuizAttempt(quizId, studentId);
+    }
+    
+    @Override
+    @Transactional
+    public void saveQuizProgress(UUID attemptId, QuizProgressDTO progressData, UUID studentId) {
+        QuizAttemptEntity attempt = quizAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new EntityNotFoundException("Quiz attempt not found with id: " + attemptId));
+        
+        // Verify the attempt belongs to the student
+        if (!attempt.getStudent().getUserId().equals(studentId)) {
+            throw new IllegalArgumentException("Quiz attempt does not belong to the specified student");
+        }
+        
+        // Verify the attempt is not completed
+        if (attempt.getIsCompleted()) {
+            throw new IllegalStateException("Cannot save progress for completed quiz attempt");
+        }
+        
+        // Verify the attempt has not expired
+        LocalDateTime now = LocalDateTime.now();
+        if (attempt.getExpiresAt() != null && now.isAfter(attempt.getExpiresAt())) {
+            throw new IllegalStateException("Cannot save progress for expired quiz attempt");
+        }
+        
+        // Convert progress data to JSON and save
+        try {
+            Map<String, String> currentAnswers = new HashMap<>();
+            if (progressData.getCurrentAnswers() != null) {
+                for (QuizProgressDTO.QuestionAnswerDTO answer : progressData.getCurrentAnswers()) {
+                    currentAnswers.put(answer.getQuestionId(), answer.getSelectedAnswer());
+                }
+            }
+            
+            // Store current answers and question index
+            attempt.setCurrentAnswers(objectMapper.writeValueAsString(currentAnswers));
+            attempt.setCurrentQuestionIndex(progressData.getCurrentQuestionIndex());
+            
+            quizAttemptRepository.save(attempt);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error converting current answers to JSON", e);
+        }
+    }
+    
+    @Override
+    public QuizAttemptDTO getQuizAttemptWithProgress(UUID attemptId, UUID studentId) {
+        QuizAttemptEntity attempt = quizAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new EntityNotFoundException("Quiz attempt not found with id: " + attemptId));
+        
+        // Verify the attempt belongs to the student
+        if (!attempt.getStudent().getUserId().equals(studentId)) {
+            throw new IllegalArgumentException("Quiz attempt does not belong to the specified student");
+        }
+        
+        QuizAttemptDTO dto = convertToAttemptDTO(attempt);
+        
+        // Add current answers if available
+        if (attempt.getCurrentAnswers() != null) {
+            try {
+                Map<String, String> currentAnswers = objectMapper.readValue(
+                        attempt.getCurrentAnswers(),
+                        new TypeReference<Map<String, String>>() {}
+                );
+                dto.setCurrentAnswers(currentAnswers);
+            } catch (JsonProcessingException e) {
+                // If JSON parsing fails, just continue without current answers
+                System.err.println("Error parsing current answers JSON: " + e.getMessage());
+            }
+        }
+        
+        dto.setCurrentQuestionIndex(attempt.getCurrentQuestionIndex());
+        
+        return dto;
+    }
+    
+    @Override
+    public QuizAttemptDTO resumeQuizAttempt(UUID quizId, UUID studentId) {
+        QuizEligibilityDTO eligibility = checkQuizEligibility(quizId, studentId);
+        
+        if (!eligibility.getHasInProgressAttempt() || eligibility.getExistingAttempt() == null) {
+            throw new EntityNotFoundException("No in-progress quiz attempt found to resume");
+        }
+        
+        return eligibility.getExistingAttempt();
+    }
+    
+    // Quiz logging methods implementation
+    
+    @Override
+    @Transactional
+    public void logSuspiciousAction(UUID attemptId, QuizLogDTO.LogEntryDTO logEntry, UUID studentId) {
+        QuizAttemptEntity attempt = quizAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new EntityNotFoundException("Quiz attempt not found with id: " + attemptId));
+        
+        // Verify the attempt belongs to the student
+        if (!attempt.getStudent().getUserId().equals(studentId)) {
+            throw new IllegalArgumentException("Quiz attempt does not belong to the specified student");
+        }
+        
+        // Verify the attempt is not completed
+        if (attempt.getIsCompleted()) {
+            throw new IllegalStateException("Cannot log actions for completed quiz attempt");
+        }
+        
+        try {
+            // Get existing logs or create new list
+            List<QuizLogDTO.LogEntryDTO> existingLogs = new ArrayList<>();
+            if (attempt.getLogs() != null && !attempt.getLogs().isEmpty()) {
+                existingLogs = objectMapper.readValue(
+                    attempt.getLogs(),
+                    new TypeReference<List<QuizLogDTO.LogEntryDTO>>() {}
+                );
+            }
+            
+            // Add new log entry
+            existingLogs.add(logEntry);
+            
+            // Save back to database
+            attempt.setLogs(objectMapper.writeValueAsString(existingLogs));
+            quizAttemptRepository.save(attempt);
+            
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error processing quiz logs JSON", e);
+        }
+    }
+    
+    @Override
+    public QuizLogDTO getQuizLogs(UUID attemptId) {
+        QuizAttemptEntity attempt = quizAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new EntityNotFoundException("Quiz attempt not found with id: " + attemptId));
+        
+        QuizLogDTO logDTO = new QuizLogDTO();
+        logDTO.setAttemptId(attemptId);
+        
+        if (attempt.getLogs() != null && !attempt.getLogs().isEmpty()) {
+            try {
+                List<QuizLogDTO.LogEntryDTO> logEntries = objectMapper.readValue(
+                    attempt.getLogs(),
+                    new TypeReference<List<QuizLogDTO.LogEntryDTO>>() {}
+                );
+                logDTO.setLogEntries(logEntries);
+            } catch (JsonProcessingException e) {
+                // If JSON parsing fails, return empty logs
+                System.err.println("Error parsing quiz logs JSON: " + e.getMessage());
+                logDTO.setLogEntries(new ArrayList<>());
+            }
+        } else {
+            logDTO.setLogEntries(new ArrayList<>());
+        }
+        
+        return logDTO;
     }
 } 

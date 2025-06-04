@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
-import { Plus, BookOpen, Upload, X, Loader2 } from 'lucide-react';
+import { Plus, BookOpen, Upload, X, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { STORY_GENRES } from '@/constants/storyGenres';
 import { classService } from '@/lib/services/classService';
 import { storyService } from '@/lib/services/storyService';
 import type { Class } from '@/lib/services/types';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 interface CreateStoryFormData {
   title: string;
@@ -42,7 +43,7 @@ interface SavedFormData extends CreateStoryFormData {
   coverImagePreview?: string;
 }
 
-const STORAGE_KEY = 'create-story-form-data';
+const STORAGE_KEY = 'filiup_create_story_draft';
 
 const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -54,6 +55,7 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
   const [loadingClasses, setLoadingClasses] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { safeExecute } = useErrorHandler();
   
   const form = useForm<CreateStoryFormData>({
     defaultValues: {
@@ -66,58 +68,82 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
   });
 
   // Save form data to localStorage
-  const saveFormData = (data: SavedFormData) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (error) {
-      console.error('Failed to save form data to localStorage:', error);
-    }
+  const saveFormData = async (data: SavedFormData) => {
+    await safeExecute(
+      () => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        return Promise.resolve();
+      },
+      {
+        showToast: false, // Don't show toast for localStorage errors
+        onError: (error) => {
+          console.error('Failed to save form data to localStorage:', error);
+        }
+      }
+    );
   };
 
   // Load form data from localStorage
-  const loadFormData = (): SavedFormData | null => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : null;
-    } catch (error) {
-      console.error('Failed to load form data from localStorage:', error);
-      return null;
-    }
+  const loadFormData = async (): Promise<SavedFormData | null> => {
+    const { data } = await safeExecute(
+      () => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return Promise.resolve(saved ? JSON.parse(saved) : null);
+      },
+      {
+        showToast: false, // Don't show toast for localStorage errors
+        onError: (error) => {
+          console.error('Failed to load form data from localStorage:', error);
+        }
+      }
+    );
+    return data;
   };
 
   // Clear form data from localStorage
-  const clearFormData = () => {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (error) {
-      console.error('Failed to clear form data from localStorage:', error);
-    }
+  const clearFormData = async () => {
+    await safeExecute(
+      () => {
+        localStorage.removeItem(STORAGE_KEY);
+        return Promise.resolve();
+      },
+      {
+        showToast: false, // Don't show toast for localStorage errors
+        onError: (error) => {
+          console.error('Failed to clear form data from localStorage:', error);
+        }
+      }
+    );
   };
 
   // Load saved form data when dialog opens
   useEffect(() => {
     if (isOpen) {
-      const savedData = loadFormData();
-      if (savedData) {
-        // Restore form values
-        form.setValue('title', savedData.title);
-        form.setValue('content', savedData.content);
-        form.setValue('genre', savedData.genre);
-        form.setValue('fictionType', savedData.fictionType);
-        if (savedData.classId) {
-          form.setValue('classId', savedData.classId);
-        }
-        
-        // Restore cover image preview
-        if (savedData.coverImagePreview) {
-          setCoverImagePreview(savedData.coverImagePreview);
-        }
+      const loadSavedData = async () => {
+        const savedData = await loadFormData();
+        if (savedData) {
+          // Restore form values
+          form.setValue('title', savedData.title);
+          form.setValue('content', savedData.content);
+          form.setValue('genre', savedData.genre);
+          form.setValue('fictionType', savedData.fictionType);
+          if (savedData.classId) {
+            form.setValue('classId', savedData.classId);
+          }
+          
+          // Restore cover image preview
+          if (savedData.coverImagePreview) {
+            setCoverImagePreview(savedData.coverImagePreview);
+          }
 
-        toast({
-          title: "Draft Restored",
-          description: "Your previous work has been restored.",
-        });
-      }
+          toast({
+            title: "Draft Restored",
+            description: "Your previous work has been restored.",
+          });
+        }
+      };
+
+      loadSavedData();
     }
   }, [isOpen, form, toast]);
 
@@ -137,7 +163,8 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
       
       // Only save if there's actual content to prevent unnecessary storage
       if (formData.title || formData.content || formData.genre || coverImagePreview) {
-        saveFormData(formData);
+        // Save asynchronously without blocking the UI
+        saveFormData(formData).catch(console.error);
       }
     });
 
@@ -149,33 +176,30 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
     const fetchClasses = async () => {
       if (!isOpen) return;
       
-      try {
-        setLoadingClasses(true);
-        const response = await classService.getClassesByTeacher();
-        if (response.data) {
-          setClasses(response.data);
-          // Set default class if none selected and no saved data
-          const savedData = loadFormData();
-          if (!selectedClass && !savedData?.classId && response.data.length > 0) {
-            form.setValue('classId', response.data[0].classId);
-          } else if (selectedClass && !savedData?.classId) {
-            form.setValue('classId', selectedClass);
-          }
+      setLoadingClasses(true);
+      const { data: response, error } = await safeExecute(
+        () => classService.getClassesByTeacher(),
+        {
+          customMessage: "Failed to load classes. Please try again.",
         }
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load classes. Please try again.",
-          variant: "destructive",
-        });
-        console.error('Error fetching classes:', error);
-      } finally {
-        setLoadingClasses(false);
+      );
+
+      if (response?.data) {
+        setClasses(response.data);
+        // Set default class if none selected and no saved data
+        const savedData = await loadFormData();
+        if (!selectedClass && !savedData?.classId && response.data.length > 0) {
+          form.setValue('classId', response.data[0].classId);
+        } else if (selectedClass && !savedData?.classId) {
+          form.setValue('classId', selectedClass);
+        }
       }
+      
+      setLoadingClasses(false);
     };
 
     fetchClasses();
-  }, [isOpen, selectedClass, form, toast]);
+  }, [isOpen, selectedClass, form]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -213,7 +237,7 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
         saveFormData({
           ...currentFormData,
           coverImagePreview: preview
-        });
+        }).catch(console.error);
       };
       reader.readAsDataURL(file);
     }
@@ -228,77 +252,84 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
     saveFormData({
       ...currentFormData,
       coverImagePreview: undefined
-    });
+    }).catch(console.error);
   };
 
-  const resetForm = () => {
+  const resetForm = async () => {
     form.reset();
     setCoverImage(null);
     setCoverImagePreview('');
-    clearFormData();
+    await clearFormData();
   };
 
   const onSubmit = async (data: CreateStoryFormData) => {
-    try {
-      setIsCreating(true);
-      let coverPictureUrl = '';
-      let coverPictureType = '';
+    setIsCreating(true);
+    let coverPictureUrl = '';
+    let coverPictureType = '';
 
-      // Step 1: Upload cover image if provided
-      if (coverImage) {
-        setIsUploading(true);
-        try {
-          const uploadResult = await storyService.uploadCoverImage(coverImage);
-          coverPictureUrl = uploadResult.url;
-          coverPictureType = coverImage.type;
-          toast({
-            title: "Cover Image Uploaded",
-            description: "Cover image uploaded successfully.",
-          });
-        } catch (error) {
-          toast({
-            title: "Upload Error",
-            description: error instanceof Error ? error.message : "Failed to upload cover image",
-            variant: "destructive",
-          });
-          return;
-        } finally {
-          setIsUploading(false);
+    // Step 1: Upload cover image if provided
+    if (coverImage) {
+      setIsUploading(true);
+      const { data: uploadResult, error: uploadError } = await safeExecute(
+        () => storyService.uploadCoverImage(coverImage),
+        {
+          customMessage: "Failed to upload cover image. Please try again.",
         }
+      );
+
+      if (uploadError) {
+        setIsUploading(false);
+        setIsCreating(false);
+        return;
       }
 
-      // Step 2: Create the story
-      const storyData: CreateStoryRequestData = {
-        title: data.title,
-        content: data.content,
-        genre: data.genre,
-        fictionType: data.fictionType,
-        coverPictureUrl,
-        coverPictureType,
-        classId: data.classId
-      };
-      
-      console.log('Creating story:', storyData);
-      await storyService.createStoryWithDetails(storyData);
+      if (uploadResult) {
+        coverPictureUrl = uploadResult.url;
+        coverPictureType = coverImage.type;
+        toast({
+          title: "Cover Image Uploaded",
+          description: "Cover image uploaded successfully.",
+        });
+      }
+      setIsUploading(false);
+    }
 
+    // Step 2: Create the story
+    const storyData: CreateStoryRequestData = {
+      title: data.title,
+      content: data.content,
+      genre: data.genre,
+      fictionType: data.fictionType,
+      coverPictureUrl,
+      coverPictureType,
+      classId: data.classId
+    };
+    
+    console.log('Creating story:', storyData);
+    const { data: createResult, error: createError } = await safeExecute(
+      () => storyService.createStoryWithDetails(storyData),
+      {
+        customMessage: "Failed to create story. Please try again.",
+      }
+    );
+
+    if (createError) {
+      setIsCreating(false);
+      return;
+    }
+
+    if (createResult) {
       toast({
         title: "Story Created Successfully!",
         description: `"${data.title}" has been created and is ready for students.`,
       });
 
       // Clear form and localStorage after successful creation
-      resetForm();
+      await resetForm();
       setIsOpen(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create story. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreating(false);
-      setIsUploading(false);
     }
+
+    setIsCreating(false);
   };
 
   const handleDialogClose = (open: boolean) => {

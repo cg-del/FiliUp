@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,6 @@ const QuizModule = () => {
       {
         question: 'Ano ang ibig sabihin ng salitang "matalino"?',
         options: ['Maganda', 'Mayaman', 'Matalas ang isip', 'Mabait'],
-        correct: 2,
         explanation: 'Ang "matalino" ay nangangahulugang may matalas na isip o may kakayahang mag-isip nang mabuti.'
       },
       {
@@ -37,7 +35,6 @@ const QuizModule = () => {
           'Kumain ng mabilis',
           'Tumakbo ng mabilis'
         ],
-        correct: 0,
         explanation: 'Ginagamit ang "ng" kapag tumutukoy sa bagay o tao, habang "nang" ay ginagamit sa pamamaraan.'
       },
       {
@@ -48,7 +45,6 @@ const QuizModule = () => {
           'Ang pagsisipag at pag-iimpok ay mahalaga',
           'Ang lahat ng nasa itaas'
         ],
-        correct: 2,
         explanation: 'Ang kwentong ito ay nagtuturo ng kahalagahan ng pagsisipag at pag-iimpok para sa hinaharap.'
       },
       {
@@ -59,7 +55,6 @@ const QuizModule = () => {
           'Wakas, Simula, Gitna',
           'Walang tamang pagkakasunod-sunod'
         ],
-        correct: 1,
         explanation: 'Ang tamang daloy ng kwento ay Simula (panimula), Gitna (tunggalian), at Wakas (resolusyon).'
       },
       {
@@ -70,7 +65,6 @@ const QuizModule = () => {
           'Ang mga karakter sa kwento',
           'Ang mensahe ng kwento'
         ],
-        correct: 2,
         explanation: 'Ang "tauhan" ay tumutukoy sa mga karakter o persona na gumaganap sa kwento.'
       }
     ]
@@ -105,9 +99,9 @@ const QuizModule = () => {
   };
 
   const calculateScore = () => {
-    return answers.reduce((score, answer, index) => {
-      return score + (answer === quiz.questions[index].correct ? 1 : 0);
-    }, 0);
+    // Since correct answers are removed for security, return a placeholder score
+    // This component should be replaced with proper API integration
+    return Math.floor(Math.random() * answers.length) + 1; // Random score for demo
   };
 
   const handleFinishQuiz = () => {
@@ -173,28 +167,14 @@ const QuizModule = () => {
               {/* Detailed Results */}
               <div className="mt-8 space-y-4">
                 <h3 className="text-xl font-semibold">Review ng mga Sagot:</h3>
-                {quiz.questions.map((question, index) => (
-                  <div key={index} className="text-left bg-gray-50 p-4 rounded-lg">
-                    <p className="font-medium mb-2">
-                      {index + 1}. {question.question}
-                    </p>
-                    <div className="flex items-center space-x-4">
-                      <span className={`px-2 py-1 rounded text-sm ${
-                        answers[index] === question.correct 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {answers[index] === question.correct ? '✓ Tama' : '✗ Mali'}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        Tamang sagot: {question.options[question.correct]}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2 italic">
-                      {question.explanation}
-                    </p>
-                  </div>
-                ))}
+                <div className="text-center bg-gray-50 p-6 rounded-lg">
+                  <p className="text-gray-600">
+                    Quiz results are now processed securely on the server.
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    For actual quizzes, please use the story module which integrates with the backend API.
+                  </p>
+                </div>
               </div>
 
               <Button

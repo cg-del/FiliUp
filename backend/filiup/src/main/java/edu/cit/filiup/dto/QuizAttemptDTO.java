@@ -12,12 +12,17 @@ public class QuizAttemptDTO {
     private UUID studentId;
     private String studentName;
     private LocalDateTime startedAt;
+    private LocalDateTime expiresAt;
     private LocalDateTime completedAt;
     private Double score;
     private Integer maxPossibleScore;
     private List<QuestionResponseDTO> responses;
     private Integer timeTakenMinutes;
     private Boolean isCompleted;
+    
+    // Fields for resume functionality
+    private Map<String, String> currentAnswers; // Map of questionId to selectedAnswer
+    private Integer currentQuestionIndex;
 
     // Nested DTO for quiz question responses
     public static class QuestionResponseDTO {
@@ -127,6 +132,14 @@ public class QuizAttemptDTO {
         this.startedAt = startedAt;
     }
 
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
     public LocalDateTime getCompletedAt() {
         return completedAt;
     }
@@ -173,5 +186,21 @@ public class QuizAttemptDTO {
 
     public void setIsCompleted(Boolean isCompleted) {
         this.isCompleted = isCompleted;
+    }
+
+    public Map<String, String> getCurrentAnswers() {
+        return currentAnswers;
+    }
+
+    public void setCurrentAnswers(Map<String, String> currentAnswers) {
+        this.currentAnswers = currentAnswers;
+    }
+
+    public Integer getCurrentQuestionIndex() {
+        return currentQuestionIndex;
+    }
+
+    public void setCurrentQuestionIndex(Integer currentQuestionIndex) {
+        this.currentQuestionIndex = currentQuestionIndex;
     }
 } 

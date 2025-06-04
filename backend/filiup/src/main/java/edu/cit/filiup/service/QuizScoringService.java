@@ -48,7 +48,6 @@ public class QuizScoringService {
             resultItem.setQuestionId(question.getQuestionId());
             resultItem.setQuestionText(question.getQuestionText());
             resultItem.setPossiblePoints(question.getPoints());
-            resultItem.setCorrectAnswer(question.getCorrectAnswer());
             
             String selectedAnswer = studentAnswers.get(question.getQuestionId());
             resultItem.setSelectedAnswer(selectedAnswer);
@@ -64,9 +63,9 @@ public class QuizScoringService {
                 resultItem.setExplanation("Correct! Good job.");
             } else {
                 if (selectedAnswer == null || selectedAnswer.isEmpty()) {
-                    resultItem.setExplanation("You did not provide an answer. The correct answer was: " + question.getCorrectAnswer());
+                    resultItem.setExplanation("You did not provide an answer.");
                 } else {
-                    resultItem.setExplanation("Incorrect. The correct answer was: " + question.getCorrectAnswer());
+                    resultItem.setExplanation("Incorrect. Please review this topic.");
                 }
             }
             

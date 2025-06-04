@@ -23,6 +23,9 @@ public class QuizAttemptEntity {
     @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;
 
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
@@ -40,6 +43,17 @@ public class QuizAttemptEntity {
 
     @Column(name = "is_completed", nullable = false)
     private Boolean isCompleted;
+
+    // Fields for resume functionality
+    @Column(name = "current_answers", columnDefinition = "TEXT")
+    private String currentAnswers; // JSON map of questionId -> selectedAnswer
+
+    @Column(name = "current_question_index")
+    private Integer currentQuestionIndex;
+
+    // Field for tracking suspicious actions during quiz
+    @Column(name = "logs", columnDefinition = "TEXT")
+    private String logs; // JSON array of suspicious actions/events
 
     // Default constructor
     public QuizAttemptEntity() {
@@ -78,6 +92,14 @@ public class QuizAttemptEntity {
 
     public void setStartedAt(LocalDateTime startedAt) {
         this.startedAt = startedAt;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
     }
 
     public LocalDateTime getCompletedAt() {
@@ -126,5 +148,29 @@ public class QuizAttemptEntity {
 
     public void setIsCompleted(Boolean isCompleted) {
         this.isCompleted = isCompleted;
+    }
+
+    public String getCurrentAnswers() {
+        return currentAnswers;
+    }
+
+    public void setCurrentAnswers(String currentAnswers) {
+        this.currentAnswers = currentAnswers;
+    }
+
+    public Integer getCurrentQuestionIndex() {
+        return currentQuestionIndex;
+    }
+
+    public void setCurrentQuestionIndex(Integer currentQuestionIndex) {
+        this.currentQuestionIndex = currentQuestionIndex;
+    }
+
+    public String getLogs() {
+        return logs;
+    }
+
+    public void setLogs(String logs) {
+        this.logs = logs;
     }
 } 

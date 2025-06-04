@@ -11,6 +11,7 @@ import { enrollmentService } from '@/lib/services/enrollmentService';
 import { classService } from '@/lib/services/classService';
 import { storyService } from '@/lib/services/storyService';
 import { toast } from '@/hooks/use-toast';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import type { Class } from '@/lib/services/types';
 
 // Add custom styles for 3D book effects
@@ -78,6 +79,7 @@ interface ClassStory {
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
+  const { safeExecute } = useErrorHandler();
   const [studentClasses, setStudentClasses] = useState<Class[]>([]);
   const [stories, setStories] = useState<ClassStory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,67 +105,87 @@ const StudentDashboard = () => {
   // Fetch student's classes on component mount
   useEffect(() => {
     const fetchStudentClasses = async () => {
-      try {
-        setLoading(true);
-        const response = await classService.getMyClasses();
-        if (response.data) {
-          setStudentClasses(response.data);
+      setLoading(true);
+      const { data: response, error } = await safeExecute(
+        () => classService.getMyClasses(),
+        {
+          customMessage: "Hindi nakuha ang mga klase. Subukang i-refresh ang page.",
+          preventAutoRedirect: true, // Don't redirect to login for class access issues
+          onError: (appError) => {
+            console.error('Error fetching student classes:', appError);
+            setError('Failed to fetch classes');
+          }
         }
-      } catch (err) {
-        setError('Failed to fetch classes');
-        console.error('Error fetching student classes:', err);
-      } finally {
-        setLoading(false);
+      );
+
+      if (response?.data) {
+        setStudentClasses(response.data);
+        setError(null);
       }
+      
+      setLoading(false);
     };
 
     fetchStudentClasses();
-  }, []);
+  }, [safeExecute]);
 
   // Fetch stories for all enrolled classes
   useEffect(() => {
     const fetchStoriesForClasses = async () => {
       if (studentClasses.length === 0) return;
 
-      try {
-        setStoriesLoading(true);
-        const allStories: ClassStory[] = [];
+      setStoriesLoading(true);
+      const allStories: ClassStory[] = [];
 
-        // Fetch stories for each class
-        for (const studentClass of studentClasses) {
-          try {
-            const classStories = await storyService.getStoriesByClass(studentClass.classId);
-            allStories.push(...classStories);
-          } catch (err) {
-            console.error(`Error fetching stories for class ${studentClass.className}:`, err);
+      // Fetch stories for each class
+      for (const studentClass of studentClasses) {
+        const { data: classStories, error } = await safeExecute(
+          () => storyService.getStoriesByClass(studentClass.classId),
+          {
+            showToast: false, // Don't show individual toasts for each class
+            preventAutoRedirect: true,
+            onError: (appError) => {
+              console.error(`Error fetching stories for class ${studentClass.className}:`, appError);
+            }
           }
-        }
+        );
 
-        setStories(allStories);
-      } catch (err) {
-        console.error('Error fetching stories:', err);
-        toast({
-          title: "Error",
-          description: "Hindi nakuha ang mga kuwento. Subukang muli.",
-          variant: "destructive",
-        });
-      } finally {
-        setStoriesLoading(false);
+        if (classStories) {
+          allStories.push(...classStories);
+        }
       }
+
+      setStories(allStories);
+      
+      // Show a single toast if no stories were loaded and there were errors
+      if (allStories.length === 0 && studentClasses.length > 0) {
+        toast({
+          title: "Info",
+          description: "Hindi pa may mga kuwento sa inyong mga klase.",
+        });
+      }
+      
+      setStoriesLoading(false);
     };
 
     fetchStoriesForClasses();
-  }, [studentClasses]);
+  }, [studentClasses, safeExecute]);
 
   // Function to refresh classes after successful enrollment
   const handleEnrollmentSuccess = async () => {
-    try {
-      const response = await classService.getMyClasses();
-      if (response.data) {
-        setStudentClasses(response.data);
+    const { data: response, error } = await safeExecute(
+      () => classService.getMyClasses(),
+      {
+        customMessage: "Hindi na-refresh ang mga klase. Subukang i-reload ang page.",
+        preventAutoRedirect: true,
+        onError: (appError) => {
+          console.error('Error refreshing classes:', appError);
+        }
       }
-    } catch (err) {
-      console.error('Error refreshing classes:', err);
+    );
+
+    if (response?.data) {
+      setStudentClasses(response.data);
     }
   };
 

@@ -22,7 +22,6 @@ public class QuizSubmissionResultDTO {
         private UUID questionId;
         private String questionText;
         private String selectedAnswer;
-        private String correctAnswer;
         private Boolean isCorrect;
         private Integer pointsEarned;
         private Integer possiblePoints;
@@ -51,14 +50,6 @@ public class QuizSubmissionResultDTO {
         
         public void setSelectedAnswer(String selectedAnswer) {
             this.selectedAnswer = selectedAnswer;
-        }
-        
-        public String getCorrectAnswer() {
-            return correctAnswer;
-        }
-        
-        public void setCorrectAnswer(String correctAnswer) {
-            this.correctAnswer = correctAnswer;
         }
         
         public Boolean getIsCorrect() {

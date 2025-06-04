@@ -4,6 +4,9 @@ import edu.cit.filiup.dto.QuizAttemptDTO;
 import edu.cit.filiup.dto.QuizDTO;
 import edu.cit.filiup.dto.QuizSubmissionDTO;
 import edu.cit.filiup.dto.QuizSubmissionResultDTO;
+import edu.cit.filiup.dto.QuizEligibilityDTO;
+import edu.cit.filiup.dto.QuizProgressDTO;
+import edu.cit.filiup.dto.QuizLogDTO;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,4 +29,18 @@ public interface QuizService {
     List<QuizAttemptDTO> getQuizAttemptsByQuiz(UUID quizId);
     QuizAttemptDTO getQuizAttemptById(UUID attemptId);
     List<QuizAttemptDTO> getQuizAttemptsByStudentAndStory(UUID studentId, UUID storyId);
+    
+    // Method for handling expired quiz auto-submission
+    QuizSubmissionResultDTO autoSubmitExpiredQuiz(UUID attemptId);
+    
+    // New methods for resume functionality
+    QuizEligibilityDTO checkQuizEligibility(UUID quizId, UUID studentId);
+    QuizAttemptDTO getOrCreateQuizAttempt(UUID quizId, UUID studentId);
+    void saveQuizProgress(UUID attemptId, QuizProgressDTO progressData, UUID studentId);
+    QuizAttemptDTO getQuizAttemptWithProgress(UUID attemptId, UUID studentId);
+    QuizAttemptDTO resumeQuizAttempt(UUID quizId, UUID studentId);
+    
+    // New methods for quiz logging
+    void logSuspiciousAction(UUID attemptId, QuizLogDTO.LogEntryDTO logEntry, UUID studentId);
+    QuizLogDTO getQuizLogs(UUID attemptId);
 } 

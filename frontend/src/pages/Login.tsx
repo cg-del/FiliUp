@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, User, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { userService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
+import { ErrorType } from '@/lib/errors/types';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -17,7 +19,8 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { logout, setUser } = useAuth();
+  const { setUser } = useAuth();
+  const { safeExecute } = useErrorHandler();
 
   useState(() => {
     const type = searchParams.get('type');
@@ -30,65 +33,85 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    try {
-      const response = await userService.login({ userName: username, userPassword: password });
-      const { accessToken, refreshToken } = response.data;
-      
-      // Clear all existing localStorage data before setting new values
-      localStorage.clear();
-      
-      // Store tokens
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('token', accessToken); // Also store as 'token' for compatibility
-      
-      // Decode JWT to get user info
-      const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
-      const userRole = tokenPayload.role;
-      const userName = tokenPayload.sub;
-      
-      // Check if user role matches selected type
-      if (userRole !== userType) {
+    const { data: response, error } = await safeExecute(
+      () => userService.login({ userName: username, userPassword: password }),
+      {
+        customMessage: "Hindi tama ang login credentials. Pakicheck ang username at password.",
+        onError: (appError) => {
+          // Custom handling for specific error types
+          if (appError.type === ErrorType.VALIDATION_ERROR) {
+            // Handle validation errors specifically
+            console.log('Validation error during login:', appError.details);
+          }
+        }
+      }
+    );
+
+    if (error) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (response) {
+      try {
+        const { accessToken, refreshToken } = response.data;
+        
+        // Clear all existing localStorage data before setting new values
+        localStorage.clear();
+        
+        // Store tokens
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('token', accessToken); // Also store as 'token' for compatibility
+        
+        // Decode JWT to get user info
+        const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+        const userRole = tokenPayload.role;
+        const userName = tokenPayload.sub;
+        
+        // Check if user role matches selected type
+        if (userRole !== userType) {
+          toast({
+            title: "Hindi tama ang user type",
+            description: "Pakipili ang tamang user type para sa inyong account.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // Create user object and store in localStorage
+        const user = {
+          id: tokenPayload.jti || Math.random().toString(36),
+          name: userName, // Use username directly
+          email: userName, // Keep email field for compatibility, using username value
+          type: userRole.toLowerCase() as 'student' | 'teacher',
+          ...(userRole === 'TEACHER' && { classes: ['3-matatag', '3-masigla', '3-mabini'] }),
+          ...(userRole === 'STUDENT' && { enrollmentStatus: 'none' as const })
+        };
+        
+        localStorage.setItem('filiup_user', JSON.stringify(user));
+
+        // Update AuthContext with the user data
+        setUser(user);
+
         toast({
-          title: "Hindi tama ang user type",
-          description: "Pakipili ang tamang user type para sa inyong account.",
+          title: "Maligayang pagdating!",
+          description: `Successfully logged in as ${userRole.toLowerCase()}`,
+        });
+
+        // Navigate based on actual role from JWT
+        navigate(userRole === 'STUDENT' ? '/student-dashboard' : '/teacher-dashboard');
+      } catch (parseError) {
+        toast({
+          title: "Error sa token parsing",
+          description: "May problema sa pag-process ng login data. Subukan ulit.",
           variant: "destructive",
         });
-        setIsLoading(false);
-        return;
       }
-
-      // Create user object and store in localStorage
-      const user = {
-        id: tokenPayload.jti || Math.random().toString(36),
-        name: userName, // Use username directly
-        email: userName, // Keep email field for compatibility, using username value
-        type: userRole.toLowerCase() as 'student' | 'teacher',
-        ...(userRole === 'TEACHER' && { classes: ['3-matatag', '3-masigla', '3-mabini'] }),
-        ...(userRole === 'STUDENT' && { enrollmentStatus: 'none' as const })
-      };
-      
-      localStorage.setItem('filiup_user', JSON.stringify(user));
-
-      // Update AuthContext with the user data
-      setUser(user);
-
-      toast({
-        title: "Maligayang pagdating!",
-        description: `Successfully logged in as ${userRole.toLowerCase()}`,
-      });
-
-      // Navigate based on actual role from JWT
-      navigate(userRole === 'STUDENT' ? '/student-dashboard' : '/teacher-dashboard');
-    } catch (error) {
-      toast({
-        title: "Hindi tama ang login",
-        description: "Pakicheck ang username at password.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
 
   return (

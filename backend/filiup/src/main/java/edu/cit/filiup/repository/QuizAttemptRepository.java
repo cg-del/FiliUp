@@ -15,4 +15,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttemptEntity, 
     List<QuizAttemptEntity> findByQuizStoryStoryIdAndStudentUserIdOrderByStartedAtDesc(UUID storyId, UUID studentId);
     Optional<QuizAttemptEntity> findTopByStudentUserIdAndQuizQuizIdOrderByStartedAtDesc(UUID studentId, UUID quizId);
     List<QuizAttemptEntity> findByQuizQuizIdAndIsCompletedTrueOrderByScoreDesc(UUID quizId);
+    
+    // New method for resume functionality
+    List<QuizAttemptEntity> findByQuizQuizIdAndStudentUserIdOrderByStartedAtDesc(UUID quizId, UUID studentId);
 } 

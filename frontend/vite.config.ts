@@ -24,6 +24,10 @@ export default defineConfig(({ command, mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    define: {
+      // Fix for sockjs-client: define global for browser environment
+      global: 'globalThis',
+    },
     // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
     // prevent vite from obscuring rust errors
     clearScreen: false,
