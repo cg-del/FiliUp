@@ -1,77 +1,170 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, ArrowLeft, ArrowRight, Star } from 'lucide-react';
+import { BookOpen, ArrowLeft, ArrowRight, Star, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getGenreByValue } from '@/constants/storyGenres';
+import { storyService } from '@/lib/services/storyService';
+
+// TypeScript interfaces for the API response
+interface ClassEntity {
+  className: string;
+  description: string;
+  createdAt: string;
+  isActive: boolean;
+  classCode: string;
+  classId: string;
+}
+
+interface StoryData {
+  storyId: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  isActive: boolean;
+  genre: string;
+  fictionType: string;
+  coverPictureUrl?: string;
+  coverPictureType?: string;
+  classEntity: ClassEntity;
+}
+
+interface StoryPage {
+  text: string;
+  image?: string;
+}
+
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correct: number;
+}
+
+interface QuizComponentProps {
+  quiz: QuizQuestion[];
+  onComplete: () => void;
+  storyTitle: string;
+}
 
 const StoryModule = () => {
-  const { storyId } = useParams();
+  const { id: storyId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   
   const [currentPage, setCurrentPage] = useState(0);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [story, setStory] = useState<StoryData | null>(null);
+  const [storyPages, setStoryPages] = useState<StoryPage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const story = {
-    id: storyId,
-    title: 'Ang Matalinong Langgam',
-    genre: 'PABULA',
-    pages: [
-      {
-        text: 'Sa isang maliit na bakuran, may nakatira na masipag na langgam na nagngangalang Ligaya. Tuwing umaga, maagang bumabangon si Ligaya para maghanap ng pagkain.',
-        image: '/placeholder.svg?height=300&width=400',
-        audio: null
-      },
-      {
-        text: 'Isang araw, nakakita si Ligaya ng malaking tinapay na nahulog mula sa kusina. "Ang laki nito!" sabi niya. "Pero paano ko kaya ito dadalhin sa aming tahanan?"',
-        image: '/placeholder.svg?height=300&width=400',
-        audio: null
-      },
-      {
-        text: 'Naisip ni Ligaya na humingi ng tulong sa iba. Pumunta siya sa mga kaibigan niya - si Maya na tipaklong, si Ben na beetles, at si Carl na cricket.',
-        image: '/placeholder.svg?height=300&width=400',
-        audio: null
-      },
-      {
-        text: 'Nang makita ng mga kaibigan ni Ligaya ang malaking tinapay, agad silang tumumulong. Sama-sama nilang binuhat ang tinapay patungo sa tahanan ng mga langgam.',
-        image: '/placeholder.svg?height=300&width=400',
-        audio: null
-      },
-      {
-        text: 'Dahil sa pakikipagtulungan, naging masaya ang lahat. Nahati nila ang tinapay at walang nagutom sa kanilang komunidad.',
-        image: '/placeholder.svg?height=300&width=400',
-        audio: null
+  // Fetch story data from API
+  useEffect(() => {
+    const fetchStory = async () => {
+      console.log('=== StoryModule Debug ===');
+      console.log('storyId from useParams:', storyId);
+      console.log('storyId type:', typeof storyId);
+      console.log('window.location.pathname:', window.location.pathname);
+      
+      if (!storyId) {
+        console.log('ERROR: storyId is undefined or null');
+        setError('Story ID not found in URL');
+        setLoading(false);
+        return;
       }
-    ],
-    quiz: [
-      {
-        question: 'Ano ang pangalan ng langgam sa kwento?',
-        options: ['Maya', 'Ligaya', 'Ben', 'Carl'],
-        correct: 1
-      },
-      {
-        question: 'Ano ang nakita ni Ligaya na nahulog mula sa kusina?',
-        options: ['Prutas', 'Tinapay', 'Tubig', 'Aklat'],
-        correct: 1
-      },
-      {
-        question: 'Sino-sino ang tumulong kay Ligaya?',
-        options: ['Maya, Ben, at Carl', 'Ligaya lang', 'Mga tao', 'Mga pusa'],
-        correct: 0
+
+      try {
+        setLoading(true);
+        console.log('Fetching story with ID:', storyId);
+        const fetchedStory = await storyService.getStoryById(storyId);
+        console.log('Story fetched successfully:', fetchedStory);
+        setStory(fetchedStory);
+        
+        // Split content into pages based on paragraphs
+        const paragraphs = fetchedStory.content
+          .split(/\\n\\n|\\n|\\r\\n/)
+          .filter(paragraph => paragraph.trim().length > 0)
+          .map(paragraph => paragraph.trim());
+
+        const pages: StoryPage[] = paragraphs.map(paragraph => ({
+          text: paragraph,
+          image: fetchedStory.coverPictureUrl
+        }));
+
+        console.log('Story pages created:', pages.length);
+        setStoryPages(pages);
+      } catch (err) {
+        console.error('Error fetching story:', err);
+        setError(`Failed to load story: ${err.message || 'Unknown error'}`);
+        toast({
+          title: "Error",
+          description: "Hindi nakuha ang kuwento. Subukang muli.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-    ]
-  };
+    };
+
+    fetchStory();
+  }, [storyId, toast]);
+
+  // Mock quiz data (since not provided by API yet)
+  const quiz = [
+    {
+      question: 'Ano ang natutunan mo sa kwentong ito?',
+      options: ['Ang kahalagahan ng pagiging masipag', 'Ang kahalagahan ng kabaitan', 'Pareho ng A at B', 'Wala'],
+      correct: 2
+    },
+    {
+      question: 'Sino ang pangunahing tauhan sa kwento?',
+      options: ['Pedro', 'Maria', 'Juan', 'Ana'],
+      correct: 0
+    },
+    {
+      question: 'Anong uri ng kwento ito?',
+      options: ['Alamat', 'Pabula', 'Maikling Kwento', 'Tula'],
+      correct: 0
+    }
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading story...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !story) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Story not found</h2>
+          <p className="text-gray-600 mb-4">{error || 'The story you are looking for could not be found.'}</p>
+          <Button 
+            onClick={() => navigate('/student-dashboard')}
+            className="bg-gradient-to-r from-blue-500 to-purple-500"
+          >
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const genre = getGenreByValue(story.genre);
-  const progress = ((currentPage + 1) / story.pages.length) * 100;
+  const progress = storyPages.length > 0 ? ((currentPage + 1) / storyPages.length) * 100 : 0;
 
   const handleNext = () => {
-    if (currentPage < story.pages.length - 1) {
+    if (currentPage < storyPages.length - 1) {
       setCurrentPage(currentPage + 1);
     } else {
       setShowQuiz(true);
@@ -87,9 +180,9 @@ const StoryModule = () => {
   const handleFinishStory = () => {
     toast({
       title: "Congratulations! 🎉",
-      description: "Natapos mo na ang kwento! Nakakuha ka ng 50 points!",
+      description: "Natapos mo na ang kuwento! Nakakuha ka ng 50 points!",
     });
-    navigate('/student');
+    navigate('/student-dashboard');
   };
 
   if (showQuiz) {
@@ -110,7 +203,7 @@ const StoryModule = () => {
           </div>
 
           <QuizComponent 
-            quiz={story.quiz} 
+            quiz={quiz} 
             onComplete={handleFinishStory}
             storyTitle={story.title}
           />
@@ -126,7 +219,7 @@ const StoryModule = () => {
         <div className="mb-6">
           <Button
             variant="outline"
-            onClick={() => navigate('/student')}
+            onClick={() => navigate('/student-dashboard')}
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -134,21 +227,33 @@ const StoryModule = () => {
           </Button>
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-3xl font-bold text-gray-900">{story.title}</h1>
-            {genre && (
-              <Badge 
-                className="text-white border-0" 
-                style={{ backgroundColor: genre.color }}
-              >
-                {genre.label}
-              </Badge>
-            )}
+            <div className="flex items-center space-x-2">
+              {genre && (
+                <Badge 
+                  className="text-white border-0" 
+                  style={{ backgroundColor: genre.color }}
+                >
+                  {genre.label}
+                </Badge>
+              )}
+              {story.fictionType && (
+                <Badge variant="outline">
+                  {story.fictionType}
+                </Badge>
+              )}
+            </div>
+          </div>
+          <div className="mb-2">
+            <p className="text-sm text-gray-600">
+              Class: {story.classEntity.className} ({story.classEntity.classCode})
+            </p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex-1">
               <Progress value={progress} className="h-2" />
             </div>
             <span className="text-sm text-gray-600">
-              {currentPage + 1} of {story.pages.length}
+              {currentPage + 1} of {storyPages.length}
             </span>
           </div>
         </div>
@@ -156,20 +261,32 @@ const StoryModule = () => {
         {/* Story Content */}
         <Card className="mb-6 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
           <CardContent className="p-8">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <img
-                  src={story.pages[currentPage].image}
-                  alt={`Page ${currentPage + 1}`}
-                  className="w-full h-64 object-cover rounded-lg shadow-lg"
-                />
+            {storyPages.length > 0 && (
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                  {storyPages[currentPage].image ? (
+                    <img
+                      src={storyPages[currentPage].image}
+                      alt={`${story.title} - Page ${currentPage + 1}`}
+                      className="w-full h-64 object-cover rounded-lg shadow-lg"
+                      onError={(e) => {
+                        // Fallback to placeholder if image fails to load
+                        e.currentTarget.src = '/placeholder.svg?height=300&width=400';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-64 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-lg shadow-lg flex items-center justify-center">
+                      <BookOpen className="h-16 w-16 text-teal-500" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-lg leading-relaxed text-gray-800 font-medium">
+                    {storyPages[currentPage].text}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-lg leading-relaxed text-gray-800 font-medium">
-                  {story.pages[currentPage].text}
-                </p>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -189,7 +306,7 @@ const StoryModule = () => {
             onClick={handleNext}
             className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 flex items-center space-x-2"
           >
-            <span>{currentPage === story.pages.length - 1 ? 'Take Quiz' : 'Next'}</span>
+            <span>{currentPage === storyPages.length - 1 ? 'Take Quiz' : 'Next'}</span>
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
@@ -198,11 +315,7 @@ const StoryModule = () => {
   );
 };
 
-const QuizComponent = ({ quiz, onComplete, storyTitle }: { 
-  quiz: any[], 
-  onComplete: () => void,
-  storyTitle: string 
-}) => {
+const QuizComponent = ({ quiz, onComplete, storyTitle }: QuizComponentProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [answers, setAnswers] = useState<number[]>([]);

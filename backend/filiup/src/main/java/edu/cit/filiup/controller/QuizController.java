@@ -7,6 +7,7 @@ import edu.cit.filiup.dto.QuizSubmissionResultDTO;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.service.QuizService;
+import edu.cit.filiup.util.RequireRole;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,26 +32,47 @@ public class QuizController {
         this.userRepository = userRepository;
     }
 
-    @PostMapping("/{storyId}")
+    @PostMapping
+    @RequireRole({"TEACHER", "ADMIN"})
     @PreAuthorize("hasAnyAuthority('TEACHER', 'ADMIN')")
     public ResponseEntity<QuizDTO> createQuiz(
-            @PathVariable UUID storyId,
             @RequestBody QuizDTO quizDTO,
             JwtAuthenticationToken jwtAuthToken) {
         
-        // Extract user email from token
-        String userEmail = jwtAuthToken.getToken().getClaim("sub");
+        // Extract user email/username from token
+        String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
+        System.out.println("=== DEBUG: QuizController.createQuiz ===");
+        System.out.println("Received userIdentifier from JWT: '" + userIdentifier + "'");
         
-        // Find user in database
-        UserEntity user = userRepository.findByUserEmail(userEmail);
+        // Find user in database - try email first, then username
+        UserEntity user = userRepository.findByUserEmail(userIdentifier);
+        System.out.println("Found user by email: " + (user != null ? user.getUserName() + " (ID: " + user.getUserId() + ")" : "null"));
+        
+        // If not found by email, try by username (in case JWT 'sub' contains username)
         if (user == null) {
+            user = userRepository.findByUserName(userIdentifier);
+            System.out.println("Found user by username: " + (user != null ? user.getUserName() + " (ID: " + user.getUserId() + ", Email: " + user.getUserEmail() + ")" : "null"));
+        }
+        
+        if (user == null) {
+            System.err.println("ERROR: No user found with email or username: '" + userIdentifier + "'");
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
         
         // Set the creator ID from the authenticated user
         quizDTO.setCreatedById(user.getUserId());
         
+        // Extract storyId from the quizDTO
+        UUID storyId = quizDTO.getStoryId();
+        if (storyId == null) {
+            System.err.println("ERROR: storyId is null in request body");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        
+        System.out.println("Creating quiz for story ID: " + storyId);
         QuizDTO createdQuiz = quizService.createQuiz(storyId, quizDTO);
+        System.out.println("Quiz created successfully with ID: " + (createdQuiz != null ? createdQuiz.getQuizId() : "null"));
+        
         return new ResponseEntity<>(createdQuiz, HttpStatus.CREATED);
     }
 
@@ -66,9 +88,23 @@ public class QuizController {
         return ResponseEntity.ok(quizzes);
     }
 
-    @GetMapping("/created-by/{userId}")
-    public ResponseEntity<List<QuizDTO>> getQuizzesByCreatedBy(@PathVariable UUID userId) {
-        List<QuizDTO> quizzes = quizService.getQuizzesByCreatedBy(userId);
+    @GetMapping("/created-by")
+    @PreAuthorize("hasAnyAuthority('TEACHER', 'ADMIN')")
+    public ResponseEntity<List<QuizDTO>> getQuizzesByCreatedBy(JwtAuthenticationToken jwtAuthToken) {
+        // Extract user email/username from token
+        String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
+        
+        // Find user in database - try email first, then username
+        UserEntity user = userRepository.findByUserEmail(userIdentifier);
+        if (user == null) {
+            user = userRepository.findByUserName(userIdentifier);
+        }
+        
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        
+        List<QuizDTO> quizzes = quizService.getQuizzesByCreatedBy(user.getUserId());
         return ResponseEntity.ok(quizzes);
     }
 
@@ -106,11 +142,15 @@ public class QuizController {
     public ResponseEntity<QuizAttemptDTO> startQuizAttempt(
             @PathVariable UUID quizId,
             JwtAuthenticationToken jwtAuthToken) {
-        // Extract user email from token
-        String userEmail = jwtAuthToken.getToken().getClaim("sub");
+        // Extract user email/username from token
+        String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
         
-        // Find user in database
-        UserEntity user = userRepository.findByUserEmail(userEmail);
+        // Find user in database - try email first, then username
+        UserEntity user = userRepository.findByUserEmail(userIdentifier);
+        if (user == null) {
+            user = userRepository.findByUserName(userIdentifier);
+        }
+        
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
@@ -131,11 +171,15 @@ public class QuizController {
     @GetMapping("/attempts/student")
     @PreAuthorize("hasAnyAuthority('STUDENT')")
     public ResponseEntity<List<QuizAttemptDTO>> getMyQuizAttempts(JwtAuthenticationToken jwtAuthToken) {
-        // Extract user email from token
-        String userEmail = jwtAuthToken.getToken().getClaim("sub");
+        // Extract user email/username from token
+        String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
         
-        // Find user in database
-        UserEntity user = userRepository.findByUserEmail(userEmail);
+        // Find user in database - try email first, then username
+        UserEntity user = userRepository.findByUserEmail(userIdentifier);
+        if (user == null) {
+            user = userRepository.findByUserName(userIdentifier);
+        }
+        
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
@@ -149,11 +193,15 @@ public class QuizController {
     public ResponseEntity<List<QuizAttemptDTO>> getMyQuizAttemptsByStory(
             @PathVariable UUID storyId,
             JwtAuthenticationToken jwtAuthToken) {
-        // Extract user email from token
-        String userEmail = jwtAuthToken.getToken().getClaim("sub");
+        // Extract user email/username from token
+        String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
         
-        // Find user in database
-        UserEntity user = userRepository.findByUserEmail(userEmail);
+        // Find user in database - try email first, then username
+        UserEntity user = userRepository.findByUserEmail(userIdentifier);
+        if (user == null) {
+            user = userRepository.findByUserName(userIdentifier);
+        }
+        
         if (user == null) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
@@ -184,4 +232,4 @@ public class QuizController {
         QuizSubmissionResultDTO result = quizService.submitAndScoreQuizAttempt(attemptId, submission);
         return ResponseEntity.ok(result);
     }
-} 
+}

@@ -18,6 +18,7 @@ import { Plus, X, Clock, Calendar, HelpCircle, Minus, Loader2 } from 'lucide-rea
 import { toast } from '@/hooks/use-toast';
 import { classService } from '@/lib/services/classService';
 import { storyService } from '@/lib/services/storyService';
+import { quizService } from '@/lib/services/quizService';
 import type { Class } from '@/lib/services/types';
 
 interface QuizFormData {
@@ -45,6 +46,7 @@ interface CreateQuizRequestData {
   opensAt: string;
   closesAt: string;
   isActive: boolean;
+  storyId: string;
   questions: QuizQuestion[];
 }
 
@@ -76,7 +78,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
       questionText: '',
       options: ['', ''],
       correctAnswer: '',
-      points: 5
+      points: 1
     }
   ]);
 
@@ -84,11 +86,65 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
     'Madali',
     'Katamtaman',
     'Mahirap',
-    'Pagsusuri ng Literatura',
-    'Pag-unawa sa Binasa',
-    'Bokabularyo',
-    'Balarila'
   ];
+
+  // localStorage keys
+  const FORM_DATA_KEY = 'filiup_quiz_form_data';
+  const QUESTIONS_KEY = 'filiup_quiz_questions';
+
+  // Restore form data from localStorage when dialog opens
+  useEffect(() => {
+    if (open) {
+      try {
+        const savedFormData = localStorage.getItem(FORM_DATA_KEY);
+        const savedQuestions = localStorage.getItem(QUESTIONS_KEY);
+        
+        if (savedFormData) {
+          const parsedFormData = JSON.parse(savedFormData);
+          setFormData(parsedFormData);
+        }
+        
+        if (savedQuestions) {
+          const parsedQuestions = JSON.parse(savedQuestions);
+          setQuestions(parsedQuestions);
+        }
+      } catch (error) {
+        console.error('Error restoring quiz form data:', error);
+      }
+    }
+  }, [open]);
+
+  // Auto-save form data to localStorage whenever it changes
+  useEffect(() => {
+    if (open) {
+      try {
+        localStorage.setItem(FORM_DATA_KEY, JSON.stringify(formData));
+      } catch (error) {
+        console.error('Error saving quiz form data:', error);
+      }
+    }
+  }, [formData, open]);
+
+  // Auto-save questions to localStorage whenever they change
+  useEffect(() => {
+    if (open) {
+      try {
+        localStorage.setItem(QUESTIONS_KEY, JSON.stringify(questions));
+      } catch (error) {
+        console.error('Error saving quiz questions:', error);
+      }
+    }
+  }, [questions, open]);
+
+  // Function to clear localStorage
+  const clearFormStorage = () => {
+    try {
+      localStorage.removeItem(FORM_DATA_KEY);
+      localStorage.removeItem(QUESTIONS_KEY);
+    } catch (error) {
+      console.error('Error clearing quiz form storage:', error);
+    }
+  };
 
   // Fetch teacher's stories when dialog opens
   useEffect(() => {
@@ -97,15 +153,13 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
       
       try {
         setLoadingStories(true);
-        const response = await storyService.getAllStories();
-        if (response.data) {
-          // Transform the data to match our Story interface
-          const formattedStories = response.data.map(story => ({
-            id: story.id,
-            title: story.title
-          }));
-          setStories(formattedStories);
-        }
+        const response = await storyService.getStoriesByTeacher();
+        // Transform the data to match our Story interface
+        const formattedStories = response.map(story => ({
+          id: story.storyId,
+          title: story.title
+        }));
+        setStories(formattedStories);
       } catch (error) {
         toast({
           title: "Mali",
@@ -170,7 +224,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
       questionText: '',
       options: ['', ''],
       correctAnswer: '',
-      points: 5
+      points: 1
     }]);
   };
 
@@ -180,32 +234,14 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
     }
   };
 
-  const createQuiz = async (storyId: string, quizData: CreateQuizRequestData) => {
-    const response = await fetch(`/api/v1/quizzes/${storyId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify(quizData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Hindi nagawa ang pagsusulit');
-    }
-
-    return response.json();
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
       // Validate required fields
-      if (!formData.title || !formData.description || !formData.category || !formData.storyId) {
-        throw new Error('Pakikumpletuhin ang lahat ng kinakailangang patlang kasama ang pagpili ng kuwento');
+      if (!formData.title || !formData.description || !formData.category || !formData.storyId || !formData.opensAt || !formData.closesAt) {
+        throw new Error('Pakikumpletuhin ang lahat ng kinakailangang patlang');
       }
 
       // Validate questions
@@ -234,19 +270,25 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
         opensAt: formData.opensAt,
         closesAt: formData.closesAt,
         isActive: true,
+        storyId: formData.storyId,
         questions: questions.map(q => ({
-          ...q,
-          options: q.options.filter(option => option.trim())
+          questionText: q.questionText,
+          options: q.options.filter(option => option.trim()),
+          correctAnswer: q.correctAnswer,
+          points: q.points
         }))
       };
 
       console.log('Quiz Data:', quizData);
-      await createQuiz(formData.storyId, quizData);
+      await quizService.createQuizForStory(quizData);
 
       toast({
         title: "Matagumpay na Nalikha ang Pagsusulit!",
         description: `"${formData.title}" ay nalikha na at handa na para sa mga estudyante.`,
       });
+
+      // Clear localStorage after successful creation
+      clearFormStorage();
 
       // Reset form
       setFormData({
@@ -323,7 +365,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
               >
-                <option value="">Piliin ang Kategorya</option>
+                <option value="">Pumili ng Kategorya</option>
                 {categories.map(category => (
                   <option key={category} value={category}>{category}</option>
                 ))}
@@ -373,7 +415,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
             <div className="space-y-2">
               <Label htmlFor="timeLimitMinutes" className="flex items-center space-x-1">
                 <Clock className="h-4 w-4" />
-                <span>Limitasyon ng Oras (minuto)</span>
+                <span>Limitasyon ng Oras (minuto) *</span>
               </Label>
               <Input
                 id="timeLimitMinutes"
@@ -382,27 +424,30 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
                 onChange={(e) => handleInputChange('timeLimitMinutes', parseInt(e.target.value))}
                 min="5"
                 max="180"
+                required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="opensAt" className="flex items-center space-x-1">
                 <Calendar className="h-4 w-4" />
-                <span>Bubukas Sa</span>
+                <span>Bubukas Sa *</span>
               </Label>
               <Input
                 id="opensAt"
                 type="datetime-local"
                 value={formData.opensAt}
                 onChange={(e) => handleInputChange('opensAt', e.target.value)}
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="closesAt">Sasara Sa</Label>
+              <Label htmlFor="closesAt">Sasara Sa *</Label>
               <Input
                 id="closesAt"
                 type="datetime-local"
                 value={formData.closesAt}
                 onChange={(e) => handleInputChange('closesAt', e.target.value)}
+                required
               />
             </div>
           </div>
@@ -418,15 +463,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
                 <Badge variant="outline" className="text-cyan-600">
                   {totalPoints} kabuuang puntos
                 </Badge>
-                <Button
-                  type="button"
-                  onClick={addQuestion}
-                  size="sm"
-                  className="bg-teal-500 hover:bg-teal-600"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Magdagdag ng Tanong
-                </Button>
+               
               </div>
             </div>
 
@@ -530,8 +567,18 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
                     </select>
                   </div>
                 </CardContent>
+                
               </Card>
             ))}
+             <Button
+                  type="button"
+                  onClick={addQuestion}
+                  size="sm"
+                  className="bg-teal-500 hover:bg-teal-600 display-flex right"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Magdagdag ng Tanong
+                </Button>
           </div>
 
           {/* Submit Button */}

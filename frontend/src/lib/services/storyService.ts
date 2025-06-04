@@ -11,14 +11,40 @@ interface CreateStoryRequestData {
   classId: string;
 }
 
+interface TeacherStory {
+  storyId: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  isActive: boolean;
+  genre: string;
+  fictionType: string;
+  coverPictureUrl?: string;
+  coverPictureType?: string;
+  classEntity: {
+    className: string;
+    description: string;
+    createdAt: string;
+    isActive: boolean;
+    classCode: string;
+    classId: string;
+  };
+}
+
 export const storyService = {
   getAllStories: async (params?: PaginationParams): Promise<ApiResponse<Story[]>> => {
     const response = await api.get('/stories', { params });
     return response.data;
   },
 
-  getStoryById: async (id: string): Promise<ApiResponse<Story>> => {
-    const response = await api.get(`/stories/${id}`);
+  getAllStoriesByTeacher: async (params?: PaginationParams): Promise<ApiResponse<Story[]>> => {
+    const response = await api.get('/story/teacher', { params });
+    return response.data;
+  },
+  
+
+  getStoryById: async (storyId: string): Promise<TeacherStory> => {
+    const response = await api.get(`/story/${storyId}`);
     return response.data;
   },
 
@@ -61,6 +87,16 @@ export const storyService = {
 
   getCommonStories: async (): Promise<ApiResponse<Story[]>> => {
     const response = await api.get('/stories/common');
+    return response.data;
+  },
+
+  getStoriesByTeacher: async (): Promise<TeacherStory[]> => {
+    const response = await api.get('/story/teacher');
+    return response.data;
+  },
+
+  getStoriesByClass: async (classId: string): Promise<TeacherStory[]> => {
+    const response = await api.get(`/story/class/${classId}`);
     return response.data;
   },
 }; 

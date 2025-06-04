@@ -339,8 +339,48 @@ public class StoryController {
 
     // Get stories by class
     @GetMapping("/class/{classId}")
-    public ResponseEntity<List<StoryEntity>> getStoriesByClass(@PathVariable UUID classId) {
-        return ResponseEntity.ok(storyService.getStoriesByClass(classId));
+    @RequireRole({"STUDENT", "TEACHER", "ADMIN"})
+    public ResponseEntity<?> getStoriesByClass(
+            @PathVariable UUID classId,
+            JwtAuthenticationToken jwtAuthToken) {
+        try {
+            // Extract user email from JWT token
+            String userEmail = jwtAuthToken.getToken().getClaim("sub");
+            String userRole = jwtAuthToken.getToken().getClaim("role");
+            
+            // Fallback to other email claims if 'sub' is not an email
+            if (userEmail == null || !userEmail.contains("@")) {
+                String emailClaim = jwtAuthToken.getToken().getClaim("email");
+                if (emailClaim != null && emailClaim.contains("@")) {
+                    userEmail = emailClaim;
+                    System.out.println("Using 'email' claim instead of 'sub': " + userEmail);
+                }
+            }
+            
+            if (userEmail == null) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("error", "User email not found in token");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+            
+            // Log the request
+            System.out.println("Get stories by class request:");
+            System.out.println("User Email: " + userEmail);
+            System.out.println("User Role: " + userRole);
+            System.out.println("Class ID: " + classId);
+            
+            // Get stories by class - the service should handle access control
+            List<StoryEntity> stories = storyService.getStoriesByClass(classId);
+            return ResponseEntity.ok(stories);
+        } catch (Exception e) {
+            System.err.println("Error getting stories by class: " + e.getMessage());
+            e.printStackTrace();
+            
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to get stories");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
     // Get stories by teacher

@@ -44,7 +44,15 @@ public class StoryResponseDTO {
         this.createdById = createdById;
         this.createdByName = createdByName;
     }
-    
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Retrieves the title of the story.
+ *
+ * @return the title of the story
+ */
+
+/*******  39d2b9e7-2d61-4422-adff-1c0fc4ca762c  *******/
+  
     // Getters and setters
     public UUID getStoryId() {
         return storyId;
@@ -149,4 +157,6 @@ public class StoryResponseDTO {
     public void setCreatedByName(String createdByName) {
         this.createdByName = createdByName;
     }
+    
+    
 } 

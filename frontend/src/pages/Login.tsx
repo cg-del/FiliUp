@@ -34,9 +34,13 @@ const Login = () => {
       const response = await userService.login({ userName: username, userPassword: password });
       const { accessToken, refreshToken } = response.data;
       
+      // Clear all existing localStorage data before setting new values
+      localStorage.clear();
+      
       // Store tokens
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('token', accessToken); // Also store as 'token' for compatibility
       
       // Decode JWT to get user info
       const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));

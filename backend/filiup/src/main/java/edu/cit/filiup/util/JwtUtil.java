@@ -20,7 +20,7 @@ import jakarta.annotation.PostConstruct;
 
 @Component
 public class JwtUtil {
-    private static final long EXPIRATION_TIME = 3600000L; // 1 hour
+    private static final long EXPIRATION_TIME = 432000000L; // 5 days
     private static final long REFRESH_EXPIRATION_TIME = 604800000L; // 7 days
     private static final SignatureAlgorithm ALGORITHM = SignatureAlgorithm.HS256;
     
