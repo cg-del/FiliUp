@@ -3,6 +3,8 @@ package edu.cit.filiup.controller;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.service.UserService;
 import edu.cit.filiup.util.JwtUtil;
+import edu.cit.filiup.util.RequireRole;
+import edu.cit.filiup.util.ResponseUtil;
 import edu.cit.filiup.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +18,7 @@ import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/api/user")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"}, allowCredentials = "true")
 public class UserController {
 
     @Autowired
@@ -26,45 +28,80 @@ public class UserController {
     private UserRepository userRepository;
 
     @PostMapping("/postUser")
-    public UserEntity postUser(@RequestBody UserEntity user) {
-        return userv.postUser(user);
+    @RequireRole({"ADMIN"})
+    public ResponseEntity<?> postUser(@RequestBody UserEntity user) {
+        try {
+            UserEntity savedUser = userv.postUser(user);
+            return ResponseUtil.success("User created successfully", savedUser);
+        } catch (Exception e) {
+            return ResponseUtil.badRequest("Failed to create user: " + e.getMessage());
+        }
     }
+    
     @GetMapping("/getAllUser")
-    public List<UserEntity> getAllUser(){
-        return userv.getAllUser();
+    @RequireRole({"ADMIN"})
+    public ResponseEntity<?> getAllUser(){
+        try {
+            List<UserEntity> users = userv.getAllUser();
+            return ResponseUtil.success("Users retrieved successfully", users);
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to retrieve users: " + e.getMessage());
+        }
     }
+    
     @PutMapping("/putUser")
-    public UserEntity putUser(@RequestParam int id, @RequestBody UserEntity newUserDetails) {
-        return userv.putUser(id, newUserDetails);
+    public ResponseEntity<?> putUser(@RequestParam int id, @RequestBody UserEntity newUserDetails) {
+        try {
+            UserEntity updatedUser = userv.putUser(id, newUserDetails);
+            if (updatedUser != null) {
+                return ResponseUtil.success("User updated successfully", updatedUser);
+            } else {
+                return ResponseUtil.notFound("User with ID " + id + " not found");
+            }
+        } catch (Exception e) {
+            return ResponseUtil.badRequest("Failed to update user: " + e.getMessage());
+        }
     }
+    
     @DeleteMapping("/deleteUser/{id}")
+    @RequireRole({"ADMIN"})
     public ResponseEntity<?> deleteUser(@PathVariable int id) {
         try {
             String result = userv.deleteUser(id);
-            return ResponseEntity.ok(Map.of("message", result));
+            return ResponseUtil.success(result);
         } catch (Exception e) {
-            return ResponseEntity.status(404)
-                .body(Map.of("error", "User not found", "message", e.getMessage()));
+            return ResponseUtil.notFound("User with ID " + id + " not found: " + e.getMessage());
         }
     }
+    
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody UserEntity user) {
-        UserEntity newUser = userv.registerUser(user);
-        if (newUser != null) {
-            Map<String, String> tokens = JwtUtil.generateTokens(newUser.getUserEmail());
-            return ResponseEntity.ok(tokens);
+        try {
+            // Automatically set user role to STUDENT for signup
+            user.setUserRole("STUDENT");
+            UserEntity newUser = userv.registerUser(user);
+            if (newUser != null) {
+                Map<String, String> tokens = JwtUtil.generateTokens(newUser.getUserEmail(), newUser.getUserRole());
+                return ResponseUtil.success("Registration successful", tokens);
+            }
+            return ResponseUtil.badRequest("Registration failed");
+        } catch (Exception e) {
+            return ResponseUtil.badRequest("Registration failed: " + e.getMessage());
         }
-        return ResponseEntity.badRequest().body("Registration failed");
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody UserEntity user) {
-        UserEntity loggedInUser = userv.loginUser(user.getUserEmail(), user.getUserPassword());
-        if (loggedInUser != null) {
-            Map<String, String> tokens = JwtUtil.generateTokens(loggedInUser.getUserEmail());
-            return ResponseEntity.ok(tokens);
-        } else {
-            return ResponseEntity.status(401).body("Invalid credentials");
+        try {
+            UserEntity loggedInUser = userv.loginUserByUsername(user.getUserName(), user.getUserPassword());
+            if (loggedInUser != null) {
+                Map<String, String> tokens = JwtUtil.generateTokens(loggedInUser.getUserName(), loggedInUser.getUserRole());
+                return ResponseUtil.success("Login successful", tokens);
+            } else {
+                return ResponseUtil.unauthorized("Invalid username or password");
+            }
+        } catch (Exception e) {
+            return ResponseUtil.badRequest("Login failed: " + e.getMessage());
         }
     }
 
@@ -79,11 +116,11 @@ public class UserController {
                 response.put("userName", user.getUserName());
                 response.put("userRole", user.getUserRole());
                 response.put("userEmail", user.getUserEmail());
-                return ResponseEntity.ok(response);
+                return ResponseUtil.success("User info retrieved successfully", response);
             }
-            return ResponseEntity.status(404).body(Map.of("error", "User not found", "email", email));
+            return ResponseUtil.notFound("User not found for email: " + email);
         } catch (Exception e) {
-            return ResponseEntity.status(401).body(Map.of("error", "Authentication failed", "message", e.getMessage()));
+            return ResponseUtil.unauthorized("Authentication failed: " + e.getMessage());
         }
     }
 
@@ -91,7 +128,7 @@ public class UserController {
     public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
         if (refreshToken == null) {
-            return ResponseEntity.status(401).body("No refresh token provided");
+            return ResponseUtil.badRequest("No refresh token provided");
         }
 
         try {
@@ -99,13 +136,13 @@ public class UserController {
                 String userEmail = JwtUtil.extractUsername(refreshToken);
                 UserEntity user = userv.getUserByEmail(userEmail);
                 if (user != null) {
-                    Map<String, String> tokens = JwtUtil.generateTokens(user.getUserEmail());
-                    return ResponseEntity.ok(tokens);
+                    Map<String, String> tokens = JwtUtil.generateTokens(user.getUserEmail(), user.getUserRole());
+                    return ResponseUtil.success("Token refreshed successfully", tokens);
                 }
             }
-            return ResponseEntity.status(401).body("Invalid refresh token");
+            return ResponseUtil.unauthorized("Invalid refresh token");
         } catch (Exception e) {
-            return ResponseEntity.status(401).body("Token refresh failed");
+            return ResponseUtil.unauthorized("Token refresh failed: " + e.getMessage());
         }
     }
 
@@ -113,7 +150,7 @@ public class UserController {
     public ResponseEntity<?> verifyToken(@RequestBody Map<String, String> request) {
         String token = request.get("token");
         if (token == null) {
-            return ResponseEntity.status(401).body("No token provided");
+            return ResponseUtil.badRequest("No token provided");
         }
 
         try {
@@ -127,12 +164,12 @@ public class UserController {
                     response.put("userName", user.getUserName());
                     response.put("userRole", user.getUserRole());
                     response.put("userEmail", user.getUserEmail());
-                    return ResponseEntity.ok(response);
+                    return ResponseUtil.success("Token verified successfully", response);
                 }
             }
-            return ResponseEntity.status(401).body("Invalid token");
+            return ResponseUtil.unauthorized("Invalid token");
         } catch (Exception e) {
-            return ResponseEntity.status(401).body("Token verification failed");
+            return ResponseUtil.unauthorized("Token verification failed: " + e.getMessage());
         }
     }
 
@@ -147,24 +184,27 @@ public class UserController {
                 response.put("userName", user.getUserName());
                 response.put("userRole", user.getUserRole());
                 response.put("userEmail", user.getUserEmail());
-                return ResponseEntity.ok(response);
+                return ResponseUtil.success("Hello request successful", response);
             }
-            return ResponseEntity.status(404)
-                .body(Map.of("error", "User not found", "email", email));
+            return ResponseUtil.notFound("User not found for email: " + email);
         } catch (Exception e) {
-            System.err.println("Error in hello endpoint: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(401)
-                .body(Map.of("error", "Authentication failed", "message", e.getMessage()));
+            return ResponseUtil.unauthorized("Authentication failed: " + e.getMessage());
         }
     }
 
     @GetMapping("/search")
-    public List<UserEntity> searchStudentsByName(@RequestParam String name) {
-        return userRepository.findByUserRoleAndUserNameContainingIgnoreCase("STUDENT", name);
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> searchStudentsByName(@RequestParam String name) {
+        try {
+            List<UserEntity> students = userRepository.findByUserRoleAndUserNameContainingIgnoreCase("STUDENT", name);
+            return ResponseUtil.success("Students retrieved successfully", students);
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to search students: " + e.getMessage());
+        }
     }
 
     @GetMapping("/sorted-by-role")
+    @RequireRole({"TEACHER", "ADMIN"})
     public ResponseEntity<?> getUsersSortedByRole() {
         try {
             List<UserEntity> allUsers = userv.getAllUser();
@@ -183,10 +223,9 @@ public class UserController {
                 }
             }
             
-            return ResponseEntity.ok(sortedUsers);
+            return ResponseUtil.success("Users sorted by role retrieved successfully", sortedUsers);
         } catch (Exception e) {
-            return ResponseEntity.status(500)
-                .body(Map.of("error", "Failed to fetch users", "message", e.getMessage()));
+            return ResponseUtil.serverError("Failed to fetch users: " + e.getMessage());
         }
     }
 }

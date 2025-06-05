@@ -2,13 +2,14 @@ package edu.cit.filiup.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "reports")
 public class ReportEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long reportId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID reportId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id", nullable = false)
@@ -74,11 +75,11 @@ public class ReportEntity {
     }
 
     // Getters and Setters
-    public Long getReportId() {
+    public UUID getReportId() {
         return reportId;
     }
 
-    public void setReportId(Long reportId) {
+    public void setReportId(UUID reportId) {
         this.reportId = reportId;
     }
 

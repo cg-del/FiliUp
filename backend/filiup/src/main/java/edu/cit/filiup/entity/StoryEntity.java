@@ -8,14 +8,15 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import java.util.UUID;
 
 @Entity
 @Table(name = "stories")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StoryEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long storyId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID storyId;
 
     @Column(name = "title", nullable = false, length = 255)
     private String title;
@@ -27,6 +28,9 @@ public class StoryEntity {
     @Lob
     @JsonProperty(access = JsonProperty.Access.READ_WRITE)
     private byte[] coverPicture;
+    
+    @Column(name = "cover_picture_url", length = 500)
+    private String coverPictureUrl;
 
     @Column(name = "cover_picture_type", length = 50)
     @JsonProperty(access = JsonProperty.Access.READ_WRITE)
@@ -41,6 +45,9 @@ public class StoryEntity {
 
     @Column(name = "genre", nullable = false)
     private String genre;
+
+    @Column(name = "fiction_type")
+    private String fictionType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id", nullable = false)
@@ -65,12 +72,20 @@ public class StoryEntity {
         this.genre = genre;
     }
 
+    public StoryEntity(String title, String content, String genre, String fictionType) {
+        this();
+        this.title = title;
+        this.content = content;
+        this.genre = genre;
+        this.fictionType = fictionType;
+    }
+
     // Getters and Setters
-    public Long getStoryId() {
+    public UUID getStoryId() {
         return storyId;
     }
 
-    public void setStoryId(Long storyId) {
+    public void setStoryId(UUID storyId) {
         this.storyId = storyId;
     }
 
@@ -98,12 +113,28 @@ public class StoryEntity {
         this.genre = genre;
     }
 
+    public String getFictionType() {
+        return fictionType;
+    }
+
+    public void setFictionType(String fictionType) {
+        this.fictionType = fictionType;
+    }
+
     public byte[] getCoverPicture() {
         return coverPicture;
     }
 
     public void setCoverPicture(byte[] coverPicture) {
         this.coverPicture = coverPicture;
+    }
+    
+    public String getCoverPictureUrl() {
+        return coverPictureUrl;
+    }
+
+    public void setCoverPictureUrl(String coverPictureUrl) {
+        this.coverPictureUrl = coverPictureUrl;
     }
 
     public String getCoverPictureType() {
@@ -153,6 +184,8 @@ public class StoryEntity {
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
                 ", genre='" + genre + '\'' +
+                ", fictionType='" + fictionType + '\'' +
+                ", coverPictureUrl='" + coverPictureUrl + '\'' +
                 ", classEntity=" + (classEntity != null ? classEntity.getClassId() : "null") +
                 ", createdBy=" + (createdBy != null ? createdBy.getUserId() : "null") +
                 '}';

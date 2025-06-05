@@ -4,13 +4,14 @@ import jakarta.persistence.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
 public class UserEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int userId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID userId;
 
     @Column(name = "user_name", length = 255, nullable = false, unique = true)
     private String userName;
@@ -23,6 +24,9 @@ public class UserEntity {
 
     @Column(name = "user_role", length = 20, nullable = false)
     private String userRole; // "STUDENT", "TEACHER", or "ADMIN"
+
+    @Column(name = "user_profile_picture_url")
+    private String userProfilePictureUrl;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -52,7 +56,7 @@ public class UserEntity {
         this.createdAt = LocalDateTime.now();
     }
 
-    public UserEntity(int userId, String userName, String userPassword, String userEmail, String userRole) {
+    public UserEntity(UUID userId, String userName, String userPassword, String userEmail, String userRole) {
         this();
         this.userId = userId;
         this.userName = userName;
@@ -62,11 +66,11 @@ public class UserEntity {
     }
 
     // Getters and Setters
-    public int getUserId() {
+    public UUID getUserId() {
         return userId;
     }
 
-    public void setUserId(int userId) {
+    public void setUserId(UUID userId) {
         this.userId = userId;
     }
 
@@ -100,6 +104,14 @@ public class UserEntity {
 
     public void setUserRole(String userRole) {
         this.userRole = userRole;
+    }
+
+    public String getUserProfilePictureUrl() {
+        return userProfilePictureUrl;
+    }
+
+    public void setUserProfilePictureUrl(String userProfilePictureUrl) {
+        this.userProfilePictureUrl = userProfilePictureUrl;
     }
 
     public LocalDateTime getCreatedAt() {

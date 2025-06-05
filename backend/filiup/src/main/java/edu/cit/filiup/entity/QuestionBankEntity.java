@@ -4,13 +4,14 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.UUID;
 
 @Entity
 @Table(name = "question_bank")
 public class QuestionBankEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long questionId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID questionId;
 
     @Column(name = "title", length = 200, nullable = false)
     private String title;
@@ -36,7 +37,7 @@ public class QuestionBankEntity {
     private UserEntity createdBy;
 
     @Column(name = "story_id", nullable = false)
-    private Long storyId;
+    private UUID storyId;
 
     @Column(name = "story_type", length = 20, nullable = false)
     @Enumerated(EnumType.STRING)
@@ -62,11 +63,11 @@ public class QuestionBankEntity {
     }
 
     // Getters and Setters
-    public Long getQuestionId() {
+    public UUID getQuestionId() {
         return questionId;
     }
 
-    public void setQuestionId(Long questionId) {
+    public void setQuestionId(UUID questionId) {
         this.questionId = questionId;
     }
 
@@ -126,11 +127,11 @@ public class QuestionBankEntity {
         this.createdBy = createdBy;
     }
 
-    public Long getStoryId() {
+    public UUID getStoryId() {
         return storyId;
     }
 
-    public void setStoryId(Long storyId) {
+    public void setStoryId(UUID storyId) {
         this.storyId = storyId;
     }
 

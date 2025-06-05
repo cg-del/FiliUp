@@ -1,104 +1,129 @@
 package edu.cit.filiup.controller;
 
-import edu.cit.filiup.entity.EnrollmentEntity;
+import edu.cit.filiup.dto.EnrollmentResponseDTO;
+import edu.cit.filiup.entity.UserEntity;
+import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.service.EnrollmentService;
+import edu.cit.filiup.service.UserService;
+import edu.cit.filiup.util.RequireRole;
+import edu.cit.filiup.util.ResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/enrollments")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"}, allowCredentials = "true")
 public class EnrollmentController {
 
+    private final EnrollmentService enrollmentService;
+    private final UserRepository userRepository;
+    private final UserService userService;
+    
+
+
+    
     @Autowired
-    private EnrollmentService enrollmentService;
+    public EnrollmentController(EnrollmentService enrollmentService, UserRepository userRepository, UserService userService) {
+        this.enrollmentService = enrollmentService;
+        this.userRepository = userRepository;
+        this.userService = userService;
+    }
 
-    /**
-     * Enrolls a user in a class using the class code
-     *
-     * @param requestBody containing userId and classCode
-     * @return ResponseEntity with the created enrollment entity or error message
-     */
     @PostMapping("/enroll")
-    public ResponseEntity<Map<String, Object>> enrollStudent(@RequestBody Map<String, Object> requestBody) {
-        Map<String, Object> response = new HashMap<>();
-        
-        // Extract and validate parameters
-        Integer userId = null;
-        String classCode = null;
-
+    @RequireRole("STUDENT")
+    public ResponseEntity<?> enrollStudent(
+            @RequestBody Map<String, String> payload) {
         try {
-            if (requestBody.containsKey("userId")) {
-                userId = Integer.valueOf(requestBody.get("userId").toString());
+            String classCode = payload.get("classCode");
+            
+            if (classCode == null || classCode.trim().isEmpty()) {
+                return ResponseUtil.badRequest("Class code is required");
             }
-            if (requestBody.containsKey("classCode")) {
-                classCode = requestBody.get("classCode").toString();
+
+            // Extract user identifier from authentication
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication == null) {
+                return ResponseUtil.unauthorized("No authentication found");
             }
-        } catch (NumberFormatException e) {
-            response.put("error", "Invalid user ID format");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
+            
+            String userIdentifier = authentication.getName();
+            UserEntity user = null;
+            
+            // Try to get user by email first
+            user = userService.getUserByEmail(userIdentifier);
+            
+            if (user == null) {
+                // Fallback to username
+                user = userService.getUserByUsername(userIdentifier);
+            }
+            
+            if (user == null) {
+                return ResponseUtil.unauthorized("User not found");
+            }
+            
+            // Verify the user is a student
+            if (!"STUDENT".equals(user.getUserRole())) {
+                return ResponseUtil.forbidden("Only students can enroll in classes");
+            }
 
-        // Validate required parameters
-        if (userId == null) {
-            response.put("error", "User ID is required");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-        
-        if (classCode == null || classCode.trim().isEmpty()) {
-            response.put("error", "Class code is required");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
-        try {
-            EnrollmentEntity enrollment = enrollmentService.enrollStudent(userId, classCode);
-            response.put("message", "Successfully enrolled");
-            response.put("enrollment", enrollment);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
-            response.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            // Enroll student with is_accepted = false by default
+            enrollmentService.enrollStudent(user.getUserId(), classCode);
+            
+            return ResponseUtil.success("Enrollment request submitted successfully. Waiting for teacher approval.");
+        } catch (IllegalStateException e) {
+            return ResponseUtil.badRequest(e.getMessage());
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to enroll: " + e.getMessage());
         }
     }
 
-    /**
-     * Gets all enrollments for a user
-     *
-     * @param userId the ID of the user
-     * @return ResponseEntity with list of enrollments
-     */
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getEnrollmentsByUser(@PathVariable Integer userId) {
+    @GetMapping("/class/{classId}")
+    @RequireRole("TEACHER")
+    public ResponseEntity<?> getPendingEnrollmentsByClassId(@PathVariable UUID classId) {
         try {
-            List<EnrollmentEntity> enrollments = enrollmentService.getEnrollmentsByStudent(userId);
-            return ResponseEntity.ok(enrollments);
-        } catch (RuntimeException e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            // Get only pending enrollments (is_accepted = false)
+            List<EnrollmentResponseDTO> pendingEnrollments = enrollmentService.getPendingEnrollmentsByClassId(classId);
+            return ResponseUtil.success("Pending enrollments retrieved successfully", pendingEnrollments);
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to retrieve pending enrollments: " + e.getMessage());
         }
     }
 
-    /**
-     * Gets all enrollments for a class
-     *
-     * @param classCode the code of the class
-     * @return ResponseEntity with list of enrollments
-     */
-    @GetMapping("/class/{classCode}")
-    public ResponseEntity<?> getEnrollmentsByClass(@PathVariable String classCode) {
+    @PostMapping("/accept/{classCode}/{studentId}")
+    @RequireRole("TEACHER")
+    public ResponseEntity<?> acceptStudent(
+            @PathVariable UUID studentId,
+            @PathVariable String classCode) {
         try {
-            List<EnrollmentEntity> enrollments = enrollmentService.getEnrollmentsByClass(classCode);
-            return ResponseEntity.ok(enrollments);
-        } catch (RuntimeException e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            enrollmentService.acceptStudent(studentId, classCode);
+            return ResponseUtil.success("Student accepted successfully");
+        } catch (IllegalStateException e) {
+            return ResponseUtil.badRequest(e.getMessage());
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to accept student: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/accept-multiple")
+    @RequireRole("TEACHER")
+    public ResponseEntity<?> acceptMultipleStudents(
+            @RequestParam String classCode,
+            @RequestBody List<UUID> studentIds) {
+        try {
+            enrollmentService.acceptMultipleStudents(studentIds, classCode);
+            return ResponseUtil.success("Students accepted successfully");
+        } catch (IllegalStateException e) {
+            return ResponseUtil.badRequest(e.getMessage());
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to accept students: " + e.getMessage());
         }
     }
 }

@@ -1,9 +1,14 @@
 package edu.cit.filiup.service;
 
+import edu.cit.filiup.dto.ClassDetailsDTO;
 import edu.cit.filiup.entity.ClassEntity;
 import edu.cit.filiup.entity.UserEntity;
+import edu.cit.filiup.entity.QuestionBankEntity;
+import edu.cit.filiup.entity.EnrollmentEntity;
 import edu.cit.filiup.repository.ClassRepository;
 import edu.cit.filiup.repository.UserRepository;
+import edu.cit.filiup.repository.QuestionBankRepository;
+import edu.cit.filiup.repository.EnrollmentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,21 +19,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ClassService {
     private final ClassRepository classRepository;
     private final UserRepository userRepository;
+    private final QuestionBankRepository questionBankRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Autowired
-    public ClassService(ClassRepository classRepository, UserRepository userRepository) {
+    public ClassService(
+            ClassRepository classRepository, 
+            UserRepository userRepository, 
+            QuestionBankRepository questionBankRepository,
+            EnrollmentRepository enrollmentRepository) {
         this.classRepository = classRepository;
         this.userRepository = userRepository;
+        this.questionBankRepository = questionBankRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     // Create
     @Transactional
-    public ClassEntity createClass(ClassEntity classEntity, int teacherId) {
+    public ClassEntity createClass(ClassEntity classEntity, UUID teacherId) {
         UserEntity teacher = userRepository.findById(teacherId)
             .orElseThrow(() -> new RuntimeException("Teacher not found"));
 
@@ -49,20 +64,33 @@ public class ClassService {
         return classRepository.findByIsActiveTrue();
     }
 
-    public Optional<ClassEntity> getClassById(Long classId) {
+    public Optional<ClassEntity> getClassById(UUID classId) {
         return classRepository.findById(classId);
     }
 
-    public List<ClassEntity> getClassesByTeacher(int teacherId) {
+    public List<ClassEntity> getClassesByTeacher(UUID teacherId) {
         return classRepository.findByTeacherUserId(teacherId);
     }
 
-    public List<ClassEntity> getClassesByStudent(int studentId) {
+    public List<ClassEntity> getClassesByStudent(UUID studentId) {
         return classRepository.findByStudentsUserId(studentId);
     }
 
+    public List<ClassEntity> getAcceptedClassesByStudent(UUID studentId) {
+        // Get all accepted enrollments for the student
+        List<EnrollmentEntity> acceptedEnrollments = enrollmentRepository.findByUserIdAndIsAccepted(studentId, true);
+        
+        // Get the class codes from accepted enrollments
+        List<String> acceptedClassCodes = acceptedEnrollments.stream()
+                .map(EnrollmentEntity::getClassCode)
+                .collect(Collectors.toList());
+        
+        // Return all active classes that match the accepted class codes
+        return classRepository.findByClassCodeInAndIsActiveTrue(acceptedClassCodes);
+    }
+
     @Transactional(readOnly = true)
-    public Map<String, String> getClassTeacher(Long classId) {
+    public Map<String, String> getClassTeacher(UUID classId) {
         ClassEntity classEntity = classRepository.findById(classId)
                 .orElseThrow(() -> new EntityNotFoundException("Class not found"));
 
@@ -82,7 +110,7 @@ public class ClassService {
 
     // Update
     @Transactional
-    public ClassEntity updateClass(Long classId, ClassEntity updatedClass) {
+    public ClassEntity updateClass(UUID classId, ClassEntity updatedClass) {
         ClassEntity existingClass = classRepository.findById(classId)
             .orElseThrow(() -> new RuntimeException("Class not found"));
 
@@ -95,7 +123,7 @@ public class ClassService {
 
     // Delete
     @Transactional
-    public void deleteClass(Long classId) {
+    public void deleteClass(UUID classId) {
         ClassEntity classEntity = classRepository.findById(classId)
             .orElseThrow(() -> new RuntimeException("Class not found"));
         
@@ -109,7 +137,7 @@ public class ClassService {
 
     // Student Management
     @Transactional
-    public ClassEntity addStudentToClass(Long classId, int studentId) {
+    public ClassEntity addStudentToClass(UUID classId, UUID studentId) {
         ClassEntity classEntity = classRepository.findById(classId)
             .orElseThrow(() -> new RuntimeException("Class not found"));
         
@@ -125,7 +153,7 @@ public class ClassService {
     }
 
     @Transactional
-    public ClassEntity removeStudentFromClass(Long classId, int studentId) {
+    public ClassEntity removeStudentFromClass(UUID classId, UUID studentId) {
         ClassEntity classEntity = classRepository.findById(classId)
             .orElseThrow(() -> new RuntimeException("Class not found"));
         
@@ -137,7 +165,7 @@ public class ClassService {
     }
 
     @Transactional
-    public ClassEntity regenerateClassCode(Long classId) {
+    public ClassEntity regenerateClassCode(UUID classId) {
         ClassEntity classEntity = classRepository.findById(classId)
             .orElseThrow(() -> new RuntimeException("Class not found"));
 
@@ -159,5 +187,45 @@ public class ClassService {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
         return sb.toString();
+    }
+
+    @Transactional(readOnly = true)
+    public ClassDetailsDTO getClassDetailsById(UUID classId) {
+        ClassEntity classEntity = classRepository.findById(classId)
+                .orElseThrow(() -> new EntityNotFoundException("Class not found"));
+
+        ClassDetailsDTO dto = ClassDetailsDTO.fromEntity(classEntity);
+
+        // Add students
+        List<ClassDetailsDTO.UserDTO> studentDTOs = classEntity.getStudents().stream()
+                .map(ClassDetailsDTO.UserDTO::fromEntity)
+                .collect(Collectors.toList());
+        dto.setStudents(studentDTOs);
+
+        // Add stories with their questions
+        List<ClassDetailsDTO.StoryDTO> storyDTOs = classEntity.getStories().stream()
+                .map(story -> {
+                    ClassDetailsDTO.StoryDTO storyDTO = ClassDetailsDTO.StoryDTO.fromEntity(story);
+                    
+                    // Get questions for this story
+                    List<QuestionBankEntity> questions = questionBankRepository
+                        .findByStoryIdAndStoryTypeAndIsActiveTrue(story.getStoryId(), QuestionBankEntity.StoryType.CLASS);
+                    
+                    List<ClassDetailsDTO.QuestionDTO> questionDTOs = questions.stream()
+                        .map(ClassDetailsDTO.QuestionDTO::fromEntity)
+                        .collect(Collectors.toList());
+                    
+                    storyDTO.setQuestions(questionDTOs);
+                    return storyDTO;
+                })
+                .collect(Collectors.toList());
+        dto.setStories(storyDTOs);
+
+        return dto;
+    }
+
+    public void acceptEnrollment(String classCode, UUID studentId, UUID teacherId) {
+        // Implementation needed
+        throw new UnsupportedOperationException("Method not implemented");
     }
 }

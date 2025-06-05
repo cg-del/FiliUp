@@ -3,17 +3,22 @@ package edu.cit.filiup.service;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.naming.NameNotFoundException;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @Service
 public class UserService {
 
     @Autowired
     UserRepository urepo;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public UserService() {
         super();
@@ -21,6 +26,7 @@ public class UserService {
     }
 
     public UserEntity postUser(UserEntity user) {
+        user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
         return urepo.save(user);
     }
 
@@ -29,7 +35,7 @@ public class UserService {
     }
 
     @SuppressWarnings("finally")
-    public UserEntity putUser(int userId, UserEntity newUserDetails) {
+    public UserEntity putUser(UUID userId, UserEntity newUserDetails) {
         UserEntity user = new UserEntity();
 
         try {
@@ -43,7 +49,12 @@ public class UserService {
 
             user.setUserName(newUserDetails.getUserName());
             user.setUserEmail(newUserDetails.getUserEmail());
-            user.setUserPassword(newUserDetails.getUserPassword());
+            
+            // Only update password if a new one is provided
+            if (newUserDetails.getUserPassword() != null && !newUserDetails.getUserPassword().isEmpty()) {
+                user.setUserPassword(passwordEncoder.encode(newUserDetails.getUserPassword()));
+            }
+            
             user.setUserRole(newUserDetails.getUserRole());
 
         } catch (NoSuchElementException nex) {
@@ -53,7 +64,7 @@ public class UserService {
         }
     }
 
-    public String deleteUser(int id) {
+    public String deleteUser(UUID id) {
         if (!urepo.existsById(id)) {
             throw new NoSuchElementException("User with ID " + id + " not found");
         }
@@ -74,13 +85,25 @@ public class UserService {
             throw new IllegalArgumentException("Invalid user role. Must be either STUDENT, TEACHER, or ADMIN.");
         }
         
+        // Encode password before saving
+        user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
+        
         return urepo.save(user);
     }
 
     // Login Method
     public UserEntity loginUser(String email, String password) {
         UserEntity user = urepo.findByUserEmail(email);
-        if (user != null && user.getUserPassword().equals(password)) {
+        if (user != null && passwordEncoder.matches(password, user.getUserPassword())) {
+            return user; // Successful login
+        }
+        return null; // Login failed
+    }
+
+    // Login Method by Username
+    public UserEntity loginUserByUsername(String username, String password) {
+        UserEntity user = urepo.findByUserName(username);
+        if (user != null && passwordEncoder.matches(password, user.getUserPassword())) {
             return user; // Successful login
         }
         return null; // Login failed
@@ -88,5 +111,9 @@ public class UserService {
 
     public UserEntity getUserByEmail(String email) {
         return urepo.findByUserEmail(email);
+    }
+
+    public UserEntity getUserByUsername(String username) {
+        return urepo.findByUserName(username);
     }
 }

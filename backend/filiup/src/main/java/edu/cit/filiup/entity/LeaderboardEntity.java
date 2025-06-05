@@ -2,13 +2,14 @@ package edu.cit.filiup.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "leaderboard")
 public class LeaderboardEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long entryId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID entryId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
@@ -31,13 +32,36 @@ public class LeaderboardEntity {
     @Column(name = "last_updated", nullable = false)
     private LocalDateTime lastUpdated;
 
+    // New fields for quiz-specific metrics
+    @Column(name = "accuracy_percentage")
+    private Double accuracyPercentage;
+
+    @Column(name = "average_time_minutes")
+    private Double averageTimeMinutes;
+
+    @Column(name = "total_quizzes_completed")
+    private Integer totalQuizzesCompleted;
+
+    @Column(name = "class_id")
+    private UUID classId;
+
+    @Column(name = "story_id")
+    private UUID storyId;
+
     public enum Category {
         QUESTION_BANK,
         ASSIGNMENT,
         LESSON,
         PRACTICE,
         PROJECT,
-        OVERALL
+        OVERALL,
+        // New quiz-specific categories
+        QUIZ_SCORE,
+        QUIZ_ACCURACY,
+        QUIZ_SPEED,
+        QUIZ_COMPLETION_RATE,
+        CLASS_QUIZ_PERFORMANCE,
+        STORY_QUIZ_PERFORMANCE
     }
 
     public enum TimeFrame {
@@ -60,12 +84,24 @@ public class LeaderboardEntity {
         this.timeFrame = timeFrame;
     }
 
+    // Constructor for quiz-specific leaderboard entries
+    public LeaderboardEntity(UserEntity student, Integer score, Category category, TimeFrame timeFrame,
+                           Double accuracyPercentage, Double averageTimeMinutes, Integer totalQuizzesCompleted,
+                           UUID classId, UUID storyId) {
+        this(student, score, category, timeFrame);
+        this.accuracyPercentage = accuracyPercentage;
+        this.averageTimeMinutes = averageTimeMinutes;
+        this.totalQuizzesCompleted = totalQuizzesCompleted;
+        this.classId = classId;
+        this.storyId = storyId;
+    }
+
     // Getters and Setters
-    public Long getEntryId() {
+    public UUID getEntryId() {
         return entryId;
     }
 
-    public void setEntryId(Long entryId) {
+    public void setEntryId(UUID entryId) {
         this.entryId = entryId;
     }
 
@@ -115,5 +151,45 @@ public class LeaderboardEntity {
 
     public void setLastUpdated(LocalDateTime lastUpdated) {
         this.lastUpdated = lastUpdated;
+    }
+
+    public Double getAccuracyPercentage() {
+        return accuracyPercentage;
+    }
+
+    public void setAccuracyPercentage(Double accuracyPercentage) {
+        this.accuracyPercentage = accuracyPercentage;
+    }
+
+    public Double getAverageTimeMinutes() {
+        return averageTimeMinutes;
+    }
+
+    public void setAverageTimeMinutes(Double averageTimeMinutes) {
+        this.averageTimeMinutes = averageTimeMinutes;
+    }
+
+    public Integer getTotalQuizzesCompleted() {
+        return totalQuizzesCompleted;
+    }
+
+    public void setTotalQuizzesCompleted(Integer totalQuizzesCompleted) {
+        this.totalQuizzesCompleted = totalQuizzesCompleted;
+    }
+
+    public UUID getClassId() {
+        return classId;
+    }
+
+    public void setClassId(UUID classId) {
+        this.classId = classId;
+    }
+
+    public UUID getStoryId() {
+        return storyId;
+    }
+
+    public void setStoryId(UUID storyId) {
+        this.storyId = storyId;
     }
 }
