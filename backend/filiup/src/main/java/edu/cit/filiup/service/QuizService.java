@@ -20,6 +20,9 @@ public interface QuizService {
     void deleteQuiz(UUID quizId);
     List<QuizDTO> getAllActiveQuizzes();
     
+    // Method for getting quiz details with correct answers (admin/teacher only)
+    QuizDTO getQuizWithCorrectAnswers(UUID quizId);
+    
     // Methods for quiz attempts
     QuizDTO getQuizForStudent(UUID quizId);
     QuizAttemptDTO startQuizAttempt(UUID quizId, UUID studentId);

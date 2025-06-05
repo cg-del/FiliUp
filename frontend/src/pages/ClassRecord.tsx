@@ -439,7 +439,7 @@ const ClassRecord: React.FC = () => {
                                   {classRecordData.quizMetadata[quizTitle] && (
                                     <div className="text-xs text-teal-600 space-y-1">
                                       <div>📖 {classRecordData.quizMetadata[quizTitle].storyTitle}</div>
-                                      <div>🏫 {classRecordData.quizMetadata[quizTitle].className}</div>
+                                     
                                     </div>
                                   )}
                                 </div>
@@ -493,14 +493,12 @@ const ClassRecord: React.FC = () => {
                                         <Badge className={getBadgeStyle(percentage)}>
                                           {scoreInfo.score}/{scoreInfo.maxScore}
                                         </Badge>
-                                        <span className="text-xs text-gray-500 font-medium">
+                                       
+                                        
+                                      </div>
+                                      <span className="text-xs text-gray-500 font-medium">
                                           {percentage.toFixed(1)}%
                                         </span>
-                                        <div className="text-xs text-gray-400 flex items-center gap-1">
-                                          <span>📖</span>
-                                          <span className="truncate max-w-[80px]">{scoreInfo.storyTitle}</span>
-                                        </div>
-                                      </div>
                                     </TableCell>
                                   );
                                 })}

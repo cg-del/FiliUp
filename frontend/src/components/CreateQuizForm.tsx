@@ -14,11 +14,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Plus, X, Clock, Calendar, HelpCircle, Minus, Loader2 } from 'lucide-react';
+import { Plus, X, Clock, Calendar, HelpCircle, Minus, Loader2, Edit } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { classService } from '@/lib/services/classService';
 import { storyService } from '@/lib/services/storyService';
-import { quizService } from '@/lib/services/quizService';
+import { quizService, type QuizData } from '@/lib/services/quizService';
 import type { Class } from '@/lib/services/types';
 
 interface QuizFormData {
@@ -55,12 +55,32 @@ interface Story {
   title: string;
 }
 
-const CreateQuizForm = ({ triggerClassName = "" }) => {
+interface CreateQuizFormProps {
+  triggerClassName?: string;
+  mode?: 'create' | 'edit';
+  existingQuiz?: QuizData;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSuccess?: () => void;
+}
+
+const CreateQuizForm = ({ 
+  triggerClassName = "", 
+  mode = 'create', 
+  existingQuiz,
+  isOpen,
+  onOpenChange,
+  onSuccess
+}: CreateQuizFormProps) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stories, setStories] = useState<Story[]>([]);
   const [loadingStories, setLoadingStories] = useState(false);
+
+  // Use controlled open state if provided
+  const dialogOpen = isOpen !== undefined ? isOpen : open;
+  const setDialogOpen = onOpenChange || setOpen;
 
   // Form state
   const [formData, setFormData] = useState<QuizFormData>({
@@ -88,13 +108,40 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
     'Mahirap',
   ];
 
-  // localStorage keys
-  const FORM_DATA_KEY = 'filiup_quiz_form_data';
-  const QUESTIONS_KEY = 'filiup_quiz_questions';
+  // localStorage keys (different for edit mode to avoid conflicts)
+  const FORM_DATA_KEY = mode === 'edit' ? 'filiup_edit_quiz_form_data' : 'filiup_quiz_form_data';
+  const QUESTIONS_KEY = mode === 'edit' ? 'filiup_edit_quiz_questions' : 'filiup_quiz_questions';
 
-  // Restore form data from localStorage when dialog opens
+  // Initialize form with existing quiz data in edit mode
   useEffect(() => {
-    if (open) {
+    if (mode === 'edit' && existingQuiz && dialogOpen) {
+      setFormData({
+        title: existingQuiz.title,
+        description: existingQuiz.description,
+        category: existingQuiz.category,
+        timeLimitMinutes: existingQuiz.timeLimitMinutes,
+        opensAt: existingQuiz.opensAt,
+        closesAt: existingQuiz.closesAt,
+        storyId: existingQuiz.storyId,
+      });
+
+      if (existingQuiz.questions && existingQuiz.questions.length > 0) {
+        // Use existing quiz data directly since it should already have correct answers
+        // from the getQuizDetailsWithCorrectAnswers method
+        const formattedQuestions = existingQuiz.questions.map(q => ({
+          questionText: q.questionText,
+          options: q.options,
+          correctAnswer: q.correctAnswer || '', // Use the correct answer from the API
+          points: q.points
+        }));
+        setQuestions(formattedQuestions);
+      }
+    }
+  }, [mode, existingQuiz, dialogOpen]);
+
+  // Restore form data from localStorage when dialog opens (only in create mode)
+  useEffect(() => {
+    if (dialogOpen && mode === 'create') {
       try {
         const savedFormData = localStorage.getItem(FORM_DATA_KEY);
         const savedQuestions = localStorage.getItem(QUESTIONS_KEY);
@@ -112,29 +159,29 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
         console.error('Error restoring quiz form data:', error);
       }
     }
-  }, [open]);
+  }, [dialogOpen, mode, FORM_DATA_KEY, QUESTIONS_KEY]);
 
-  // Auto-save form data to localStorage whenever it changes
+  // Auto-save form data to localStorage whenever it changes (only in create mode)
   useEffect(() => {
-    if (open) {
+    if (dialogOpen && mode === 'create') {
       try {
         localStorage.setItem(FORM_DATA_KEY, JSON.stringify(formData));
       } catch (error) {
         console.error('Error saving quiz form data:', error);
       }
     }
-  }, [formData, open]);
+  }, [formData, dialogOpen, mode, FORM_DATA_KEY]);
 
-  // Auto-save questions to localStorage whenever they change
+  // Auto-save questions to localStorage whenever they change (only in create mode)
   useEffect(() => {
-    if (open) {
+    if (dialogOpen && mode === 'create') {
       try {
         localStorage.setItem(QUESTIONS_KEY, JSON.stringify(questions));
       } catch (error) {
         console.error('Error saving quiz questions:', error);
       }
     }
-  }, [questions, open]);
+  }, [questions, dialogOpen, mode, QUESTIONS_KEY]);
 
   // Function to clear localStorage
   const clearFormStorage = () => {
@@ -149,7 +196,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
   // Fetch teacher's stories when dialog opens
   useEffect(() => {
     const fetchStories = async () => {
-      if (!open) return;
+      if (!dialogOpen) return;
       
       try {
         setLoadingStories(true);
@@ -173,7 +220,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
     };
 
     fetchStories();
-  }, [open]);
+  }, [dialogOpen]);
 
   const handleInputChange = (field: keyof QuizFormData, value: string | number) => {
     setFormData(prev => ({
@@ -247,7 +294,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
       // Validate questions
       for (let i = 0; i < questions.length; i++) {
         const question = questions[i];
-        if (!question.questionText || !question.correctAnswer) {
+        if (!question.questionText) {
           throw new Error(`Tanong ${i + 1} ay hindi kumpleto`);
         }
         
@@ -256,61 +303,136 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
           throw new Error(`Tanong ${i + 1} ay dapat may hindi bababa sa 2 pagpipilian`);
         }
         
-        if (!validOptions.includes(question.correctAnswer)) {
+        // Only validate correct answer in create mode
+        if (mode === 'create' && !question.correctAnswer) {
+          throw new Error(`Tanong ${i + 1} - kailangan ng tamang sagot`);
+        }
+        
+        if (mode === 'create' && !validOptions.includes(question.correctAnswer)) {
           throw new Error(`Tanong ${i + 1} - ang tamang sagot ay dapat tumugma sa isa sa mga pagpipilian`);
         }
       }
 
-      // Create quiz data structure
-      const quizData: CreateQuizRequestData = {
-        title: formData.title,
-        description: formData.description,
-        category: formData.category,
-        timeLimitMinutes: formData.timeLimitMinutes,
-        opensAt: formData.opensAt,
-        closesAt: formData.closesAt,
-        isActive: true,
-        storyId: formData.storyId,
-        questions: questions.map(q => ({
-          questionText: q.questionText,
-          options: q.options.filter(option => option.trim()),
-          correctAnswer: q.correctAnswer,
-          points: q.points
-        }))
-      };
+      if (mode === 'edit' && existingQuiz) {
+        // Update existing quiz
+        const updateData = {
+          quizId: existingQuiz.quizId,
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          timeLimitMinutes: formData.timeLimitMinutes,
+          opensAt: formData.opensAt,
+          closesAt: formData.closesAt,
+          storyId: existingQuiz.storyId,
+          storyTitle: existingQuiz.storyTitle,
+          createdById: existingQuiz.createdById,
+          createdByName: existingQuiz.createdByName,
+          createdAt: existingQuiz.createdAt,
+          isActive: existingQuiz.isActive,
+          // Try to include questions with proper structure
+          questions: questions.map((q, index) => ({
+            questionId: existingQuiz.questions[index]?.questionId || '', // Use existing ID if available
+            questionText: q.questionText,
+            options: q.options.filter(option => option.trim()),
+            points: q.points,
+            correctAnswer: q.correctAnswer // Include correct answer for backend processing
+          }))
+        };
 
-      console.log('Quiz Data:', quizData);
-      await quizService.createQuizForStory(quizData);
+        try {
+          await quizService.updateQuiz(existingQuiz.quizId, updateData);
 
-      toast({
-        title: "Matagumpay na Nalikha ang Pagsusulit!",
-        description: `"${formData.title}" ay nalikha na at handa na para sa mga estudyante.`,
-      });
+          toast({
+            title: "Matagumpay na Na-update ang Pagsusulit!",
+            description: `"${formData.title}" ay na-update na kasama ang mga tanong.`,
+          });
 
-      // Clear localStorage after successful creation
-      clearFormStorage();
+          onSuccess?.();
+          setDialogOpen(false);
+        } catch (error: unknown) {
+          // If questions update fails due to orphan deletion, try updating without questions
+          console.error('Questions update failed, trying without questions:', error);
+          
+          const basicUpdateData = {
+            quizId: existingQuiz.quizId,
+            title: formData.title,
+            description: formData.description,
+            category: formData.category,
+            timeLimitMinutes: formData.timeLimitMinutes,
+            opensAt: formData.opensAt,
+            closesAt: formData.closesAt,
+            storyId: existingQuiz.storyId,
+            storyTitle: existingQuiz.storyTitle,
+            createdById: existingQuiz.createdById,
+            createdByName: existingQuiz.createdByName,
+            createdAt: existingQuiz.createdAt,
+            isActive: existingQuiz.isActive,
+          };
 
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        category: '',
-        timeLimitMinutes: 30,
-        opensAt: '',
-        closesAt: '',
-        storyId: '',
-      });
-      setQuestions([{
-        questionText: '',
-        options: ['', ''],
-        correctAnswer: '',
-        points: 5
-      }]);
-      setOpen(false);
+          await quizService.updateQuiz(existingQuiz.quizId, basicUpdateData);
+
+          toast({
+            title: "Bahagyang Na-update ang Pagsusulit",
+            description: `"${formData.title}" ay na-update na, ngunit ang mga tanong ay hindi pa naa-update dahil sa teknikal na limitasyon sa backend.`,
+            variant: "destructive",
+          });
+
+          onSuccess?.();
+          setDialogOpen(false);
+        }
+      } else {
+        // Create new quiz
+        const quizData: CreateQuizRequestData = {
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          timeLimitMinutes: formData.timeLimitMinutes,
+          opensAt: formData.opensAt,
+          closesAt: formData.closesAt,
+          isActive: true,
+          storyId: formData.storyId,
+          questions: questions.map(q => ({
+            questionText: q.questionText,
+            options: q.options.filter(option => option.trim()),
+            correctAnswer: q.correctAnswer,
+            points: q.points
+          }))
+        };
+
+        console.log('Quiz Data:', quizData);
+        await quizService.createQuizForStory(quizData);
+
+        toast({
+          title: "Matagumpay na Nalikha ang Pagsusulit!",
+          description: `"${formData.title}" ay nalikha na at handa na para sa mga estudyante.`,
+        });
+
+        // Clear localStorage after successful creation
+        clearFormStorage();
+
+        // Reset form
+        setFormData({
+          title: '',
+          description: '',
+          category: '',
+          timeLimitMinutes: 30,
+          opensAt: '',
+          closesAt: '',
+          storyId: '',
+        });
+        setQuestions([{
+          questionText: '',
+          options: ['', ''],
+          correctAnswer: '',
+          points: 1
+        }]);
+        setDialogOpen(false);
+        onSuccess?.();
+      }
 
     } catch (error) {
       toast({
-        title: "Mali sa Paggawa ng Pagsusulit",
+        title: mode === 'edit' ? "Mali sa Pag-update ng Pagsusulit" : "Mali sa Paggawa ng Pagsusulit",
         description: error instanceof Error ? error.message : "Nagkaproblema sa hindi inaasahang dahilan",
         variant: "destructive",
       });
@@ -322,24 +444,29 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
   const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Card className={`border-2 border-dashed border-teal-200 hover:border-teal-400 transition-colors cursor-pointer ${triggerClassName}`}>
-          <CardContent className="p-6 text-center">
-            <HelpCircle className="h-12 w-12 text-teal-500 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-900 mb-2">Gumawa ng Pagsusulit</h3>
-            <p className="text-sm text-gray-500">Magdisenyo ng mga pagsusulit sa pag-unawa para sa inyong mga estudyante</p>
-          </CardContent>
-        </Card>
-      </DialogTrigger>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {mode === 'create' && (
+        <DialogTrigger asChild>
+          <Card className={`border-2 border-dashed border-teal-200 hover:border-teal-400 transition-colors cursor-pointer ${triggerClassName}`}>
+            <CardContent className="p-6 text-center">
+              <HelpCircle className="h-12 w-12 text-teal-500 mx-auto mb-4" />
+              <h3 className="font-semibold text-gray-900 mb-2">Gumawa ng Pagsusulit</h3>
+              <p className="text-sm text-gray-500">Magdisenyo ng mga pagsusulit sa pag-unawa para sa inyong mga estudyante</p>
+            </CardContent>
+          </Card>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <HelpCircle className="h-5 w-5" />
-            <span>Gumawa ng Bagong Pagsusulit</span>
+            {mode === 'edit' ? <Edit className="h-5 w-5" /> : <HelpCircle className="h-5 w-5" />}
+            <span>{mode === 'edit' ? 'I-edit ang Pagsusulit' : 'Gumawa ng Bagong Pagsusulit'}</span>
           </DialogTitle>
           <DialogDescription>
-            Gumawa ng interactive na pagsusulit para sa inyong mga estudyante upang subukin ang kanilang pag-unawa at kaalaman.
+            {mode === 'edit' 
+              ? 'Gawin ang mga pagbabago sa pagsusulit. Tandaan na hindi ka makakapag-edit kung may mga estudyanteng sumagot na.'
+              : 'Gumawa ng interactive na pagsusulit para sa inyong mga estudyante upang subukin ang kanilang pag-unawa at kaalaman.'
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -393,20 +520,17 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
               onChange={(e) => handleInputChange('storyId', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
-              disabled={loadingStories}
+              disabled={mode === 'edit'} // Don't allow changing story in edit mode
             >
               <option value="">
-                {loadingStories ? "Naglo-load ng mga kuwento..." : "Piliin ang kuwento"}
+                {loadingStories ? 'Kumukuha ng mga kuwento...' : 'Pumili ng Kuwento'}
               </option>
               {stories.map(story => (
                 <option key={story.id} value={story.id}>{story.title}</option>
               ))}
             </select>
-            {loadingStories && (
-              <div className="flex items-center mt-2">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                <span className="text-sm text-gray-500">Naglo-load ng mga kuwento...</span>
-              </div>
+            {mode === 'edit' && (
+              <p className="text-xs text-gray-500">Hindi mababago ang kuwento kapag nag-edit ng quiz</p>
             )}
           </div>
 
@@ -463,9 +587,9 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
                 <Badge variant="outline" className="text-cyan-600">
                   {totalPoints} kabuuang puntos
                 </Badge>
-               
               </div>
             </div>
+
 
             {questions.map((question, questionIndex) => (
               <Card key={questionIndex} className="border-teal-100">
@@ -552,19 +676,26 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`correct-${questionIndex}`}>Tamang Sagot *</Label>
+                    <Label htmlFor={`correct-${questionIndex}`}>
+                      Tamang Sagot {mode === 'create' ? '*' : '(opsyonal sa pag-edit)'}
+                    </Label>
                     <select
                       id={`correct-${questionIndex}`}
                       value={question.correctAnswer}
                       onChange={(e) => handleQuestionChange(questionIndex, 'correctAnswer', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      required
+                      required={mode === 'create'}
                     >
                       <option value="">Piliin ang tamang sagot</option>
                       {question.options.filter(option => option.trim()).map((option, index) => (
                         <option key={index} value={option}>{option}</option>
                       ))}
                     </select>
+                    {mode === 'edit' && (
+                      <p className="text-xs text-gray-500">
+                        Hindi kinakailangan ang tamang sagot sa pag-edit para sa seguridad
+                      </p>
+                    )}
                   </div>
                 </CardContent>
                 
@@ -586,7 +717,7 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={() => setDialogOpen(false)}
             >
               Kanselahin
             </Button>
@@ -598,10 +729,10 @@ const CreateQuizForm = ({ triggerClassName = "" }) => {
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Ginagawa...
+                  {mode === 'edit' ? 'Nag-a-update...' : 'Ginagawa...'}
                 </>
               ) : (
-                'Gumawa ng Pagsusulit'
+                mode === 'edit' ? 'I-update ang Pagsusulit' : 'Gumawa ng Pagsusulit'
               )}
             </Button>
           </div>

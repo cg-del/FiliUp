@@ -47,6 +47,7 @@ export interface QuizQuestion {
   questionId: string;
   questionText: string;
   options: string[];
+  correctAnswer?: string; // Optional since students shouldn't see this
   points: number;
 }
 
@@ -213,7 +214,7 @@ export const quizService = {
   },
 
   updateQuiz: async (id: string, data: Partial<QuizData>): Promise<ApiResponse<QuizData>> => {
-    const response = await api.put(`/quizzes/${id}`, data);
+    const response = await api.put(`/v1/quizzes/${id}`, data);
     return response.data;
   },
 
@@ -251,6 +252,12 @@ export const quizService = {
   // Get quiz for student (without correct answers)
   async getQuizForStudent(quizId: string): Promise<QuizData> {
     const response = await api.get(`/v1/quizzes/student/${quizId}`);
+    return response.data;
+  },
+
+  // Get quiz details with correct answers (admin/teacher only)
+  async getQuizDetailsWithCorrectAnswers(quizId: string): Promise<QuizData> {
+    const response = await api.get(`/v1/quizzes/${quizId}/details`);
     return response.data;
   },
 
@@ -390,6 +397,12 @@ export const quizService = {
   // Get quiz attempts for a specific class
   async getQuizAttemptsByClass(classId: string): Promise<QuizAttempt[]> {
     const response = await api.get(`/v1/quizzes/attempts/class/${classId}`);
+    return response.data;
+  },
+
+  // Get quiz attempts by quiz (admin/teacher only)
+  async getQuizAttemptsByQuiz(quizId: string): Promise<QuizAttempt[]> {
+    const response = await api.get(`/v1/quizzes/${quizId}/attempts`);
     return response.data;
   },
 

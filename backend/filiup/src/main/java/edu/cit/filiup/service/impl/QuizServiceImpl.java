@@ -139,6 +139,16 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    public QuizDTO getQuizWithCorrectAnswers(UUID quizId) {
+        QuizEntity quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new EntityNotFoundException("Quiz not found with id: " + quizId));
+        
+        // Return the complete quiz with correct answers (no filtering)
+        // This method should only be called by admin/teacher endpoints with proper authorization
+        return convertToDTO(quiz);
+    }
+
+    @Override
     public QuizDTO getQuizForStudent(UUID quizId) {
         QuizEntity quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new EntityNotFoundException("Quiz not found with id: " + quizId));
@@ -364,24 +374,50 @@ public class QuizServiceImpl implements QuizService {
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + quizDTO.getCreatedById()));
         quiz.setCreatedBy(creator);
 
-        // Update questions
+        // Update questions - handle existing questions properly to avoid orphan deletion error
         if (quizDTO.getQuestions() != null) {
-            List<QuizQuestionEntity> questions = quizDTO.getQuestions().stream()
-                    .map(questionDTO -> {
-                        QuizQuestionEntity question = new QuizQuestionEntity();
-                        question.setQuestionText(questionDTO.getQuestionText());
-                        try {
-                            question.setOptions(objectMapper.writeValueAsString(questionDTO.getOptions()));
-                        } catch (JsonProcessingException e) {
-                            throw new RuntimeException("Error converting options to JSON", e);
-                        }
-                        question.setCorrectAnswer(questionDTO.getCorrectAnswer());
-                        question.setPoints(questionDTO.getPoints());
-                        question.setQuiz(quiz);
-                        return question;
-                    })
-                    .collect(Collectors.toList());
-            quiz.setQuestions(questions);
+            // Get existing questions or initialize empty list
+            List<QuizQuestionEntity> existingQuestions = quiz.getQuestions();
+            if (existingQuestions == null) {
+                existingQuestions = new ArrayList<>();
+                quiz.setQuestions(existingQuestions);
+            }
+            
+            // Create a map of existing questions by ID for efficient lookup
+            Map<UUID, QuizQuestionEntity> existingQuestionsMap = existingQuestions.stream()
+                    .filter(q -> q.getQuestionId() != null)
+                    .collect(Collectors.toMap(QuizQuestionEntity::getQuestionId, q -> q));
+            
+            // Clear the list but keep the reference to avoid orphan deletion issues
+            existingQuestions.clear();
+            
+            // Process each question from the DTO
+            for (QuizDTO.QuizQuestionDTO questionDTO : quizDTO.getQuestions()) {
+                QuizQuestionEntity question;
+                
+                // Check if this is an existing question (has valid ID and exists in map)
+                if (questionDTO.getQuestionId() != null && existingQuestionsMap.containsKey(questionDTO.getQuestionId())) {
+                    // Update existing question
+                    question = existingQuestionsMap.get(questionDTO.getQuestionId());
+                } else {
+                    // Create new question
+                    question = new QuizQuestionEntity();
+                    question.setQuiz(quiz);
+                }
+                
+                // Update question fields
+                question.setQuestionText(questionDTO.getQuestionText());
+                try {
+                    question.setOptions(objectMapper.writeValueAsString(questionDTO.getOptions()));
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("Error converting options to JSON", e);
+                }
+                question.setCorrectAnswer(questionDTO.getCorrectAnswer());
+                question.setPoints(questionDTO.getPoints());
+                
+                // Add to the list
+                existingQuestions.add(question);
+            }
         }
     }
 

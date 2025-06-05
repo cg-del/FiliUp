@@ -86,6 +86,13 @@ public class QuizController {
         return ResponseEntity.ok(quiz);
     }
 
+    @GetMapping("/{quizId}/details")
+    @PreAuthorize("hasAnyAuthority('TEACHER', 'ADMIN')")
+    public ResponseEntity<QuizDTO> getQuizDetailsWithCorrectAnswers(@PathVariable UUID quizId) {
+        QuizDTO quiz = quizService.getQuizWithCorrectAnswers(quizId);
+        return ResponseEntity.ok(quiz);
+    }
+
     @GetMapping("/story/{storyId}")
     @PreAuthorize("hasAnyAuthority('STUDENT', 'TEACHER', 'ADMIN')")
     public ResponseEntity<List<QuizDTO>> getQuizzesByStoryId(
