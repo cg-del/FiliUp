@@ -2,10 +2,15 @@ package edu.cit.filiup.controller;
 
 import edu.cit.filiup.dto.LeaderboardDTO;
 import edu.cit.filiup.entity.LeaderboardEntity;
+import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.service.LeaderboardService;
+import edu.cit.filiup.service.UserService;
+import edu.cit.filiup.util.RequireRole;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,10 +21,12 @@ import java.util.UUID;
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"}, allowCredentials = "true")
 public class LeaderboardController {
     private final LeaderboardService leaderboardService;
+    private final UserService userService;
 
     @Autowired
-    public LeaderboardController(LeaderboardService leaderboardService) {
+    public LeaderboardController(LeaderboardService leaderboardService, UserService userService) {
         this.leaderboardService = leaderboardService;
+        this.userService = userService;
     }
 
     // Create new leaderboard entry
@@ -344,6 +351,42 @@ public class LeaderboardController {
         try {
             Object summary = leaderboardService.getStoryQuizSummary(storyId);
             return ResponseEntity.ok(summary);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // STUDENT-SPECIFIC ENDPOINTS
+
+    // Get classmate leaderboards for student's enrolled classes
+    @GetMapping("/student/classmates")
+    @RequireRole("STUDENT")
+    public ResponseEntity<List<LeaderboardDTO>> getStudentClassmateLeaderboards(
+            @RequestParam(required = false, defaultValue = "CLASS_QUIZ_PERFORMANCE") LeaderboardEntity.Category category,
+            @RequestParam(required = false, defaultValue = "ALL_TIME") LeaderboardEntity.TimeFrame timeFrame) {
+        try {
+            // Get current student from authentication
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            String userIdentifier = authentication.getName();
+            UserEntity currentUser = userService.getUserByEmail(userIdentifier);
+            
+            // If not found by email, try by username
+            if (currentUser == null) {
+                currentUser = userService.getUserByUsername(userIdentifier);
+            }
+            
+            if (currentUser == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+            // Get classmate leaderboards
+            List<LeaderboardDTO> leaderboards = leaderboardService.getStudentClassmateLeaderboards(
+                currentUser.getUserId(), category, timeFrame);
+            return ResponseEntity.ok(leaderboards);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

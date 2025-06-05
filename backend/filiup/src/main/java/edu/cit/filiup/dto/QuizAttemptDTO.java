@@ -23,6 +23,9 @@ public class QuizAttemptDTO {
     // Fields for resume functionality
     private Map<String, String> currentAnswers; // Map of questionId to selectedAnswer
     private Integer currentQuestionIndex;
+    
+    // Fields for quiz logs
+    private List<QuizLogDTO.LogEntryDTO> logs;
 
     // Nested DTO for quiz question responses
     public static class QuestionResponseDTO {
@@ -202,5 +205,13 @@ public class QuizAttemptDTO {
 
     public void setCurrentQuestionIndex(Integer currentQuestionIndex) {
         this.currentQuestionIndex = currentQuestionIndex;
+    }
+
+    public List<QuizLogDTO.LogEntryDTO> getLogs() {
+        return logs;
+    }
+
+    public void setLogs(List<QuizLogDTO.LogEntryDTO> logs) {
+        this.logs = logs;
     }
 } 

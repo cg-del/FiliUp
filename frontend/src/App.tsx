@@ -86,7 +86,7 @@ function App() {
               <Route 
                 path="/leaderboards" 
                 element={
-                  <ProtectedRoute allowedUserTypes={['teacher']}>
+                  <ProtectedRoute allowedUserTypes={['teacher', 'student']}>
                     <Leaderboards />
                   </ProtectedRoute>
                 } 

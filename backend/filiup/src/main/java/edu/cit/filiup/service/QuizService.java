@@ -7,6 +7,7 @@ import edu.cit.filiup.dto.QuizSubmissionResultDTO;
 import edu.cit.filiup.dto.QuizEligibilityDTO;
 import edu.cit.filiup.dto.QuizProgressDTO;
 import edu.cit.filiup.dto.QuizLogDTO;
+import edu.cit.filiup.dto.ClassAverageSummaryDTO;
 
 import java.util.List;
 import java.util.UUID;
@@ -53,4 +54,10 @@ public interface QuizService {
     
     // New method for class record matrix
     edu.cit.filiup.dto.ClassRecordDTO getClassRecordMatrix(UUID teacherId);
+    
+    // New method for class average summary
+    ClassAverageSummaryDTO getClassAverageSummary(UUID userId, String userRole);
+    
+    // New method for reports with filtering
+    List<QuizAttemptDTO> getQuizAttemptReports(UUID teacherId, String quizTitle, UUID classId, Boolean completedOnly);
 } 
