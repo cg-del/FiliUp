@@ -26,12 +26,12 @@ const ClassSelector = ({ classes, selectedClass, onClassChange, classData }: Cla
   };
 
   return (
-    <Card className="mb-6">
+    <Card className="mb-6 border-teal-200">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <GraduationCap className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-900">Select Class</h3>
+            <GraduationCap className="h-5 w-5 text-teal-600" />
+            <h3 className="font-semibold text-teal-700">Select Class</h3>
           </div>
           <Select value={selectedClass} onValueChange={onClassChange}>
             <SelectTrigger className="w-64">
@@ -43,10 +43,10 @@ const ClassSelector = ({ classes, selectedClass, onClassChange, classData }: Cla
                   <div className="flex items-center space-x-2">
                     <Users className="h-4 w-4" />
                     <div className="flex flex-col">
-                      <span>{formatClassName(classId)}</span>
-                      <span className="text-xs text-gray-500">{getClassCode(classId)}</span>
+                      <span>{classData[classId]?.name || formatClassName(classId)}</span>
+                      <span className="text-xs text-teal-500">{getClassCode(classId)}</span>
                     </div>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-teal-500">
                       ({classData[classId]?.totalStudents || 0} students)
                     </span>
                   </div>

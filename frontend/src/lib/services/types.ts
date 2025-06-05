@@ -107,6 +107,26 @@ export interface Reward {
 
 // Leaderboard types
 export interface LeaderboardEntry {
+  entryId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  score: number;
+  rank: number;
+  category: string;
+  timeFrame: string;
+  accuracyPercentage?: number;
+  averageTimeMinutes?: number;
+  totalQuizzesCompleted?: number;
+  classId?: string;
+  className?: string;
+  storyId?: string;
+  storyTitle?: string;
+  lastUpdated: string;
+}
+
+// Legacy interface for backward compatibility
+export interface LegacyLeaderboardEntry {
   studentId: string;
   username: string;
   points: number;

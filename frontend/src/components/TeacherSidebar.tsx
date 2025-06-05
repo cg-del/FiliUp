@@ -45,11 +45,11 @@ const menuItems = [
     url: "/students",
     icon: Users,
   },
-  {
-    title: "Assessments",
-    url: "/assessments",
-    icon: HelpCircle,
-  },
+  // {
+  //   title: "Assessments",
+  //   url: "/assessments",
+  //   icon: HelpCircle,
+  // },
   {
     title: "Class Record",
     url: "/class-record",

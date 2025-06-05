@@ -3,9 +3,13 @@ package edu.cit.filiup.service;
 import edu.cit.filiup.dto.LeaderboardDTO;
 import edu.cit.filiup.entity.LeaderboardEntity;
 import edu.cit.filiup.entity.UserEntity;
+import edu.cit.filiup.entity.EnrollmentEntity;
+import edu.cit.filiup.entity.ClassEntity;
 import edu.cit.filiup.repository.LeaderboardRepository;
 import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.repository.QuizAttemptRepository;
+import edu.cit.filiup.repository.EnrollmentRepository;
+import edu.cit.filiup.repository.ClassRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,20 +22,27 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.ArrayList;
 
 @Service
 public class LeaderboardService {
     private final LeaderboardRepository leaderboardRepository;
     private final UserRepository userRepository;
     private final QuizAttemptRepository quizAttemptRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final ClassRepository classRepository;
 
     @Autowired
     public LeaderboardService(LeaderboardRepository leaderboardRepository, 
                             UserRepository userRepository,
-                            QuizAttemptRepository quizAttemptRepository) {
+                            QuizAttemptRepository quizAttemptRepository,
+                            EnrollmentRepository enrollmentRepository,
+                            ClassRepository classRepository) {
         this.leaderboardRepository = leaderboardRepository;
         this.userRepository = userRepository;
         this.quizAttemptRepository = quizAttemptRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.classRepository = classRepository;
     }
 
     @Transactional
@@ -715,5 +726,99 @@ public class LeaderboardService {
         return entities.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    // STUDENT-SPECIFIC LEADERBOARD METHODS
+
+    /**
+     * Get leaderboards for classes where the student is enrolled
+     * Only shows classmates' average scores from classes the student is enrolled in
+     */
+    public List<LeaderboardDTO> getStudentClassmateLeaderboards(UUID studentId, 
+                                                               LeaderboardEntity.Category category,
+                                                               LeaderboardEntity.TimeFrame timeFrame) {
+        // Verify student exists and is a student
+        UserEntity student = userRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+        
+        if (!"STUDENT".equals(student.getUserRole())) {
+            throw new RuntimeException("Only students can view classmate leaderboards");
+        }
+
+        // Get all accepted enrollments for this student
+        List<EnrollmentEntity> studentEnrollments = enrollmentRepository.findByUserIdAndIsAcceptedTrue(studentId);
+        
+        if (studentEnrollments.isEmpty()) {
+            return new ArrayList<>(); // Student is not enrolled in any classes
+        }
+
+        // Get class IDs from enrollment class codes
+        List<String> classCodes = studentEnrollments.stream()
+                .map(EnrollmentEntity::getClassCode)
+                .collect(Collectors.toList());
+        
+        List<ClassEntity> enrolledClasses = classRepository.findByClassCodeInAndIsActiveTrue(classCodes);
+        List<UUID> classIds = enrolledClasses.stream()
+                .map(ClassEntity::getClassId)
+                .collect(Collectors.toList());
+
+        if (classIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Get leaderboard entries for all enrolled classes
+        List<LeaderboardEntity> classmateEntries = new ArrayList<>();
+        for (UUID classId : classIds) {
+            // Generate/update leaderboard for this class first
+            generateClassQuizLeaderboard(classId, timeFrame);
+            
+            // Get leaderboard entries for this class
+            List<LeaderboardEntity> classEntries = leaderboardRepository
+                    .findByClassIdAndCategoryAndTimeFrameOrderByRankAsc(classId, category, timeFrame);
+            
+            // Filter out entries where students are not actually enrolled and accepted in this class
+            List<LeaderboardEntity> filteredEntries = classEntries.stream()
+                    .filter(entry -> {
+                        // Check if the student is enrolled and accepted in this specific class
+                        ClassEntity classEntity = enrolledClasses.stream()
+                                .filter(cls -> cls.getClassId().equals(classId))
+                                .findFirst()
+                                .orElse(null);
+                        
+                        if (classEntity == null) {
+                            return false;
+                        }
+                        
+                        return enrollmentRepository.findByUserIdAndClassCode(
+                                entry.getStudent().getUserId(), 
+                                classEntity.getClassCode()
+                        ).map(enrollment -> Boolean.TRUE.equals(enrollment.getIsAccepted())).orElse(false);
+                    })
+                    .collect(Collectors.toList());
+            
+            classmateEntries.addAll(filteredEntries);
+        }
+
+        // Convert to DTOs and include class information
+        return classmateEntries.stream()
+                .map(this::convertToDTOWithClassInfo)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Convert LeaderboardEntity to DTO with class information included
+     */
+    private LeaderboardDTO convertToDTOWithClassInfo(LeaderboardEntity entity) {
+        LeaderboardDTO dto = convertToDTO(entity);
+        
+        // Add class information if available
+        if (entity.getClassId() != null) {
+            Optional<ClassEntity> classOptional = classRepository.findById(entity.getClassId());
+            if (classOptional.isPresent()) {
+                dto.setClassName(classOptional.get().getClassName());
+            }
+        }
+        
+        return dto;
     }
 }

@@ -77,7 +77,7 @@ const ClassRecord: React.FC = () => {
     const rows = filteredStudents.map(student => {
       const quizScores = filteredQuizTitles.map(quizTitle => {
         const scoreInfo = student.quizScores[quizTitle];
-        return scoreInfo ? `${scoreInfo.score}/${scoreInfo.maxScore} (${scoreInfo.percentage.toFixed(1)}%)` : 'N/A';
+        return scoreInfo ? scoreInfo.score : 'N/A';
       });
       
       // Calculate average for filtered quizzes only
@@ -525,27 +525,7 @@ const ClassRecord: React.FC = () => {
               </Card>
             )}
 
-            {/* Class Information */}
-            {!loading && classRecordData && Object.keys(classRecordData.classInfo).length > 0 && (
-              <Card className="mt-6 bg-white/80 backdrop-blur-sm border-teal-100">
-                <CardHeader>
-                  <CardTitle className="text-teal-700">Classes Overview</CardTitle>
-                  <CardDescription className="text-teal-600">
-                    Summary of all classes in the system
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(classRecordData.classInfo).map(([classId, className]) => (
-                      <div key={classId} className="p-4 border border-teal-200 rounded-lg bg-gradient-to-br from-teal-50 to-cyan-50 hover:from-teal-100 hover:to-cyan-100 transition-colors">
-                        <h3 className="font-semibold text-teal-700">{className}</h3>
-                        <p className="text-sm text-teal-600">Class ID: {classId}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+         
           </div>
         </div>
       </SidebarInset>

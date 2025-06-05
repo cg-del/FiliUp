@@ -31,4 +31,15 @@ export const leaderboardService = {
     const response = await api.get('/leaderboard/monthly');
     return response.data;
   },
+
+  // New endpoint for students to view their classmates' leaderboards
+  getStudentClassmateLeaderboards: async (
+    category: string = 'CLASS_QUIZ_PERFORMANCE',
+    timeFrame: string = 'ALL_TIME'
+  ): Promise<ApiResponse<LeaderboardEntry[]>> => {
+    const response = await api.get(`/leaderboard/student/classmates`, {
+      params: { category, timeFrame }
+    });
+    return response.data;
+  },
 }; 

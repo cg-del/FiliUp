@@ -84,6 +84,7 @@ export interface QuizAttempt {
   responses?: QuestionResponse[];
   currentAnswers?: Record<string, string>; // Plain object from JSON, not Map
   currentQuestionIndex?: number;
+  logs?: QuizLogEntry[]; // Add logs to the interface
 }
 
 export interface QuestionResponse {
@@ -415,6 +416,41 @@ export const quizService = {
   // Get class record matrix
   async getClassRecordMatrix(): Promise<ClassRecordMatrix> {
     const response = await api.get('/v1/quizzes/class-record-matrix');
+    return response.data;
+  },
+
+  // Get class average summary
+  async getClassAverageSummary(): Promise<{
+    totalAverageScore: number;
+    totalAttempts: number;
+    studentAttempts: {
+      attemptId: string;
+      studentName: string;
+      studentId: string;
+      score: number;
+      maxScore: number;
+      percentage: number;
+      timeTakenMinutes: number;
+      quizTitle: string;
+      quizId: string;
+    }[];
+  }> {
+    const response = await api.get('/v1/quizzes/class-average-summary');
+    return response.data;
+  },
+
+  // New method for reports with filtering
+  async getQuizAttemptReports(filters?: {
+    quizTitle?: string;
+    classId?: string;
+    completedOnly?: boolean;
+  }): Promise<QuizAttempt[]> {
+    const params = new URLSearchParams();
+    if (filters?.quizTitle) params.append('quizTitle', filters.quizTitle);
+    if (filters?.classId) params.append('classId', filters.classId);
+    if (filters?.completedOnly !== undefined) params.append('completedOnly', filters.completedOnly.toString());
+    
+    const response = await api.get(`/v1/quizzes/reports/attempts?${params.toString()}`);
     return response.data;
   },
 }; 

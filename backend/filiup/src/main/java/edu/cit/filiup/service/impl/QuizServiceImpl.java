@@ -7,6 +7,7 @@ import edu.cit.filiup.dto.QuizSubmissionResultDTO;
 import edu.cit.filiup.dto.QuizEligibilityDTO;
 import edu.cit.filiup.dto.QuizProgressDTO;
 import edu.cit.filiup.dto.QuizLogDTO;
+import edu.cit.filiup.dto.ClassAverageSummaryDTO;
 import edu.cit.filiup.entity.QuizAttemptEntity;
 import edu.cit.filiup.entity.QuizEntity;
 import edu.cit.filiup.entity.QuizQuestionEntity;
@@ -53,6 +54,7 @@ public class QuizServiceImpl implements QuizService {
     private final ObjectMapper objectMapper;
     private final QuizTimerService quizTimerService;
     private final edu.cit.filiup.repository.EnrollmentRepository enrollmentRepository;
+    private final edu.cit.filiup.repository.ClassRepository classRepository;
 
     @Autowired
     public QuizServiceImpl(QuizRepository quizRepository, 
@@ -63,7 +65,8 @@ public class QuizServiceImpl implements QuizService {
                           QuizScoringService quizScoringService,
                           ObjectMapper objectMapper,
                           QuizTimerService quizTimerService,
-                          edu.cit.filiup.repository.EnrollmentRepository enrollmentRepository) {
+                          edu.cit.filiup.repository.EnrollmentRepository enrollmentRepository,
+                          edu.cit.filiup.repository.ClassRepository classRepository) {
         this.quizRepository = quizRepository;
         this.quizAttemptRepository = quizAttemptRepository;
         this.storyRepository = storyRepository;
@@ -73,6 +76,7 @@ public class QuizServiceImpl implements QuizService {
         this.objectMapper = objectMapper;
         this.quizTimerService = quizTimerService;
         this.enrollmentRepository = enrollmentRepository;
+        this.classRepository = classRepository;
     }
 
     @Override
@@ -492,6 +496,19 @@ public class QuizServiceImpl implements QuizService {
             }
         }
         
+        // Parse logs if available
+        if (attempt.getLogs() != null && !attempt.getLogs().isEmpty()) {
+            try {
+                List<QuizLogDTO.LogEntryDTO> logEntries = objectMapper.readValue(
+                    attempt.getLogs(),
+                    new TypeReference<List<QuizLogDTO.LogEntryDTO>>() {}
+                );
+                dto.setLogs(logEntries);
+            } catch (JsonProcessingException e) {
+                System.err.println("Error parsing quiz logs JSON: " + e.getMessage());
+            }
+        }
+        
         return dto;
     }
 
@@ -851,5 +868,133 @@ public class QuizServiceImpl implements QuizService {
         classRecordDTO.setQuizMetadata(quizMetadata);
         
         return classRecordDTO;
+    }
+    
+    @Override
+    public ClassAverageSummaryDTO getClassAverageSummary(UUID userId, String userRole) {
+        List<QuizAttemptEntity> filteredAttempts = new ArrayList<>();
+        
+        if ("STUDENT".equals(userRole)) {
+            // For students: get their enrollments first, then get attempts from those classes
+            List<edu.cit.filiup.entity.EnrollmentEntity> studentEnrollments = 
+                enrollmentRepository.findByUserIdAndIsAcceptedTrue(userId);
+            
+            for (edu.cit.filiup.entity.EnrollmentEntity enrollment : studentEnrollments) {
+                String classCode = enrollment.getClassCode();
+                
+                // Find the class by classCode to get the classId
+                Optional<edu.cit.filiup.entity.ClassEntity> classEntityOpt = 
+                    classRepository.findByClassCode(classCode);
+                
+                if (classEntityOpt.isPresent()) {
+                    UUID classId = classEntityOpt.get().getClassId();
+                    
+                    // Get all completed quiz attempts for this class
+                    List<QuizAttemptEntity> classAttempts = quizAttemptRepository.findCompletedAttemptsByClass(
+                        classId, null);
+                    
+                    // Filter to only include enrolled and accepted students in this class
+                    for (QuizAttemptEntity attempt : classAttempts) {
+                        UUID attemptStudentId = attempt.getStudent().getUserId();
+                        
+                        Optional<edu.cit.filiup.entity.EnrollmentEntity> attemptStudentEnrollment = 
+                            enrollmentRepository.findByUserIdAndClassCode(attemptStudentId, classCode);
+                        
+                        if (attemptStudentEnrollment.isPresent() && Boolean.TRUE.equals(attemptStudentEnrollment.get().getIsAccepted())) {
+                            filteredAttempts.add(attempt);
+                        }
+                    }
+                }
+            }
+        } else {
+            // For teachers/admins: get attempts from classes they teach
+            List<QuizAttemptEntity> attempts = quizAttemptRepository.findCompletedQuizAttemptsByTeacherClasses(userId);
+            
+            // Filter attempts to only include students who are enrolled and accepted in the specific class
+            for (QuizAttemptEntity attempt : attempts) {
+                String classCode = attempt.getQuiz().getStory().getClassEntity().getClassCode();
+                UUID studentId = attempt.getStudent().getUserId();
+                
+                // Check if student is enrolled and accepted in this specific class
+                Optional<edu.cit.filiup.entity.EnrollmentEntity> enrollment = 
+                    enrollmentRepository.findByUserIdAndClassCode(studentId, classCode);
+                
+                if (enrollment.isPresent() && Boolean.TRUE.equals(enrollment.get().getIsAccepted())) {
+                    filteredAttempts.add(attempt);
+                }
+            }
+        }
+        
+        // Calculate total average score
+        double totalScore = 0.0;
+        double totalMaxScore = 0.0;
+        
+        for (QuizAttemptEntity attempt : filteredAttempts) {
+            if (attempt.getScore() != null && attempt.getMaxPossibleScore() != null) {
+                totalScore += attempt.getScore();
+                totalMaxScore += attempt.getMaxPossibleScore();
+            }
+        }
+        
+        Double averagePercentage = (totalMaxScore > 0) ? (totalScore / totalMaxScore) * 100 : 0.0;
+        
+        // Create student attempt summaries
+        List<ClassAverageSummaryDTO.StudentAttemptSummaryDTO> studentAttempts = filteredAttempts.stream()
+                .map(attempt -> {
+                    double percentage = attempt.getMaxPossibleScore() > 0 
+                        ? (attempt.getScore() / attempt.getMaxPossibleScore()) * 100 
+                        : 0.0;
+                    return new ClassAverageSummaryDTO.StudentAttemptSummaryDTO(
+                            attempt.getAttemptId(),
+                            attempt.getStudent().getUserName(),
+                            attempt.getStudent().getUserId(),
+                            attempt.getScore(),
+                            attempt.getMaxPossibleScore(),
+                            percentage,
+                            attempt.getTimeTakenMinutes(),
+                            attempt.getQuiz().getTitle(),
+                            attempt.getQuiz().getQuizId()
+                    );
+                })
+                .collect(Collectors.toList());
+        
+        // Sort by student name
+        studentAttempts.sort(Comparator.comparing(ClassAverageSummaryDTO.StudentAttemptSummaryDTO::getStudentName));
+        
+        return new ClassAverageSummaryDTO(averagePercentage, filteredAttempts.size(), studentAttempts);
+    }
+    
+    @Override
+    public List<QuizAttemptDTO> getQuizAttemptReports(UUID teacherId, String quizTitle, UUID classId, Boolean completedOnly) {
+        // Start with all quiz attempts by teacher
+        List<QuizAttemptEntity> attempts = quizAttemptRepository.findQuizAttemptsByTeacher(teacherId);
+        
+        // Apply filters
+        return attempts.stream()
+                .filter(attempt -> {
+                    // Filter by quiz title if specified
+                    if (quizTitle != null && !quizTitle.trim().isEmpty()) {
+                        return attempt.getQuiz().getTitle().toLowerCase()
+                                .contains(quizTitle.toLowerCase());
+                    }
+                    return true;
+                })
+                .filter(attempt -> {
+                    // Filter by class if specified
+                    if (classId != null) {
+                        return classId.equals(attempt.getQuiz().getStory().getClassEntity().getClassId());
+                    }
+                    return true;
+                })
+                .filter(attempt -> {
+                    // Filter by completion status if specified
+                    if (completedOnly != null) {
+                        return completedOnly.equals(attempt.getIsCompleted());
+                    }
+                    return true;
+                })
+                .map(this::convertToAttemptDTO)
+                .sorted(Comparator.comparing(QuizAttemptDTO::getStartedAt).reversed())
+                .collect(Collectors.toList());
     }
 } 

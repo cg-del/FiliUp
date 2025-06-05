@@ -7,6 +7,7 @@ import edu.cit.filiup.dto.QuizSubmissionResultDTO;
 import edu.cit.filiup.dto.QuizEligibilityDTO;
 import edu.cit.filiup.dto.QuizProgressDTO;
 import edu.cit.filiup.dto.QuizLogDTO;
+import edu.cit.filiup.dto.ClassAverageSummaryDTO;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.service.QuizService;
@@ -488,5 +489,52 @@ public class QuizController {
         
         edu.cit.filiup.dto.ClassRecordDTO classRecord = quizService.getClassRecordMatrix(user.getUserId());
         return ResponseEntity.ok(classRecord);
+    }
+    
+    @GetMapping("/class-average-summary")
+    @PreAuthorize("hasAnyAuthority('STUDENT', 'TEACHER', 'ADMIN')")
+    public ResponseEntity<ClassAverageSummaryDTO> getClassAverageSummary(JwtAuthenticationToken jwtAuthToken) {
+        // Extract user email/username from token
+        String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
+        String userRole = jwtAuthToken.getToken().getClaim("role");
+        
+        // Find user in database - try email first, then username
+        UserEntity user = userRepository.findByUserEmail(userIdentifier);
+        if (user == null) {
+            user = userRepository.findByUserName(userIdentifier);
+        }
+        
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        
+        ClassAverageSummaryDTO summary = quizService.getClassAverageSummary(user.getUserId(), userRole);
+        return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/reports/attempts")
+    @PreAuthorize("hasAnyAuthority('TEACHER', 'ADMIN')")
+    public ResponseEntity<List<QuizAttemptDTO>> getQuizAttemptReports(
+            @RequestParam(required = false) String quizTitle,
+            @RequestParam(required = false) UUID classId,
+            @RequestParam(required = false) Boolean completedOnly,
+            JwtAuthenticationToken jwtAuthToken) {
+        
+        // Extract user email/username from token
+        String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
+        
+        // Find user in database - try email first, then username
+        UserEntity user = userRepository.findByUserEmail(userIdentifier);
+        if (user == null) {
+            user = userRepository.findByUserName(userIdentifier);
+        }
+        
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        
+        List<QuizAttemptDTO> attempts = quizService.getQuizAttemptReports(
+            user.getUserId(), quizTitle, classId, completedOnly);
+        return ResponseEntity.ok(attempts);
     }
 }
