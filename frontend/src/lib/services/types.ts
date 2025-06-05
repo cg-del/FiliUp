@@ -19,6 +19,12 @@ export interface User {
   role: 'STUDENT' | 'TEACHER' | 'ADMIN';
 }
 
+export interface Student {
+  id: string;
+  user: User;
+  studentProfile?: StudentProfile;
+}
+
 export interface LoginCredentials {
   userName: string;
   userPassword: string;

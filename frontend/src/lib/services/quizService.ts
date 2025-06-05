@@ -159,6 +159,37 @@ export interface QuizLog {
   logEntries: QuizLogEntry[];
 }
 
+export interface ClassRecordMatrix {
+  students: StudentRecord[];
+  quizTitles: string[];
+  classInfo: Record<string, string>; // classId -> className
+  quizMetadata: Record<string, QuizMetadata>; // quizTitle -> quiz metadata
+}
+
+export interface StudentRecord {
+  studentId: string;
+  studentName: string;
+  quizScores: Record<string, ScoreInfo>; // quizTitle -> score info
+}
+
+export interface ScoreInfo {
+  score: number | null;
+  maxScore: number;
+  percentage: number;
+  storyTitle: string;
+  storyId: string;
+  classId: string;
+  className: string;
+}
+
+export interface QuizMetadata {
+  quizTitle: string;
+  storyTitle: string;
+  storyId: string;
+  classId: string;
+  className: string;
+}
+
 export const quizService = {
   getAllQuizzes: async (): Promise<ApiResponse<QuizData[]>> => {
     const response = await api.get('/quizzes');
@@ -348,5 +379,29 @@ export const quizService = {
       severity,
       questionIndex
     };
-  }
+  },
+
+  // Get quiz attempts for all classes taught by the teacher
+  async getQuizAttemptsForTeacher(): Promise<QuizAttempt[]> {
+    const response = await api.get('/v1/quizzes/attempts/teacher');
+    return response.data;
+  },
+
+  // Get quiz attempts for a specific class
+  async getQuizAttemptsByClass(classId: string): Promise<QuizAttempt[]> {
+    const response = await api.get(`/v1/quizzes/attempts/class/${classId}`);
+    return response.data;
+  },
+
+  // Get quiz attempts grouped for teacher
+  async getQuizAttemptsGroupedForTeacher(): Promise<Record<string, Record<string, QuizAttempt[]>>> {
+    const response = await api.get('/v1/quizzes/attempts/teacher/grouped');
+    return response.data;
+  },
+  
+  // Get class record matrix
+  async getClassRecordMatrix(): Promise<ClassRecordMatrix> {
+    const response = await api.get('/v1/quizzes/class-record-matrix');
+    return response.data;
+  },
 }; 

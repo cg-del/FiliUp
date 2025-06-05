@@ -433,4 +433,53 @@ public class QuizController {
             return ResponseEntity.notFound().build();
         }
     }
+    
+    // New endpoints for teacher quiz attempts
+    
+    @GetMapping("/attempts/teacher")
+    @PreAuthorize("hasAnyAuthority('TEACHER', 'ADMIN')")
+    public ResponseEntity<List<QuizAttemptDTO>> getQuizAttemptsByTeacher(JwtAuthenticationToken jwtAuthToken) {
+        // Extract user email/username from token
+        String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
+        
+        // Find user in database - try email first, then username
+        UserEntity user = userRepository.findByUserEmail(userIdentifier);
+        if (user == null) {
+            user = userRepository.findByUserName(userIdentifier);
+        }
+        
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        
+        List<QuizAttemptDTO> attempts = quizService.getQuizAttemptsByTeacher(user.getUserId());
+        return ResponseEntity.ok(attempts);
+    }
+    
+    @GetMapping("/attempts/class/{classId}")
+    @PreAuthorize("hasAnyAuthority('TEACHER', 'ADMIN')")
+    public ResponseEntity<List<QuizAttemptDTO>> getQuizAttemptsByClass(@PathVariable UUID classId) {
+        List<QuizAttemptDTO> attempts = quizService.getQuizAttemptsByClass(classId);
+        return ResponseEntity.ok(attempts);
+    }
+    
+    @GetMapping("/class-record-matrix")
+    @PreAuthorize("hasAnyAuthority('TEACHER', 'ADMIN')")
+    public ResponseEntity<edu.cit.filiup.dto.ClassRecordDTO> getClassRecordMatrix(JwtAuthenticationToken jwtAuthToken) {
+        // Extract user email/username from token
+        String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
+        
+        // Find user in database - try email first, then username
+        UserEntity user = userRepository.findByUserEmail(userIdentifier);
+        if (user == null) {
+            user = userRepository.findByUserName(userIdentifier);
+        }
+        
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        
+        edu.cit.filiup.dto.ClassRecordDTO classRecord = quizService.getClassRecordMatrix(user.getUserId());
+        return ResponseEntity.ok(classRecord);
+    }
 }

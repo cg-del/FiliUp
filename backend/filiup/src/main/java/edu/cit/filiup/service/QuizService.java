@@ -43,4 +43,11 @@ public interface QuizService {
     // New methods for quiz logging
     void logSuspiciousAction(UUID attemptId, QuizLogDTO.LogEntryDTO logEntry, UUID studentId);
     QuizLogDTO getQuizLogs(UUID attemptId);
+    
+    // New methods for teacher quiz attempts
+    List<QuizAttemptDTO> getQuizAttemptsByTeacher(UUID teacherId);
+    List<QuizAttemptDTO> getQuizAttemptsByClass(UUID classId);
+    
+    // New method for class record matrix
+    edu.cit.filiup.dto.ClassRecordDTO getClassRecordMatrix(UUID teacherId);
 } 

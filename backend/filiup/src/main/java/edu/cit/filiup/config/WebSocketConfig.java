@@ -1,6 +1,7 @@
 package edu.cit.filiup.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -22,9 +23,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Register the "/ws" endpoint for WebSocket connections
+        // Register the "/ws" endpoint for WebSocket connections with authentication interceptor
         registry.addEndpoint("/ws")
                 .setAllowedOrigins("http://localhost:3000", "http://localhost:5173")
+                .addInterceptors(new WebSocketAuthInterceptor())
                 .withSockJS(); // Enable SockJS fallback options
+        
+        // Also register a native WebSocket endpoint without SockJS for better authentication handling
+        registry.addEndpoint("/ws")
+                .setAllowedOrigins("http://localhost:3000", "http://localhost:5173")
+                .addInterceptors(new WebSocketAuthInterceptor());
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(new WebSocketChannelInterceptor());
     }
 } 

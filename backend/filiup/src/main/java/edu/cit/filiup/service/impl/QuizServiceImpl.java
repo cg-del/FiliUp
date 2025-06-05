@@ -36,6 +36,10 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Comparator;
+import java.util.Optional;
 
 @Service
 public class QuizServiceImpl implements QuizService {
@@ -48,6 +52,7 @@ public class QuizServiceImpl implements QuizService {
     private final QuizScoringService quizScoringService;
     private final ObjectMapper objectMapper;
     private final QuizTimerService quizTimerService;
+    private final edu.cit.filiup.repository.EnrollmentRepository enrollmentRepository;
 
     @Autowired
     public QuizServiceImpl(QuizRepository quizRepository, 
@@ -57,7 +62,8 @@ public class QuizServiceImpl implements QuizService {
                           StudentProfileService studentProfileService,
                           QuizScoringService quizScoringService,
                           ObjectMapper objectMapper,
-                          QuizTimerService quizTimerService) {
+                          QuizTimerService quizTimerService,
+                          edu.cit.filiup.repository.EnrollmentRepository enrollmentRepository) {
         this.quizRepository = quizRepository;
         this.quizAttemptRepository = quizAttemptRepository;
         this.storyRepository = storyRepository;
@@ -66,6 +72,7 @@ public class QuizServiceImpl implements QuizService {
         this.quizScoringService = quizScoringService;
         this.objectMapper = objectMapper;
         this.quizTimerService = quizTimerService;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     @Override
@@ -678,5 +685,135 @@ public class QuizServiceImpl implements QuizService {
         }
         
         return logDTO;
+    }
+    
+    // New methods for teacher quiz attempts
+    
+    @Override
+    public List<QuizAttemptDTO> getQuizAttemptsByTeacher(UUID teacherId) {
+        List<QuizAttemptEntity> attempts = quizAttemptRepository.findQuizAttemptsByTeacher(teacherId);
+        return attempts.stream()
+                .map(this::convertToAttemptDTO)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<QuizAttemptDTO> getQuizAttemptsByClass(UUID classId) {
+        List<QuizAttemptEntity> attempts = quizAttemptRepository.findQuizAttemptsByClass(classId);
+        return attempts.stream()
+                .map(this::convertToAttemptDTO)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public edu.cit.filiup.dto.ClassRecordDTO getClassRecordMatrix(UUID teacherId) {
+        // Get all completed quiz attempts for students in teacher's classes
+        List<QuizAttemptEntity> attempts = quizAttemptRepository.findCompletedQuizAttemptsByTeacherClasses(teacherId);
+        
+        // Filter attempts to only include students who are enrolled and accepted in the specific class
+        List<QuizAttemptEntity> filteredAttempts = new ArrayList<>();
+        for (QuizAttemptEntity attempt : attempts) {
+            String classCode = attempt.getQuiz().getStory().getClassEntity().getClassCode();
+            UUID studentId = attempt.getStudent().getUserId();
+            
+            // Check if student is enrolled and accepted in this specific class
+            Optional<edu.cit.filiup.entity.EnrollmentEntity> enrollment = 
+                enrollmentRepository.findByUserIdAndClassCode(studentId, classCode);
+            
+            if (enrollment.isPresent() && Boolean.TRUE.equals(enrollment.get().getIsAccepted())) {
+                filteredAttempts.add(attempt);
+            }
+        }
+        
+        // Group attempts by student and quiz
+        Map<String, Map<String, QuizAttemptEntity>> studentQuizMatrix = new HashMap<>();
+        Set<String> allQuizTitles = new HashSet<>();
+        Map<String, String> classInfo = new HashMap<>();
+        Map<String, edu.cit.filiup.dto.ClassRecordDTO.QuizMetadataDTO> quizMetadata = new HashMap<>();
+        
+        for (QuizAttemptEntity attempt : filteredAttempts) {
+            String studentName = attempt.getStudent().getUserName();
+            String quizTitle = attempt.getQuiz().getTitle();
+            String storyTitle = attempt.getQuiz().getStory().getTitle();
+            String storyId = attempt.getQuiz().getStory().getStoryId().toString();
+            String classId = attempt.getQuiz().getStory().getClassEntity().getClassId().toString();
+            String className = attempt.getQuiz().getStory().getClassEntity().getClassName();
+            
+            // Store class info
+            classInfo.put(classId, className);
+            
+            // Store quiz metadata
+            if (!quizMetadata.containsKey(quizTitle)) {
+                quizMetadata.put(quizTitle, new edu.cit.filiup.dto.ClassRecordDTO.QuizMetadataDTO(
+                    quizTitle, storyTitle, storyId, classId, className
+                ));
+            }
+            
+            // Group by student
+            studentQuizMatrix.computeIfAbsent(studentName, k -> new HashMap<>())
+                    .put(quizTitle, attempt);
+            
+            allQuizTitles.add(quizTitle);
+        }
+        
+        // Convert to DTO format
+        List<edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO> studentRecords = new ArrayList<>();
+        
+        for (Map.Entry<String, Map<String, QuizAttemptEntity>> studentEntry : studentQuizMatrix.entrySet()) {
+            String studentName = studentEntry.getKey();
+            Map<String, QuizAttemptEntity> studentAttempts = studentEntry.getValue();
+            
+            edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO studentRecord = 
+                    new edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO();
+            studentRecord.setStudentName(studentName);
+            
+            // Get student ID from any attempt
+            QuizAttemptEntity anyAttempt = studentAttempts.values().iterator().next();
+            studentRecord.setStudentId(anyAttempt.getStudent().getUserId().toString());
+            
+            // Create quiz scores map
+            Map<String, edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO.ScoreDTO> quizScores = new HashMap<>();
+            
+            for (String quizTitle : allQuizTitles) {
+                QuizAttemptEntity attempt = studentAttempts.get(quizTitle);
+                if (attempt != null) {
+                    String storyTitle = attempt.getQuiz().getStory().getTitle();
+                    String storyId = attempt.getQuiz().getStory().getStoryId().toString();
+                    String classId = attempt.getQuiz().getStory().getClassEntity().getClassId().toString();
+                    String className = attempt.getQuiz().getStory().getClassEntity().getClassName();
+                    
+                    edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO.ScoreDTO scoreDTO = 
+                            new edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO.ScoreDTO(
+                                    attempt.getScore(), 
+                                    attempt.getMaxPossibleScore(),
+                                    storyTitle,
+                                    storyId,
+                                    classId,
+                                    className
+                            );
+                    quizScores.put(quizTitle, scoreDTO);
+                }
+                // If no attempt, leave null in the map (will be handled in frontend)
+            }
+            
+            studentRecord.setQuizScores(quizScores);
+            studentRecords.add(studentRecord);
+        }
+        
+        // Sort students by name
+        studentRecords.sort(Comparator.comparing(edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO::getStudentName));
+        
+        // Sort quiz titles
+        List<String> sortedQuizTitles = new ArrayList<>(allQuizTitles);
+        sortedQuizTitles.sort(String::compareTo);
+        
+        // Create final DTO
+        edu.cit.filiup.dto.ClassRecordDTO classRecordDTO = new edu.cit.filiup.dto.ClassRecordDTO();
+        classRecordDTO.setStudents(studentRecords);
+        classRecordDTO.setQuizTitles(sortedQuizTitles);
+        classRecordDTO.setClassInfo(classInfo);
+        classRecordDTO.setQuizMetadata(quizMetadata);
+        
+        return classRecordDTO;
     }
 } 

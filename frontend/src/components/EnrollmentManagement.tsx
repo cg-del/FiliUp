@@ -1,21 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Check, X, Users } from 'lucide-react';
+import { UserPlus, Check, X, Users, Wifi, WifiOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { enrollmentService, type PendingEnrollment } from '@/lib/services/enrollmentService';
+import { enrollmentWebSocketService, type EnrollmentWebSocketMessage } from '@/lib/services/enrollmentWebSocketService';
 
 interface EnrollmentManagementProps {
   selectedClassId: string;
 }
 
 const EnrollmentManagement = ({ selectedClassId }: EnrollmentManagementProps) => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [pendingEnrollments, setPendingEnrollments] = useState<PendingEnrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set());
+  const [webSocketConnected, setWebSocketConnected] = useState(false);
 
   // Helper function to check if the class ID is a valid UUID (real class) vs mock data
   const isValidClassId = (classId: string): boolean => {
@@ -23,6 +26,75 @@ const EnrollmentManagement = ({ selectedClassId }: EnrollmentManagementProps) =>
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(classId);
   };
+
+  // WebSocket message handler
+  const handleWebSocketMessage = useCallback((message: EnrollmentWebSocketMessage) => {
+    console.log('Received enrollment WebSocket message:', message);
+    
+    // Only handle messages for the currently selected class
+    if (message.classId !== selectedClassId) {
+      return;
+    }
+
+    switch (message.type) {
+      case 'NEW_ENROLLMENT':
+        if (message.enrollment) {
+          // Add new enrollment to the list
+          setPendingEnrollments(prev => {
+            // Check if enrollment already exists to avoid duplicates
+            const exists = prev.some(e => e.id === message.enrollment!.id);
+            if (!exists) {
+              toast({
+                title: "New Enrollment Request",
+                description: message.message,
+              });
+              return [message.enrollment!, ...prev];
+            }
+            return prev;
+          });
+        }
+        break;
+        
+      case 'ENROLLMENT_ACCEPTED':
+        // This would be handled if we want to show notifications about accepted enrollments
+        // For now, we'll just log it
+        console.log('Enrollment accepted:', message);
+        break;
+        
+      default:
+        console.log('Unknown enrollment message type:', message.type);
+    }
+  }, [selectedClassId, toast]);
+
+  // Setup WebSocket connection for teachers
+  useEffect(() => {
+    const setupWebSocket = async () => {
+      if (!user || user.type !== 'teacher') {
+        return;
+      }
+
+      try {
+        await enrollmentWebSocketService.connect(user.id, user.type);
+        enrollmentWebSocketService.addMessageHandler(handleWebSocketMessage);
+        setWebSocketConnected(true);
+        console.log('Enrollment WebSocket connected successfully');
+      } catch (error) {
+        console.warn('Enrollment WebSocket connection failed:', error);
+        setWebSocketConnected(false);
+      }
+    };
+
+    setupWebSocket();
+
+    // Cleanup on unmount
+    return () => {
+      if (webSocketConnected) {
+        enrollmentWebSocketService.removeMessageHandler(handleWebSocketMessage);
+        enrollmentWebSocketService.disconnect();
+        setWebSocketConnected(false);
+      }
+    };
+  }, [user, handleWebSocketMessage, webSocketConnected]);
 
   // Fetch pending enrollments when selectedClassId changes
   useEffect(() => {
@@ -123,9 +195,18 @@ const EnrollmentManagement = ({ selectedClassId }: EnrollmentManagementProps) =>
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <UserPlus className="h-5 w-5 text-teal-600" />
-            <span>Enrollment Requests</span>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <UserPlus className="h-5 w-5 text-teal-600" />
+              <span>Enrollment Requests</span>
+            </div>
+            <div className="flex items-center space-x-2" title={webSocketConnected ? "Real-time updates active" : "Real-time updates inactive"}>
+              {webSocketConnected ? (
+                <Wifi className="h-4 w-4 text-green-500" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-gray-400" />
+              )}
+            </div>
           </CardTitle>
           <CardDescription>
             Manage student enrollment requests for this class
@@ -146,9 +227,18 @@ const EnrollmentManagement = ({ selectedClassId }: EnrollmentManagementProps) =>
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <UserPlus className="h-5 w-5 text-teal-600" />
-            <span>Enrollment Requests</span>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <UserPlus className="h-5 w-5 text-teal-600" />
+              <span>Enrollment Requests</span>
+            </div>
+            <div className="flex items-center space-x-2" title={webSocketConnected ? "Real-time updates active" : "Real-time updates inactive"}>
+              {webSocketConnected ? (
+                <Wifi className="h-4 w-4 text-green-500" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-gray-400" />
+              )}
+            </div>
           </CardTitle>
           <CardDescription>
             Manage student enrollment requests for this class
@@ -169,9 +259,18 @@ const EnrollmentManagement = ({ selectedClassId }: EnrollmentManagementProps) =>
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <UserPlus className="h-5 w-5 text-teal-600" />
-            <span>Enrollment Requests</span>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <UserPlus className="h-5 w-5 text-teal-600" />
+              <span>Enrollment Requests</span>
+            </div>
+            <div className="flex items-center space-x-2" title={webSocketConnected ? "Real-time updates active" : "Real-time updates inactive"}>
+              {webSocketConnected ? (
+                <Wifi className="h-4 w-4 text-green-500" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-gray-400" />
+              )}
+            </div>
           </CardTitle>
           <CardDescription>
             Manage student enrollment requests for this class
@@ -181,6 +280,9 @@ const EnrollmentManagement = ({ selectedClassId }: EnrollmentManagementProps) =>
           <div className="text-center py-8 text-gray-500">
             <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <p>No pending enrollment requests</p>
+            {webSocketConnected && (
+              <p className="text-sm mt-2 text-teal-600">🔄 Real-time updates are active</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -195,10 +297,22 @@ const EnrollmentManagement = ({ selectedClassId }: EnrollmentManagementProps) =>
             <UserPlus className="h-5 w-5 text-teal-600" />
             <span>Enrollment Requests</span>
           </div>
-          <Badge variant="secondary">{pendingEnrollments.length} pending</Badge>
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary">{pendingEnrollments.length} pending</Badge>
+            <div title={webSocketConnected ? "Real-time updates active" : "Real-time updates inactive"}>
+              {webSocketConnected ? (
+                <Wifi className="h-4 w-4 text-green-500" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-gray-400" />
+              )}
+            </div>
+          </div>
         </CardTitle>
         <CardDescription>
           Review and approve student enrollment requests
+          {webSocketConnected && (
+            <span className="text-teal-600 ml-2">• Live updates enabled</span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>

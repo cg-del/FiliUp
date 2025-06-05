@@ -1,5 +1,5 @@
 import { api } from '../api';
-import type { ApiResponse, Class } from './types';
+import type { ApiResponse, Class, Student } from './types';
 
 export const classService = {
   getAllClasses: async (): Promise<ApiResponse<Class[]>> => {
@@ -52,6 +52,12 @@ export const classService = {
   // Get classes for the current authenticated student
   getMyClasses: async (): Promise<ApiResponse<Class[]>> => {
     const response = await api.get('/classes/myclasses');
+    return response.data;
+  },
+
+  // Get students by class ID
+  getStudentsByClass: async (classId: string): Promise<ApiResponse<Student[]>> => {
+    const response = await api.get(`/classes/${classId}/students`);
     return response.data;
   },
 }; 

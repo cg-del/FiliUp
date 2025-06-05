@@ -12,6 +12,7 @@ import edu.cit.filiup.repository.ClassRepository;
 import edu.cit.filiup.service.EnrollmentService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class EnrollmentServiceImpl implements EnrollmentService {
@@ -27,17 +30,20 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final UserRepository userRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final ClassRepository classRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     public EnrollmentServiceImpl(
             EnrollmentRepository enrollmentRepository,
             UserRepository userRepository,
             StudentProfileRepository studentProfileRepository,
-            ClassRepository classRepository) {
+            ClassRepository classRepository,
+            SimpMessagingTemplate messagingTemplate) {
         this.enrollmentRepository = enrollmentRepository;
         this.userRepository = userRepository;
         this.studentProfileRepository = studentProfileRepository;
         this.classRepository = classRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Override
@@ -67,7 +73,12 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         enrollment.setEnrollmentDate(LocalDateTime.now());
         enrollment.setIsAccepted(false); // Teacher needs to accept the enrollment
 
-        return enrollmentRepository.save(enrollment);
+        EnrollmentEntity savedEnrollment = enrollmentRepository.save(enrollment);
+
+        // Send WebSocket notification to the teacher
+        sendEnrollmentNotificationToTeacher(savedEnrollment, classEntity);
+
+        return savedEnrollment;
     }
 
     @Override
@@ -106,7 +117,14 @@ public class EnrollmentServiceImpl implements EnrollmentService {
                 .orElseThrow(() -> new EntityNotFoundException("Enrollment not found"));
         
         enrollment.setIsAccepted(true);
-        enrollmentRepository.save(enrollment);
+        EnrollmentEntity savedEnrollment = enrollmentRepository.save(enrollment);
+
+        // Get class information for notification
+        ClassEntity classEntity = classRepository.findByClassCode(classCode)
+                .orElseThrow(() -> new EntityNotFoundException("Class not found with code: " + classCode));
+
+        // Send WebSocket notification to the student about acceptance
+        sendAcceptanceNotificationToStudent(savedEnrollment, classEntity);
     }
 
     @Override
@@ -161,5 +179,74 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         }
 
         return dto;
+    }
+
+    /**
+     * Sends a real-time notification to the teacher when a new enrollment request is received
+     */
+    private void sendEnrollmentNotificationToTeacher(EnrollmentEntity enrollment, ClassEntity classEntity) {
+        try {
+            // Get student information
+            UserEntity student = userRepository.findById(enrollment.getUserId())
+                    .orElse(null);
+            
+            if (student == null) {
+                return;
+            }
+
+            // Create enrollment DTO for the notification
+            EnrollmentResponseDTO enrollmentDTO = convertToResponseDTO(enrollment);
+
+            // Create WebSocket message
+            Map<String, Object> message = new HashMap<>();
+            message.put("type", "NEW_ENROLLMENT");
+            message.put("classId", classEntity.getClassId().toString());
+            message.put("classCode", classEntity.getClassCode());
+            message.put("enrollment", enrollmentDTO);
+            message.put("message", student.getUserName() + " has requested to join your class: " + classEntity.getClassName());
+
+            // Send to teacher via WebSocket
+            messagingTemplate.convertAndSendToUser(
+                classEntity.getTeacher().getUserId().toString(),
+                "/queue/enrollment",
+                message
+            );
+
+            System.out.println("Sent enrollment notification to teacher " + classEntity.getTeacher().getUserId() + 
+                             " for class " + classEntity.getClassName());
+
+        } catch (Exception e) {
+            System.err.println("Failed to send enrollment notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Sends a real-time notification to the student when their enrollment is accepted
+     */
+    private void sendAcceptanceNotificationToStudent(EnrollmentEntity enrollment, ClassEntity classEntity) {
+        try {
+            // Create WebSocket message
+            Map<String, Object> message = new HashMap<>();
+            message.put("type", "ENROLLMENT_ACCEPTED");
+            message.put("classId", classEntity.getClassId().toString());
+            message.put("classCode", classEntity.getClassCode());
+            message.put("className", classEntity.getClassName());
+            message.put("message", "Your enrollment request for " + classEntity.getClassName() + " has been accepted!");
+
+            // Send to student via WebSocket
+            messagingTemplate.convertAndSendToUser(
+                enrollment.getUserId().toString(),
+                "/queue/enrollment",
+                message
+            );
+
+            System.out.println("Sent acceptance notification to student " + enrollment.getUserId() + 
+                             " for class " + classEntity.getClassName());
+
+        } catch (Exception e) {
+            System.err.println("Failed to send acceptance notification: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 } 

@@ -3,8 +3,13 @@ package edu.cit.filiup.controller;
 import edu.cit.filiup.dto.ClassDetailsDTO;
 import edu.cit.filiup.entity.ClassEntity;
 import edu.cit.filiup.entity.UserEntity;
+import edu.cit.filiup.entity.EnrollmentEntity;
+import edu.cit.filiup.entity.StudentProfileEntity;
 import edu.cit.filiup.service.ClassService;
 import edu.cit.filiup.service.UserService;
+import edu.cit.filiup.repository.EnrollmentRepository;
+import edu.cit.filiup.repository.StudentProfileRepository;
+import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.util.RequireRole;
 import edu.cit.filiup.util.ResponseUtil;
 import jakarta.persistence.EntityNotFoundException;
@@ -20,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/classes")
@@ -29,6 +36,15 @@ public class ClassController {
     
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
+
+    @Autowired
+    private StudentProfileRepository studentProfileRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     public ClassController(ClassService classService) {
@@ -244,12 +260,55 @@ public class ClassController {
     @GetMapping("/{classId}/students")
     public ResponseEntity<?> getStudentsByClass(@PathVariable UUID classId) {
         try {
+            // First get the class to find its class code
             Optional<ClassEntity> classOptional = classService.getClassById(classId);
-            if (classOptional.isPresent()) {
-                return ResponseUtil.success("Students retrieved successfully", classOptional.get().getStudents());
-            } else {
+            if (!classOptional.isPresent()) {
                 return ResponseUtil.notFound("Class with ID " + classId + " not found");
             }
+            
+            ClassEntity classEntity = classOptional.get();
+            String classCode = classEntity.getClassCode();
+            
+            // Get all accepted enrollments for this class
+            List<EnrollmentEntity> acceptedEnrollments = enrollmentRepository.findByClassCodeAndIsAccepted(classCode, true);
+            
+            // Convert enrollments to student information
+            List<Map<String, Object>> studentsList = new ArrayList<>();
+            
+            for (EnrollmentEntity enrollment : acceptedEnrollments) {
+                UserEntity student = userRepository.findById(enrollment.getUserId()).orElse(null);
+                if (student != null && "STUDENT".equals(student.getUserRole())) {
+                    Map<String, Object> studentInfo = new HashMap<>();
+                    studentInfo.put("id", student.getUserId());
+                    
+                    // User information
+                    Map<String, Object> userInfo = new HashMap<>();
+                    userInfo.put("id", student.getUserId());
+                    userInfo.put("username", student.getUserName());
+                    userInfo.put("email", student.getUserEmail());
+                    userInfo.put("role", student.getUserRole());
+                    studentInfo.put("user", userInfo);
+                    
+                    // Try to get student profile if it exists
+                    try {
+                        StudentProfileEntity profile = studentProfileRepository.findByUserUserId(student.getUserId()).orElse(null);
+                        if (profile != null) {
+                            Map<String, Object> profileInfo = new HashMap<>();
+                            profileInfo.put("id", profile.getProfileId());
+                            profileInfo.put("userId", profile.getUser().getUserId());
+                            profileInfo.put("grade", profile.getSection() != null ? profile.getSection() : "Not specified");
+                            profileInfo.put("readingLevel", "Beginner"); // Default reading level
+                            studentInfo.put("studentProfile", profileInfo);
+                        }
+                    } catch (Exception e) {
+                        // Profile not found, continue without it
+                    }
+                    
+                    studentsList.add(studentInfo);
+                }
+            }
+            
+            return ResponseUtil.success("Students retrieved successfully", studentsList);
         } catch (Exception e) {
             return ResponseUtil.serverError("Failed to retrieve students: " + e.getMessage());
         }
