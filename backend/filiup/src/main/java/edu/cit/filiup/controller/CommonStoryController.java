@@ -1,14 +1,18 @@
 package edu.cit.filiup.controller;
 
 import edu.cit.filiup.entity.CommonStoryEntity;
+import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.service.CommonStoryService;
+import edu.cit.filiup.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/common-stories")
@@ -18,10 +22,13 @@ public class CommonStoryController {
     @Autowired
     private CommonStoryService commonStoryService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @GetMapping
     public ResponseEntity<List<CommonStoryEntity>> getAllStories() {
         try {
-            List<CommonStoryEntity> stories = commonStoryService.getAllStories();
+            List<CommonStoryEntity> stories = commonStoryService.getAllCommonStories();
             return ResponseEntity.ok(stories);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -29,19 +36,29 @@ public class CommonStoryController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CommonStoryEntity> getStoryById(@PathVariable Long id) {
+    public ResponseEntity<CommonStoryEntity> getStoryById(@PathVariable UUID id) {
         try {
-        return commonStoryService.getStoryById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+            CommonStoryEntity story = commonStoryService.getCommonStoryById(id);
+            if (story != null) {
+                return ResponseEntity.ok(story);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
     @PostMapping
-    public ResponseEntity<?> createStory(@RequestBody CommonStoryEntity story) {
+    public ResponseEntity<?> createStory(@RequestBody CommonStoryEntity story, JwtAuthenticationToken authentication) {
         try {
+            // Get the authenticated user
+            String userEmail = authentication.getName();
+            UserEntity user = userRepository.findByUserEmail(userEmail);
+            if (user == null) {
+                return ResponseEntity.status(401).body("User not found");
+            }
+
             // Validate required fields
             if (story.getTitle() == null || story.getTitle().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("Title is required");
@@ -53,7 +70,7 @@ public class CommonStoryController {
                 return ResponseEntity.badRequest().body("Genre is required");
             }
 
-            CommonStoryEntity createdStory = commonStoryService.saveStory(story);
+            CommonStoryEntity createdStory = commonStoryService.createCommonStory(story, user);
             return ResponseEntity.ok(createdStory);
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
@@ -64,25 +81,25 @@ public class CommonStoryController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateStory(@PathVariable Long id, @RequestBody CommonStoryEntity story) {
+    public ResponseEntity<?> updateStory(@PathVariable UUID id, @RequestBody CommonStoryEntity story) {
         try {
             // Validate required fields
-            if (story.getTitle() == null || story.getTitle().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Title is required");
+            if (story.getTitle() != null && story.getTitle().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Title cannot be empty");
             }
-            if (story.getContent() == null || story.getContent().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Content is required");
+            if (story.getContent() != null && story.getContent().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Content cannot be empty");
             }
-            if (story.getGenre() == null || story.getGenre().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Genre is required");
+            if (story.getGenre() != null && story.getGenre().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Genre cannot be empty");
             }
 
-            return commonStoryService.getStoryById(id)
-                    .map(existingStory -> {
-                        story.setStoryId(id);
-                        return ResponseEntity.ok(commonStoryService.saveStory(story));
-                    })
-                    .orElse(ResponseEntity.notFound().build());
+            CommonStoryEntity updatedStory = commonStoryService.updateCommonStory(id, story);
+            if (updatedStory != null) {
+                return ResponseEntity.ok(updatedStory);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "Failed to update story");
@@ -92,13 +109,14 @@ public class CommonStoryController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteStory(@PathVariable Long id) {
+    public ResponseEntity<?> deleteStory(@PathVariable UUID id) {
         try {
-            if (!commonStoryService.getStoryById(id).isPresent()) {
+            boolean deleted = commonStoryService.deleteCommonStory(id);
+            if (deleted) {
+                return ResponseEntity.ok().build();
+            } else {
                 return ResponseEntity.notFound().build();
             }
-        commonStoryService.deleteStory(id);
-        return ResponseEntity.ok().build();
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "Failed to delete story");

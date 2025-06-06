@@ -67,6 +67,18 @@ public class DataSeeder {
             teacher1 = userRepository.save(teacher1);
             teacher2 = userRepository.save(teacher2);
 
+            // Create admin
+            UserEntity admin = new UserEntity();
+            admin.setUserName("admin");
+            admin.setUserEmail("admin@filiup.com");
+            admin.setUserPassword(passwordEncoder.encode("admin123"));
+            admin.setUserRole("ADMIN");
+            admin.setCreatedAt(LocalDateTime.now());
+            admin.setIsActive(true);
+
+            // Save admin
+            admin = userRepository.save(admin);
+
             // Create students
             UserEntity student1 = new UserEntity();
             student1.setUserName("student1");

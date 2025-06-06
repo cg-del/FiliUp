@@ -15,4 +15,8 @@ public interface StoryRepository extends JpaRepository<StoryEntity, UUID> {
     List<StoryEntity> findByGenre(String genre);
     List<StoryEntity> findByFictionType(String fictionType);
     List<StoryEntity> findByFictionTypeAndIsActiveTrue(String fictionType);
+    
+    // Admin-specific repository methods
+    StoryEntity findByStoryId(UUID storyId);
+    List<StoryEntity> findByCreatedBy_UserId(UUID teacherId);
 }

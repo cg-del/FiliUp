@@ -318,7 +318,7 @@ const TeacherDashboard = () => {
                       </div>
 
                       {/* Student Progress Table */}
-                      <Card>
+                      {/* <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
@@ -380,7 +380,7 @@ const TeacherDashboard = () => {
                             ))}
                           </div>
                         </CardContent>
-                      </Card>
+                      </Card> */}
 
                       {/* Quick Actions */}
                       <div className="mt-8 grid md:grid-cols-4 gap-6">
