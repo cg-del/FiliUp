@@ -8,8 +8,19 @@ export const leaderboardService = {
   },
 
   getClassLeaderboard: async (classId: string): Promise<ApiResponse<LeaderboardEntry[]>> => {
-    const response = await api.get(`/leaderboard/class/${classId}`);
-    return response.data;
+    console.log('LeaderboardService: Fetching leaderboard for classId:', classId);
+    try {
+      // Try the v1 endpoint first
+      const response = await api.get(`/v1/leaderboard/class/${classId}`);
+      console.log('LeaderboardService: Response from v1 endpoint:', response.data);
+      return response.data;
+    } catch (error) {
+      console.log('LeaderboardService: Error with v1 endpoint, trying legacy endpoint');
+      // Fall back to the original endpoint
+      const response = await api.get(`/leaderboard/class/${classId}`);
+      console.log('LeaderboardService: Response from legacy endpoint:', response.data);
+      return response.data;
+    }
   },
 
   getStudentRank: async (studentId: string): Promise<ApiResponse<LeaderboardEntry>> => {

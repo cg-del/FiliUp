@@ -60,4 +60,22 @@ export const classService = {
     const response = await api.get(`/classes/${classId}/students`);
     return response.data;
   },
+  
+  // Add common story to class
+  addCommonStoryToClass: async (classId: string, storyId: string): Promise<ApiResponse<void>> => {
+    const response = await api.post(`/classes/${classId}/common-stories/${storyId}`);
+    return response.data;
+  },
+  
+  // Get common stories added to a class
+  getClassCommonStories: async (classId: string): Promise<ApiResponse<any[]>> => {
+    const response = await api.get(`/classes/${classId}/common-stories`);
+    return response.data;
+  },
+  
+  // Remove common story from class
+  removeCommonStoryFromClass: async (classId: string, storyId: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/classes/${classId}/common-stories/${storyId}`);
+    return response.data;
+  }
 }; 

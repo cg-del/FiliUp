@@ -61,6 +61,25 @@ export interface Question {
   correctAnswer: string;
 }
 
+// Quiz Summary types
+export interface QuizAttempt {
+  attemptId: string;
+  studentName: string;
+  studentId: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  timeTakenMinutes: number;
+  quizTitle: string;
+  quizId: string;
+}
+
+export interface QuizClassSummary {
+  totalAverageScore: number;
+  totalAttempts: number;
+  studentAttempts: QuizAttempt[];
+}
+
 // Class types
 export interface Class {
   classId: string;

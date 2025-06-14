@@ -9,6 +9,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable sending cookies with cross-origin requests
   timeout: 30000, // 30 seconds timeout
 });
 
@@ -20,8 +21,24 @@ api.interceptors.request.use(
                   localStorage.getItem('authToken') || 
                   localStorage.getItem('token');
     
+    console.log('Request to:', config.url);
+    console.log('Token found for request:', token ? 'Yes (length: ' + token.length + ')' : 'No');
+    
+    // Decode and inspect token payload (for debugging)
+    if (token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(window.atob(base64));
+        console.log('Token payload:', payload);
+      } catch (e) {
+        console.error('Error decoding token payload:', e);
+      }
+    }
+    
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('Authorization header set:', `Bearer ${token.substring(0, 10)}...`);
     }
     
     // Add request timestamp for debugging

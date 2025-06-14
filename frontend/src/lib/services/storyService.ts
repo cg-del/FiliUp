@@ -71,12 +71,12 @@ export const storyService = {
   },
 
   updateStory: async (id: string, data: Partial<Story>): Promise<ApiResponse<Story>> => {
-    const response = await api.put(`/stories/${id}`, data);
+    const response = await api.put(`/story/${id}`, data);
     return response.data;
   },
 
   deleteStory: async (id: string): Promise<ApiResponse<void>> => {
-    const response = await api.delete(`/stories/${id}`);
+    const response = await api.delete(`/story/${id}`);
     return response.data;
   },
 

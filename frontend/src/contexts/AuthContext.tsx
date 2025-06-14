@@ -5,7 +5,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  type: 'student' | 'teacher';
+  type: 'student' | 'teacher' | 'admin';
   grade?: string;
   section?: string;
   classes?: string[]; // For teachers - list of class IDs they manage
@@ -25,7 +25,7 @@ interface EnrollmentRequest {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, userType: 'student' | 'teacher') => Promise<boolean>;
+  login: (email: string, password: string, userType: 'student' | 'teacher' | 'admin') => Promise<boolean>;
   logout: () => void;
   enrollInClass: (classCode: string) => Promise<{ success: boolean; message: string }>;
   approveEnrollment: (requestId: string) => Promise<boolean>;
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string, userType: 'student' | 'teacher'): Promise<boolean> => {
+  const login = async (email: string, password: string, userType: 'student' | 'teacher' | 'admin'): Promise<boolean> => {
     setIsLoading(true);
     
     // Mock authentication - in real app, this would be an API call
@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (email && password) {
       const mockUser: User = {
         id: Math.random().toString(36),
-        name: userType === 'student' ? 'Juan Dela Cruz' : 'Guro Maria',
+        name: userType === 'student' ? 'Juan Dela Cruz' : userType === 'teacher' ? 'Guro Maria' : 'Admin User',
         email,
         type: userType,
         ...(userType === 'teacher' && { classes: ['3-matatag', '3-masigla', '3-mabini'] }),

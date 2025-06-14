@@ -137,7 +137,7 @@ export function TeacherSidebar() {
         </div>
         
         <div className="space-y-2">
-          <Button 
+          {/* <Button 
             variant="ghost" 
             size="sm" 
             className="w-full justify-start text-gray-600 hover:bg-teal-50 hover:text-teal-700"
@@ -153,7 +153,7 @@ export function TeacherSidebar() {
           >
             <Settings className="h-4 w-4 mr-2" />
             Settings
-          </Button>
+          </Button> */}
           
           <Button 
             variant="ghost" 

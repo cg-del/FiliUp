@@ -9,6 +9,8 @@ import edu.cit.filiup.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -226,6 +228,52 @@ public class UserController {
             return ResponseUtil.success("Users sorted by role retrieved successfully", sortedUsers);
         } catch (Exception e) {
             return ResponseUtil.serverError("Failed to fetch users: " + e.getMessage());
+        }
+    }
+
+    // Test endpoint to check authentication
+    @GetMapping("/check-auth")
+    public ResponseEntity<?> checkAuth() {
+        try {
+            // Get the authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            
+            if (authentication == null) {
+                return ResponseEntity.status(401).body("No authentication found");
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("authenticated", authentication.isAuthenticated());
+            response.put("principal", authentication.getPrincipal());
+            response.put("name", authentication.getName());
+            response.put("details", authentication.getDetails());
+            response.put("credentials", "REDACTED");
+            response.put("authorities", authentication.getAuthorities());
+            
+            // Try to find user
+            String userIdentifier = authentication.getName();
+            UserEntity user = userRepository.findByUserEmail(userIdentifier);
+            
+            if (user == null) {
+                user = userRepository.findByUserName(userIdentifier);
+            }
+            
+            if (user != null) {
+                Map<String, Object> userInfo = new HashMap<>();
+                userInfo.put("id", user.getUserId());
+                userInfo.put("name", user.getUserName());
+                userInfo.put("email", user.getUserEmail());
+                userInfo.put("role", user.getUserRole());
+                response.put("user", userInfo);
+            } else {
+                response.put("userFound", false);
+                response.put("userIdentifier", userIdentifier);
+            }
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error checking authentication: " + e.getMessage());
         }
     }
 }

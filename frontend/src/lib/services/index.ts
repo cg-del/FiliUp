@@ -6,4 +6,5 @@ export * from './profileService';
 export * from './progressService';
 export * from './rewardService';
 export * from './leaderboardService';
+export * from './adminService';
 export * from './types'; 
