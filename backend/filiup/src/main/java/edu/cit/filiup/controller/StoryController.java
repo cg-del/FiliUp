@@ -467,7 +467,7 @@ public class StoryController {
     }
 
     // Update story
-    @PutMapping("/update/{storyId}")
+    @PutMapping("/{storyId}")
     @RequireRole({"TEACHER", "ADMIN"})
     public ResponseEntity<?> updateStory(
             @PathVariable UUID storyId,
@@ -499,7 +499,7 @@ public class StoryController {
     }
 
     // Delete story (soft delete)
-    @DeleteMapping("/delete/{storyId}")
+    @DeleteMapping("/{storyId}")
     @RequireRole({"TEACHER", "ADMIN"})
     public ResponseEntity<?> deleteStory(
             @PathVariable UUID storyId,

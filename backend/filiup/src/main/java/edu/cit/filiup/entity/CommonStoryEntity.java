@@ -2,7 +2,11 @@ package edu.cit.filiup.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import java.util.UUID;
 
 @Entity
@@ -13,23 +17,41 @@ public class CommonStoryEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID storyId;
 
-    @Column(name = "title", nullable = false, length = 200)
+    @Column(name = "title", nullable = false, length = 255)
     private String title;
 
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    @Column(name = "cover_picture_url")
+    @Column(name = "cover_picture", columnDefinition = "LONGBLOB")
+    @Lob
+    @JsonProperty(access = JsonProperty.Access.READ_WRITE)
+    private byte[] coverPicture;
+    
+    @Column(name = "cover_picture_url", length = 500)
     private String coverPictureUrl;
 
+    @Column(name = "cover_picture_type", length = 50)
+    @JsonProperty(access = JsonProperty.Access.READ_WRITE)
+    private String coverPictureType;
+
     @Column(name = "created_at", nullable = false)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    @Column(name = "genre", length = 100)
+    @Column(name = "genre", nullable = false)
     private String genre;
+
+    @Column(name = "fiction_type")
+    private String fictionType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", nullable = false)
+    @JsonIgnore
+    private UserEntity createdBy;
 
     // Constructors
     public CommonStoryEntity() {
@@ -41,6 +63,14 @@ public class CommonStoryEntity {
         this.title = title;
         this.content = content;
         this.genre = genre;
+    }
+
+    public CommonStoryEntity(String title, String content, String genre, String fictionType) {
+        this();
+        this.title = title;
+        this.content = content;
+        this.genre = genre;
+        this.fictionType = fictionType;
     }
 
     // Getters and Setters
@@ -68,12 +98,28 @@ public class CommonStoryEntity {
         this.content = content;
     }
 
+    public byte[] getCoverPicture() {
+        return coverPicture;
+    }
+
+    public void setCoverPicture(byte[] coverPicture) {
+        this.coverPicture = coverPicture;
+    }
+    
     public String getCoverPictureUrl() {
         return coverPictureUrl;
     }
 
     public void setCoverPictureUrl(String coverPictureUrl) {
         this.coverPictureUrl = coverPictureUrl;
+    }
+
+    public String getCoverPictureType() {
+        return coverPictureType;
+    }
+
+    public void setCoverPictureType(String coverPictureType) {
+        this.coverPictureType = coverPictureType;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -100,6 +146,22 @@ public class CommonStoryEntity {
         this.genre = genre;
     }
 
+    public String getFictionType() {
+        return fictionType;
+    }
+
+    public void setFictionType(String fictionType) {
+        this.fictionType = fictionType;
+    }
+
+    public UserEntity getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UserEntity createdBy) {
+        this.createdBy = createdBy;
+    }
+
     @Override
     public String toString() {
         return "CommonStoryEntity{" +
@@ -107,6 +169,9 @@ public class CommonStoryEntity {
                 ", title='" + title + '\'' +
                 ", content='" + content + '\'' +
                 ", genre='" + genre + '\'' +
+                ", fictionType='" + fictionType + '\'' +
+                ", coverPictureUrl='" + coverPictureUrl + '\'' +
+                ", createdBy=" + (createdBy != null ? createdBy.getUserId() : "null") +
                 '}';
     }
 } 

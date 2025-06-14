@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/progress")
-@CrossOrigin(origins = "*")
 public class ProgressTrackingController {
     private final ProgressTrackingService progressTrackingService;
 
@@ -24,7 +24,7 @@ public class ProgressTrackingController {
     @PostMapping
     public ResponseEntity<ProgressEntity> createProgress(
             @RequestBody ProgressEntity progressEntity,
-            @RequestParam int studentId) {
+            @RequestParam UUID studentId) {
         try {
             ProgressEntity createdProgress = progressTrackingService.createProgress(progressEntity, studentId);
             return ResponseEntity.ok(createdProgress);
@@ -33,37 +33,48 @@ public class ProgressTrackingController {
         }
     }
 
-    // Get all progress for a student
+    // Get all progress for a student - Direct endpoint for frontend
+    @GetMapping("/{studentId}")
+    public ResponseEntity<List<ProgressEntity>> getStudentProgressDirect(@PathVariable UUID studentId) {
+        try {
+            List<ProgressEntity> progress = progressTrackingService.getStudentProgress(studentId);
+            return ResponseEntity.ok(progress);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Get all progress for a student - Original endpoint
     @GetMapping("/student/{studentId}")
-    public ResponseEntity<List<ProgressEntity>> getStudentProgress(@PathVariable int studentId) {
+    public ResponseEntity<List<ProgressEntity>> getStudentProgress(@PathVariable UUID studentId) {
         return ResponseEntity.ok(progressTrackingService.getStudentProgress(studentId));
     }
 
     // Get progress by activity type
     @GetMapping("/student/{studentId}/activity/{activityType}")
     public ResponseEntity<List<ProgressEntity>> getProgressByActivityType(
-            @PathVariable int studentId,
+            @PathVariable UUID studentId,
             @PathVariable ProgressEntity.ActivityType activityType) {
         return ResponseEntity.ok(progressTrackingService.getStudentProgressByActivityType(studentId, activityType));
     }
 
     // Get completed activities
     @GetMapping("/student/{studentId}/completed")
-    public ResponseEntity<List<ProgressEntity>> getCompletedActivities(@PathVariable int studentId) {
+    public ResponseEntity<List<ProgressEntity>> getCompletedActivities(@PathVariable UUID studentId) {
         return ResponseEntity.ok(progressTrackingService.getCompletedActivities(studentId));
     }
 
     // Get progress by completion threshold
     @GetMapping("/student/{studentId}/threshold/{completionPercentage}")
     public ResponseEntity<List<ProgressEntity>> getProgressByThreshold(
-            @PathVariable int studentId,
+            @PathVariable UUID studentId,
             @PathVariable Double completionPercentage) {
         return ResponseEntity.ok(progressTrackingService.getProgressByCompletionThreshold(studentId, completionPercentage));
     }
 
     // Get progress by ID
-    @GetMapping("/{progressId}")
-    public ResponseEntity<ProgressEntity> getProgressById(@PathVariable Long progressId) {
+    @GetMapping("/id/{progressId}")
+    public ResponseEntity<ProgressEntity> getProgressById(@PathVariable UUID progressId) {
         return progressTrackingService.getProgressById(progressId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -72,7 +83,7 @@ public class ProgressTrackingController {
     // Update progress
     @PutMapping("/{progressId}")
     public ResponseEntity<ProgressEntity> updateProgress(
-            @PathVariable Long progressId,
+            @PathVariable UUID progressId,
             @RequestBody ProgressEntity updatedProgress) {
         try {
             ProgressEntity updated = progressTrackingService.updateProgress(progressId, updatedProgress);
@@ -84,7 +95,7 @@ public class ProgressTrackingController {
 
     // Mark activity as completed
     @PutMapping("/{progressId}/complete")
-    public ResponseEntity<ProgressEntity> markActivityCompleted(@PathVariable Long progressId) {
+    public ResponseEntity<ProgressEntity> markActivityCompleted(@PathVariable UUID progressId) {
         try {
             ProgressEntity completed = progressTrackingService.markActivityCompleted(progressId);
             return ResponseEntity.ok(completed);
@@ -95,7 +106,7 @@ public class ProgressTrackingController {
 
     // Delete progress
     @DeleteMapping("/{progressId}")
-    public ResponseEntity<Void> deleteProgress(@PathVariable Long progressId) {
+    public ResponseEntity<Void> deleteProgress(@PathVariable UUID progressId) {
         try {
             progressTrackingService.deleteProgress(progressId);
             return ResponseEntity.ok().build();
@@ -106,7 +117,7 @@ public class ProgressTrackingController {
 
     // Get student statistics
     @GetMapping("/student/{studentId}/statistics")
-    public ResponseEntity<Map<String, Object>> getStudentStatistics(@PathVariable int studentId) {
+    public ResponseEntity<Map<String, Object>> getStudentStatistics(@PathVariable UUID studentId) {
         Double averageCompletion = progressTrackingService.calculateAverageCompletion(studentId);
         Integer totalTimeSpent = progressTrackingService.calculateTotalTimeSpent(studentId);
         

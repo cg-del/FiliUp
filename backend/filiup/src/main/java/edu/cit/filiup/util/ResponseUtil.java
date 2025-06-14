@@ -32,6 +32,17 @@ public class ResponseUtil {
         return ResponseEntity.status(status).body(response);
     }
 
+    public static ResponseEntity<?> error(HttpStatus status, String message, String errorCode, Object debugData) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now().toString());
+        response.put("status", status.value());
+        response.put("error", status.getReasonPhrase());
+        response.put("message", message);
+        response.put("errorCode", errorCode);
+        response.put("debug", debugData);
+        return ResponseEntity.status(status).body(response);
+    }
+
     public static ResponseEntity<?> badRequest(String message) {
         return error(HttpStatus.BAD_REQUEST, message, "BAD_REQUEST");
     }

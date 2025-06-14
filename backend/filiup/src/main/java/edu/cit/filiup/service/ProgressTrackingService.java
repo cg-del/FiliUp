@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class ProgressTrackingService {
@@ -24,7 +25,7 @@ public class ProgressTrackingService {
     }
 
     @Transactional
-    public ProgressEntity createProgress(ProgressEntity progressEntity, int studentId) {
+    public ProgressEntity createProgress(ProgressEntity progressEntity, UUID studentId) {
         UserEntity student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         
@@ -40,28 +41,28 @@ public class ProgressTrackingService {
         return progressRepository.save(progressEntity);
     }
 
-    public List<ProgressEntity> getStudentProgress(int studentId) {
+    public List<ProgressEntity> getStudentProgress(UUID studentId) {
         return progressRepository.findByStudentUserIdOrderByLastUpdatedDesc(studentId);
     }
 
-    public List<ProgressEntity> getStudentProgressByActivityType(int studentId, ProgressEntity.ActivityType activityType) {
+    public List<ProgressEntity> getStudentProgressByActivityType(UUID studentId, ProgressEntity.ActivityType activityType) {
         return progressRepository.findByStudentUserIdAndActivityType(studentId, activityType);
     }
 
-    public List<ProgressEntity> getCompletedActivities(int studentId) {
+    public List<ProgressEntity> getCompletedActivities(UUID studentId) {
         return progressRepository.findByStudentUserIdAndCompletedAtIsNotNull(studentId);
     }
 
-    public List<ProgressEntity> getProgressByCompletionThreshold(int studentId, Double completionPercentage) {
+    public List<ProgressEntity> getProgressByCompletionThreshold(UUID studentId, Double completionPercentage) {
         return progressRepository.findByStudentUserIdAndCompletionPercentageGreaterThanEqual(studentId, completionPercentage);
     }
 
-    public Optional<ProgressEntity> getProgressById(Long progressId) {
+    public Optional<ProgressEntity> getProgressById(UUID progressId) {
         return progressRepository.findById(progressId);
     }
 
     @Transactional
-    public ProgressEntity updateProgress(Long progressId, ProgressEntity updatedProgress) {
+    public ProgressEntity updateProgress(UUID progressId, ProgressEntity updatedProgress) {
         return progressRepository.findById(progressId)
                 .map(existingProgress -> {
                     existingProgress.setCompletionPercentage(updatedProgress.getCompletionPercentage());
@@ -81,7 +82,7 @@ public class ProgressTrackingService {
     }
 
     @Transactional
-    public ProgressEntity markActivityCompleted(Long progressId) {
+    public ProgressEntity markActivityCompleted(UUID progressId) {
         return progressRepository.findById(progressId)
                 .map(progress -> {
                     progress.setCompletionPercentage(100.0);
@@ -93,11 +94,11 @@ public class ProgressTrackingService {
     }
 
     @Transactional
-    public void deleteProgress(Long progressId) {
+    public void deleteProgress(UUID progressId) {
         progressRepository.deleteById(progressId);
     }
 
-    public Double calculateAverageCompletion(int studentId) {
+    public Double calculateAverageCompletion(UUID studentId) {
         List<ProgressEntity> progressList = progressRepository.findByStudentUserId(studentId);
         if (progressList.isEmpty()) {
             return 0.0;
@@ -109,7 +110,7 @@ public class ProgressTrackingService {
                 .orElse(0.0);
     }
 
-    public Integer calculateTotalTimeSpent(int studentId) {
+    public Integer calculateTotalTimeSpent(UUID studentId) {
         List<ProgressEntity> progressList = progressRepository.findByStudentUserId(studentId);
         return progressList.stream()
                 .mapToInt(progress -> progress.getTimeSpentMinutes() != null ? progress.getTimeSpentMinutes() : 0)

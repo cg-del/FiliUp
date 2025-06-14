@@ -448,9 +448,19 @@ export const quizService = {
     const params = new URLSearchParams();
     if (filters?.quizTitle) params.append('quizTitle', filters.quizTitle);
     if (filters?.classId) params.append('classId', filters.classId);
-    if (filters?.completedOnly !== undefined) params.append('completedOnly', filters.completedOnly.toString());
-    
-    const response = await api.get(`/v1/quizzes/reports/attempts?${params.toString()}`);
+    if (filters?.completedOnly !== undefined) params.append('completedOnly', String(filters.completedOnly));
+
+    const response = await api.get(`/v1/quizzes/reports?${params.toString()}`);
+    return response.data;
+  },
+
+  getQuizzesByClass: async (classId: string): Promise<ApiResponse<QuizData[]>> => {
+    const response = await api.get(`/quizzes/class/${classId}`);
+    return response.data;
+  },
+
+  submitQuiz: async (quizId: string, answers: Record<string, string>): Promise<ApiResponse<any>> => {
+    const response = await api.post(`/quizzes/${quizId}/submit`, { answers });
     return response.data;
   },
 }; 

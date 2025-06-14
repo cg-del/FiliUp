@@ -13,6 +13,8 @@ import EnrollmentManagement from '../components/EnrollmentManagement';
 import CreateClassForm from '../components/CreateClassForm';
 import CreateStoryForm from '../components/CreateStoryForm';
 import CreateQuizForm from '../components/CreateQuizForm';
+import AddCommonStoryToClass from '../components/AddCommonStoryToClass';
+import ClassCommonStories from '../components/ClassCommonStories';
 import { getClassInfo } from '@/constants/classData';
 import { classService } from '@/lib/services/classService';
 import type { Class } from '@/lib/services/types';
@@ -89,17 +91,14 @@ const TeacherDashboard = () => {
     fetchClasses();
   }, []);
 
-  const [selectedClass, setSelectedClass] = useState(() => {
-    // Set initial selected class from API data or fallback to mock data
-    return classes.length > 0 ? classes[0].classId : (user?.classes?.[0] || '3-matatag');
-  });
+  const [selectedClass, setSelectedClass] = useState<string>('');
 
   // Update selected class when classes are loaded
   useEffect(() => {
-    if (classes.length > 0 && !selectedClass) {
+    if (classes.length > 0) {
       setSelectedClass(classes[0].classId);
     }
-  }, [classes, selectedClass]);
+  }, [classes]);
 
   // Get current class data
   const currentClass = classes.find(cls => cls.classId === selectedClass);
@@ -318,7 +317,7 @@ const TeacherDashboard = () => {
                       </div>
 
                       {/* Student Progress Table */}
-                      <Card>
+                      {/* <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
@@ -380,7 +379,7 @@ const TeacherDashboard = () => {
                             ))}
                           </div>
                         </CardContent>
-                      </Card>
+                      </Card> */}
 
                       {/* Quick Actions */}
                       <div className="mt-8 grid md:grid-cols-4 gap-6">
@@ -390,6 +389,8 @@ const TeacherDashboard = () => {
 
                         <CreateQuizForm />
 
+                        <AddCommonStoryToClass selectedClass={selectedClass} />
+
                         <Card className="border-2 border-dashed border-cyan-200 hover:border-cyan-400 transition-colors cursor-pointer">
                           <CardContent className="p-6 text-center">
                             <TrendingUp className="h-12 w-12 text-cyan-500 mx-auto mb-4" />
@@ -397,6 +398,14 @@ const TeacherDashboard = () => {
                             <p className="text-sm text-gray-500">Generate detailed progress reports</p>
                           </CardContent>
                         </Card>
+                      </div>
+
+                      {/* Class Common Stories */}
+                      <div className="mt-8">
+                        <ClassCommonStories 
+                          selectedClass={selectedClass} 
+                          className={currentClass?.className}
+                        />
                       </div>
                     </>
                   )}
