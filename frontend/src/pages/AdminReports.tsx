@@ -60,7 +60,7 @@ export default function AdminReports() {
     try {
       setLoading(true);
       const data = await adminService.getReports();
-      setReports(data);
+      setReports(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast({

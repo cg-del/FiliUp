@@ -45,7 +45,7 @@ const Login = () => {
 
     if (response) {
       try {
-        const { accessToken, refreshToken } = response.data;
+        const { accessToken, refreshToken, mustChangePassword, userId } = response.data;
         
         // Clear all existing localStorage data before setting new values
         localStorage.clear();
@@ -74,6 +74,15 @@ const Login = () => {
 
         // Update AuthContext with the user data
         setUser(user);
+
+        if (mustChangePassword && userRole === 'TEACHER') {
+          toast({
+            title: "Change Password Required",
+            description: "You must change your password before accessing the dashboard.",
+          });
+          navigate('/change-password', { state: { userId } });
+          return;
+        }
 
         toast({
           title: "Maligayang pagdating!",

@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/user")
@@ -97,13 +98,32 @@ public class UserController {
         try {
             UserEntity loggedInUser = userv.loginUserByUsername(user.getUserName(), user.getUserPassword());
             if (loggedInUser != null) {
-                Map<String, String> tokens = JwtUtil.generateTokens(loggedInUser.getUserName(), loggedInUser.getUserRole());
+                Map<String, Object> tokens = new HashMap<>();
+                Map<String, String> jwtTokens = JwtUtil.generateTokens(loggedInUser.getUserName(), loggedInUser.getUserRole());
+                tokens.putAll(jwtTokens);
+                tokens.put("mustChangePassword", loggedInUser.getMustChangePassword());
+                tokens.put("userId", loggedInUser.getUserId());
                 return ResponseUtil.success("Login successful", tokens);
             } else {
                 return ResponseUtil.unauthorized("Invalid username or password");
             }
         } catch (Exception e) {
             return ResponseUtil.badRequest("Login failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> request) {
+        try {
+            String userId = request.get("userId");
+            String newPassword = request.get("newPassword");
+            if (userId == null || newPassword == null) {
+                return ResponseUtil.badRequest("Missing userId or newPassword");
+            }
+            UserEntity updatedUser = userv.changePassword(UUID.fromString(userId), newPassword);
+            return ResponseUtil.success("Password changed successfully", null);
+        } catch (Exception e) {
+            return ResponseUtil.badRequest("Failed to change password: " + e.getMessage());
         }
     }
 

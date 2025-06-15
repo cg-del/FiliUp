@@ -450,7 +450,7 @@ export const quizService = {
     if (filters?.classId) params.append('classId', filters.classId);
     if (filters?.completedOnly !== undefined) params.append('completedOnly', String(filters.completedOnly));
 
-    const response = await api.get(`/v1/quizzes/reports?${params.toString()}`);
+    const response = await api.get(`/v1/quizzes/reports/attempts?${params.toString()}`);
     return response.data;
   },
 

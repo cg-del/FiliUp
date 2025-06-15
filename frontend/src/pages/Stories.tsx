@@ -59,6 +59,7 @@ const TeacherStories = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
+const [selectedClass, setSelectedClass] = useState<string>('all');
   const [stories, setStories] = useState<TeacherStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +134,8 @@ const TeacherStories = () => {
     const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          story.content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGenre = selectedGenre === 'all' || story.genre === selectedGenre;
-    return matchesSearch && matchesGenre;
+    const matchesClass = selectedClass === 'all' || story.classEntity.classId === selectedClass;
+    return matchesSearch && matchesGenre && matchesClass;
   });
 
   const getGenreColor = (genre: string) => {
@@ -373,23 +375,33 @@ const TeacherStories = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <select
-                      value={selectedGenre}
-                      onChange={(e) => setSelectedGenre(e.target.value)}
-                      className="px-3 py-2 border border-teal-200 rounded-md focus:border-teal-500 focus:outline-none"
-                    >
-                      <option value="all">All Genres</option>
-                      {STORY_GENRES.map(genre => (
-                        <option key={genre.value} value={genre.value}>
-                          {genre.label}
-                        </option>
-                      ))}
-                    </select>
-                    <Button variant="outline" className="border-teal-200 text-teal-600 hover:bg-teal-50">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
-                  </div>
+  <select
+    value={selectedGenre}
+    onChange={(e) => setSelectedGenre(e.target.value)}
+    className="px-3 py-2 border border-teal-200 rounded-md focus:border-teal-500 focus:outline-none"
+  >
+    <option value="all">All Genres</option>
+    {STORY_GENRES.map(genre => (
+      <option key={genre.value} value={genre.value}>
+        {genre.label}
+      </option>
+    ))}
+  </select>
+  <select
+    value={selectedClass}
+    onChange={e => setSelectedClass(e.target.value)}
+    className="px-3 py-2 border border-teal-200 rounded-md focus:border-teal-500 focus:outline-none"
+  >
+    <option value="all">All Classes</option>
+    {[...new Map(stories.map(s => [s.classEntity.classId, s.classEntity])).values()].map(cls => (
+      <option key={cls.classId} value={cls.classId}>{cls.className}</option>
+    ))}
+  </select>
+  <Button variant="outline" className="border-teal-200 text-teal-600 hover:bg-teal-50">
+    <Filter className="h-4 w-4 mr-2" />
+    Filter
+  </Button>
+</div>
                 </div>
               </div>
 

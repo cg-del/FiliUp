@@ -65,23 +65,23 @@ const menuItems = [
     url: "/admin/reports",
     icon: FileText,
   },
-  {
-    title: "Analytics",
-    url: "/admin/analytics",
-    icon: TrendingUp,
-    submenu: [
-      {
-        title: "User Growth",
-        url: "/admin/analytics/user-growth",
-        icon: TrendingUp,
-      },
-      {
-        title: "Activity",
-        url: "/admin/analytics/activity",
-        icon: Activity,
-      }
-    ]
-  },
+  // {
+  //   title: "Analytics",
+  //   url: "/admin/analytics",
+  //   icon: TrendingUp,
+  //   submenu: [
+  //     {
+  //       title: "User Growth",
+  //       url: "/admin/analytics/user-growth",
+  //       icon: TrendingUp,
+  //     },
+  //     {
+  //       title: "Activity",
+  //       url: "/admin/analytics/activity",
+  //       icon: Activity,
+  //     }
+  //   ]
+  // },
   {
     title: "System",
     url: "/admin/system",
