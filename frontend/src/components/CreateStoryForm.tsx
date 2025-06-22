@@ -137,8 +137,8 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
           }
 
           toast({
-            title: "Draft Restored",
-            description: "Your previous work has been restored.",
+            title: "Naibalik ang Draft",
+            description: "Naibalik ang iyong dating gawa.",
           });
         }
       };
@@ -347,8 +347,8 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
     if (hasContent) {
       // Keep the draft for later
       toast({
-        title: "Draft Saved",
-        description: "Your work has been saved as a draft.",
+        title: "Nai-save ang Draft",
+        description: "Nai-save ang iyong gawa bilang draft.",
       });
     }
     
@@ -363,8 +363,8 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
         <Card className="border-2 border-dashed border-teal-200 hover:border-teal-400 transition-colors cursor-pointer">
           <CardContent className="p-6 text-center">
             <BookOpen className="h-12 w-12 text-teal-500 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-900 mb-2">Create New Story</h3>
-            <p className="text-sm text-gray-500">Write interactive Filipino stories for your students</p>
+            <h3 className="font-semibold text-gray-900 mb-2">Gumawa ng Bagong Kuwento</h3>
+            <p className="text-sm text-gray-500">Sumulat ng interaktibong kuwentong Filipino para sa inyong mga estudyante</p>
           </CardContent>
         </Card>
       </DialogTrigger>
@@ -373,10 +373,10 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <BookOpen className="h-5 w-5 text-teal-600" />
-            <span>Create New Story</span>
+            <span>Gumawa ng Bagong Kuwento</span>
           </DialogTitle>
           <DialogDescription>
-            Create an engaging Filipino story for your students. Add content, cover image, and assign it to a class.
+            Gumawa ng makabuluhang kuwentong Filipino para sa inyong mga estudyante. Magdagdag ng nilalaman, larawan sa pabalat, at itakda ito sa isang klase.
           </DialogDescription>
         </DialogHeader>
         
@@ -394,7 +394,7 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
                       <FormLabel>Pamagat ng Kuwento</FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="e.g., Ang Alamat ng Pinya" 
+                          placeholder="hal. Ang Alamat ng Pinya" 
                           {...field}
                           className="focus:ring-teal-500 focus:border-teal-500"
                           disabled={isSubmitting}
@@ -584,7 +584,7 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
                 disabled={isSubmitting || loadingClasses || classes.length === 0}
               >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isUploading ? 'Uploading Image...' : isCreating ? 'Creating Story...' : 'Create Story'}
+                {isUploading ? 'Ina-upload ang Larawan...' : isCreating ? 'Ginagawa ang Kuwento...' : 'Gumawa ng Kuwento'}
               </Button>
             </DialogFooter>
           </form>

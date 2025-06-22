@@ -179,7 +179,7 @@ export default function AddCommonStoryToClass({ selectedClass, onSuccess }: AddC
       <DialogTrigger asChild>
         <Button variant="default" className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600">
           <Plus className="h-4 w-4 mr-2" />
-          Add Common Story
+          Add Common Story 
         </Button>
       </DialogTrigger>
       

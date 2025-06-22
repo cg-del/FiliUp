@@ -26,6 +26,10 @@ export interface PendingEnrollment {
 }
 
 export const enrollmentService = {
+  getEnrollmentStatusByStudentId: async (studentId: string): Promise<ApiResponse<{ status: string; classId?: string }>> => {
+    const response = await api.get(`/enrollment-status/${studentId}`);
+    return response.data;
+  },
   enrollInClass: async (classCode: string): Promise<ApiResponse<EnrollmentResponse>> => {
     const response = await api.post('/enrollments/enroll', { classCode });
     return response.data;

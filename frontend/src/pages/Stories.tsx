@@ -31,6 +31,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { commonStoryService, type CommonStory } from '@/lib/services/commonStoryService';
+import { classService } from '@/lib/services/classService';
 
 // TypeScript interfaces for the API response
 interface ClassEntity {
@@ -59,8 +61,10 @@ const TeacherStories = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('all');
-const [selectedClass, setSelectedClass] = useState<string>('all');
+  const [selectedClass, setSelectedClass] = useState<string>('all');
+  const [creatorFilter, setCreatorFilter] = useState<'all' | 'teacher' | 'filiup'>('all');
   const [stories, setStories] = useState<TeacherStory[]>([]);
+  const [commonStories, setCommonStories] = useState<CommonStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,8 +82,24 @@ const [selectedClass, setSelectedClass] = useState<string>('all');
       try {
         setLoading(true);
         setError(null);
-        const fetchedStories = await storyService.getStoriesByTeacher();
+        const [fetchedStories, fetchedCommonStories] = await Promise.all([
+          storyService.getStoriesByTeacher(),
+          selectedClass !== 'all'
+            ? classService.getClassCommonStories(selectedClass)
+            : commonStoryService.getActiveCommonStories()
+        ]);
         setStories(fetchedStories);
+        // Handle possible response formats for common stories
+        const commonStoriesData = fetchedCommonStories;
+        if (Array.isArray(commonStoriesData)) {
+          setCommonStories(commonStoriesData);
+        } else if (commonStoriesData && Array.isArray(commonStoriesData.data)) {
+          setCommonStories(commonStoriesData.data);
+        } else if (commonStoriesData && Array.isArray(commonStoriesData.stories)) {
+          setCommonStories(commonStoriesData.stories);
+        } else {
+          setCommonStories([]);
+        }
       } catch (error) {
         console.error('Error fetching stories:', error);
         setError('Failed to load stories. Please try again.');
@@ -92,9 +112,8 @@ const [selectedClass, setSelectedClass] = useState<string>('all');
         setLoading(false);
       }
     };
-
     fetchStories();
-  }, []);
+  }, [selectedClass]);
 
   // Fetch quiz attempts count for each story
   useEffect(() => {
@@ -130,7 +149,37 @@ const [selectedClass, setSelectedClass] = useState<string>('all');
     }
   }, [stories]);
 
-  const filteredStories = stories.filter(story => {
+  // Map common stories to TeacherStory-like structure
+  const mappedCommonStories: TeacherStory[] = commonStories.map(story => ({
+    storyId: story.storyId,
+    title: story.title,
+    content: story.content,
+    createdAt: story.createdAt,
+    isActive: story.isActive ?? true,
+    genre: story.genre,
+    fictionType: story.fictionType || '',
+    coverPictureUrl: story.coverPictureUrl,
+    coverPictureType: story.coverPictureType,
+    classEntity: {
+      className: 'Common Story',
+      description: '',
+      createdAt: story.createdAt,
+      isActive: true,
+      classCode: '',
+      classId: 'common',
+    },
+    // Optionally, add a flag to distinguish
+    isCommon: true,
+  }));
+
+  // Merge stories
+  const allStories: (TeacherStory & { isCommon?: boolean })[] = [
+    ...stories,
+    ...mappedCommonStories
+  ];
+
+  // Filtering logic
+  const filteredStories = allStories.filter(story => {
     const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          story.content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGenre = selectedGenre === 'all' || story.genre === selectedGenre;
@@ -360,6 +409,7 @@ const [selectedClass, setSelectedClass] = useState<string>('all');
                 </div>
               )}
 
+
               {/* Search and Filter Section */}
               <div className="mb-8 bg-white rounded-lg p-6 shadow-sm border border-teal-100">
                 <div className="flex flex-col md:flex-row gap-4">
@@ -397,27 +447,116 @@ const [selectedClass, setSelectedClass] = useState<string>('all');
       <option key={cls.classId} value={cls.classId}>{cls.className}</option>
     ))}
   </select>
+  <select
+    value={creatorFilter}
+    onChange={e => setCreatorFilter(e.target.value as 'all' | 'teacher' | 'filiup')}
+    className="px-3 py-2 border border-teal-200 rounded-md focus:border-teal-500 focus:outline-none"
+  >
+    <option value="all">Show All</option>
+    <option value="teacher">Created by Teacher</option>
+    <option value="filiup">Created by FiliUp</option>
+  </select>
   <Button variant="outline" className="border-teal-200 text-teal-600 hover:bg-teal-50">
     <Filter className="h-4 w-4 mr-2" />
     Filter
-  </Button>
+  </Button> 
 </div>
                 </div>
               </div>
 
+              {/* Class Common Stories Section */}
+              {creatorFilter !== 'teacher' && commonStories.length > 0 && (
+                <div className="mb-10">
+                  <h2 className="text-xl font-bold mb-4 text-teal-700">Class Common Stories</h2>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {commonStories.map((story) => {
+                      const readingTime = getReadingTimeEstimate(story.content);
+                      const createdDate = new Date(story.createdAt);
+                      return (
+                        <Card key={story.storyId} className="hover:shadow-lg transition-shadow border-yellow-200">
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg mb-2 text-gray-900 flex items-center gap-2">
+                                  {story.title}
+                                  <Badge className="bg-yellow-400 text-white text-xs ml-2">Common Story</Badge>
+                                </CardTitle>
+                                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                  <Badge 
+                                    className="text-xs"
+                                    style={{ 
+                                      backgroundColor: getGenreColor(story.genre),
+                                      color: 'white'
+                                    }}
+                                  >
+                                    {getGenreLabel(story.genre)}
+                                  </Badge>
+                                  {story.fictionType && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {story.fictionType}
+                                    </Badge>
+                                  )}
+                                  <Badge className={`text-xs ${story.isActive ? 'bg-teal-100 text-teal-800' : 'bg-gray-100 text-gray-800'}`}>
+                                    {story.isActive ? 'Active' : 'Inactive'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <CardDescription className="text-sm text-gray-600">
+                              {story.content.length > 150 
+                                ? `${story.content.substring(0, 150)}...` 
+                                : story.content}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              {/* Story Stats */}
+                              <div className="grid grid-cols-2 gap-4 text-center">
+                                <div className="bg-teal-50 p-3 rounded-lg">
+                                  <p className="text-lg font-semibold text-teal-600">{readingTime}</p>
+                                  <p className="text-xs text-gray-500">Min read</p>
+                                </div>
+                                <div className="bg-cyan-50 p-3 rounded-lg">
+                                  <p className="text-sm font-semibold text-cyan-600">{story.createdBy?.userName || ''}</p>
+                                  <p className="text-xs text-gray-500">Created By</p>
+                                </div>
+                              </div>
+                              {/* Cover Image Preview */}
+                              {story.coverPictureUrl && (
+                                <div className="relative h-32 bg-gray-100 rounded-lg overflow-hidden">
+                                  <img 
+                                    src={story.coverPictureUrl} 
+                                    alt={story.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Stories Grid */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredStories.map((story) => {
-                  const readingTime = getReadingTimeEstimate(story.content);
-                  const createdDate = new Date(story.createdAt);
-                  const storyAttempts = quizAttempts[story.storyId] || 0;
-                  
-                  return (
-                    <Card key={story.storyId} className="hover:shadow-lg transition-shadow border-teal-100">
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="text-lg mb-2 text-gray-900">{story.title}</CardTitle>
+              {creatorFilter !== 'filiup' && (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredStories
+                    .filter(story => !commonStories.some(cs => cs.storyId === story.storyId))
+                    .map((story) => {
+                      const readingTime = getReadingTimeEstimate(story.content);
+                      const createdDate = new Date(story.createdAt);
+                      const storyAttempts = quizAttempts[story.storyId] || 0;
+                      return (
+                        <Card key={story.storyId} className="hover:shadow-lg transition-shadow border-teal-100">
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg mb-2 text-gray-900 flex items-center gap-2">
+                                  {story.title}
+                                </CardTitle>
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <Badge 
                                 className="text-xs"
@@ -525,7 +664,8 @@ const [selectedClass, setSelectedClass] = useState<string>('all');
                     </Card>
                   );
                 })}
-              </div>
+                </div>
+              )}
 
               {/* Empty State */}
               {!loading && filteredStories.length === 0 && (

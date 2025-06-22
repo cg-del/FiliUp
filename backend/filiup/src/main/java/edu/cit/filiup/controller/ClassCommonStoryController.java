@@ -1,6 +1,7 @@
 package edu.cit.filiup.controller;
 
 import edu.cit.filiup.entity.CommonStoryEntity;
+import edu.cit.filiup.entity.ClassCommonStoryEntity;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.service.ClassService;
 import edu.cit.filiup.service.UserService;
@@ -39,8 +40,32 @@ public class ClassCommonStoryController {
     @GetMapping("/{classId}/common-stories")
     public ResponseEntity<?> getClassCommonStories(@PathVariable UUID classId) {
         try {
-            List<CommonStoryEntity> stories = classService.getClassCommonStories(classId);
-            return ResponseUtil.success("Stories retrieved successfully", stories);
+            List<ClassCommonStoryEntity> classCommonStories = classService.getClassCommonStories(classId);
+            List<edu.cit.filiup.dto.CommonStoryDTO> dtoList = classCommonStories.stream().map(ccs -> {
+                CommonStoryEntity story = ccs.getStory();
+                edu.cit.filiup.dto.CommonStoryDTO dto = new edu.cit.filiup.dto.CommonStoryDTO();
+                dto.setStoryId(story.getStoryId());
+                dto.setTitle(story.getTitle());
+                dto.setContent(story.getContent());
+                dto.setCoverPictureUrl(story.getCoverPictureUrl());
+                dto.setCoverPictureType(story.getCoverPictureType());
+                dto.setCreatedAt(story.getCreatedAt());
+                dto.setIsActive(story.getIsActive());
+                dto.setGenre(story.getGenre());
+                dto.setFictionType(story.getFictionType());
+                // Defensive: avoid lazy loading issues for createdBy
+                String createdByName = null;
+                try {
+                    if (story.getCreatedBy() != null) {
+                        createdByName = story.getCreatedBy().getUserName();
+                    }
+                } catch (Exception ignored) {}
+                dto.setCreatedByUserName(createdByName);
+                dto.setClassId(ccs.getClassEntity().getClassId());
+                dto.setClassName(ccs.getClassEntity().getClassName());
+                return dto;
+            }).toList();
+            return ResponseUtil.success("Stories retrieved successfully", dtoList);
         } catch (EntityNotFoundException e) {
             return ResponseUtil.notFound(e.getMessage());
         } catch (Exception e) {

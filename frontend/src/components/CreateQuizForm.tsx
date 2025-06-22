@@ -479,12 +479,12 @@ const CreateQuizForm = ({
                 id="title"
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="hal., Komprehensibong Pagsusulit sa Alamat ng Pinya"
+                placeholder="Halimbawa, Komprehensibong Pagsusulit sa Alamat ng Pinya"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="category">Kategorya *</Label>
+              <Label htmlFor="category">Kategorya ng Pagsusulit *</Label>
               <select
                 id="category"
                 value={formData.category}
@@ -492,7 +492,7 @@ const CreateQuizForm = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
               >
-                <option value="">Pumili ng Kategorya</option>
+                <option value="">Pumili ng Kategorya ng Pagsusulit</option>
                 {categories.map(category => (
                   <option key={category} value={category}>{category}</option>
                 ))}
@@ -501,19 +501,19 @@ const CreateQuizForm = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Paglalarawan *</Label>
+            <Label htmlFor="description">Paglalarawan ng Pagsusulit *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Detalyadong pagsusulit na sumasaklaw sa lahat ng aspeto ng kuwento..."
+              placeholder="Detalyadong paglalarawan ng pagsusulit na sumasaklaw sa lahat ng aspeto ng kuwento..."
               rows={3}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="storyId">Kaugnay na Kuwento *</Label>
+            <Label htmlFor="storyId">Kaugnay na Kuwento ng Pagsusulit *</Label>
             <select
               id="storyId"
               value={formData.storyId}
@@ -523,14 +523,14 @@ const CreateQuizForm = ({
               disabled={mode === 'edit'} // Don't allow changing story in edit mode
             >
               <option value="">
-                {loadingStories ? 'Kumukuha ng mga kuwento...' : 'Pumili ng Kuwento'}
+                {loadingStories ? 'Kumukuha ng mga kuwento...' : 'Pumili ng Kuwento ng Pagsusulit'}
               </option>
               {stories.map(story => (
                 <option key={story.id} value={story.id}>{story.title}</option>
               ))}
             </select>
             {mode === 'edit' && (
-              <p className="text-xs text-gray-500">Hindi mababago ang kuwento kapag nag-edit ng quiz</p>
+              <p className="text-xs text-gray-500">Hindi mababago ang kuwento kapag nag-edit ng pagsusulit</p>
             )}
           </div>
 
@@ -579,7 +579,7 @@ const CreateQuizForm = ({
           {/* Questions Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Mga Tanong</h3>
+              <h3 className="text-lg font-semibold">Mga Tanong ng Pagsusulit</h3>
               <div className="flex items-center space-x-4">
                 <Badge variant="outline" className="text-teal-600">
                   {questions.length} tanong{questions.length !== 1 ? '' : ''}
@@ -589,7 +589,6 @@ const CreateQuizForm = ({
                 </Badge>
               </div>
             </div>
-
 
             {questions.map((question, questionIndex) => (
               <Card key={questionIndex} className="border-teal-100">
@@ -618,6 +617,7 @@ const CreateQuizForm = ({
                           className="text-red-600 border-red-200 hover:bg-red-50"
                         >
                           <X className="h-4 w-4" />
+                          Alisin ang Tanong
                         </Button>
                       )}
                     </div>
@@ -668,6 +668,7 @@ const CreateQuizForm = ({
                               className="text-red-600 border-red-200 hover:bg-red-50 px-2"
                             >
                               <Minus className="h-4 w-4" />
+                              Alisin ang Pagpipilian
                             </Button>
                           )}
                         </div>

@@ -75,8 +75,8 @@ const CreateClassForm = () => {
         <Card className="border-2 border-dashed border-teal-200 hover:border-teal-400 transition-colors cursor-pointer">
           <CardContent className="p-6 text-center">
             <Plus className="h-12 w-12 text-teal-500 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-900 mb-2">Create New Class</h3>
-            <p className="text-sm text-gray-500">Set up a new class for your students</p>
+            <h3 className="font-semibold text-gray-900 mb-2">Gumawa ng Bagong Klase</h3>
+            <p className="text-sm text-gray-500">Mag-set up ng bagong klase para sa inyong mga estudyante</p>
           </CardContent>
         </Card>
       </DialogTrigger>
@@ -85,10 +85,10 @@ const CreateClassForm = () => {
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Users className="h-5 w-5 text-teal-600" />
-            <span>Create New Class</span>
+            <span>Gumawa ng Bagong Klase</span>
           </DialogTitle>
           <DialogDescription>
-            Fill in the details to create a new class. Students will use the generated class code to enroll.
+            Punan ang mga detalye upang gumawa ng bagong klase. Gagamitin ng mga estudyante ang nabuo na class code upang makasali.
           </DialogDescription>
         </DialogHeader>
         
@@ -99,10 +99,10 @@ const CreateClassForm = () => {
               name="className"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Class Name *</FormLabel>
+                  <FormLabel>Pangalan ng Klase *</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="e.g., Rizal, English Literature, Filipino History" 
+                      placeholder="hal. Rizal, Panitikang Ingles, Kasaysayan ng Pilipinas" 
                       {...field}
                       className="focus:ring-teal-500 focus:border-teal-500"
                     />
@@ -117,17 +117,17 @@ const CreateClassForm = () => {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description *</FormLabel>
+                  <FormLabel>Paglalarawan  *</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Provide a detailed description of the class, including objectives, topics covered, and what students will learn..."
+                      placeholder="Magbigay ng detalyadong deskripsyon ng klase, kabilang ang mga layunin, paksang tatalakayin, at matututuhan ng mga estudyante..."
                       {...field}
                       className="focus:ring-teal-500 focus:border-teal-500 min-h-[100px]"
                       rows={4}
                     />
                   </FormControl>
                   <FormDescription>
-                    Describe the class content, objectives, and what students will learn.
+                    Ilarawan ang mga nilalaman, layunin, at matututuhan ng mga estudyante sa klase.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -140,13 +140,13 @@ const CreateClassForm = () => {
                 variant="outline" 
                 onClick={() => setIsOpen(false)}
               >
-                Cancel
+                Kanselahin
               </Button>
               <Button 
                 type="submit" 
                 className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
               >
-                Create Class
+                Gumawa ng Klase
               </Button>
             </DialogFooter>
           </form>

@@ -1,5 +1,5 @@
 import { api } from '../api';
-import type { ApiResponse, Class, Student } from './types';
+import type { ApiResponse, Class, Student, CommonStoryDTO } from './types';
 
 export const classService = {
   getAllClasses: async (): Promise<ApiResponse<Class[]>> => {
@@ -19,6 +19,11 @@ export const classService = {
 
   updateClass: async (classId: string, data: Partial<Class>): Promise<ApiResponse<Class>> => {
     const response = await api.put(`/classes/${classId}`, data);
+    return response.data;
+  },
+
+  updateClassName: async (classId: string, className: string): Promise<ApiResponse<Class>> => {
+    const response = await api.put(`/classes/${classId}/name`, { className });
     return response.data;
   },
 
@@ -68,7 +73,7 @@ export const classService = {
   },
   
   // Get common stories added to a class
-  getClassCommonStories: async (classId: string): Promise<ApiResponse<any[]>> => {
+  getClassCommonStories: async (classId: string): Promise<ApiResponse<CommonStoryDTO[]>> => {
     const response = await api.get(`/classes/${classId}/common-stories`);
     return response.data;
   },

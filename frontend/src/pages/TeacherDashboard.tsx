@@ -20,6 +20,48 @@ import { classService } from '@/lib/services/classService';
 import type { Class } from '@/lib/services/types';
 
 const TeacherDashboard = () => {
+  const [isEditingClassName, setIsEditingClassName] = useState(false);
+  const [editedClassName, setEditedClassName] = useState("");
+  const [savingClassName, setSavingClassName] = useState(false);
+  const [classNameError, setClassNameError] = useState<string|null>(null);
+
+  // ...existing state...
+
+  // Edit handlers
+  const handleEditClassName = () => {
+    setIsEditingClassName(true);
+    setEditedClassName(currentClass?.className || "");
+    setClassNameError(null);
+  };
+  const handleCancelEditClassName = () => {
+    setIsEditingClassName(false);
+    setEditedClassName("");
+    setClassNameError(null);
+  };
+  const handleSaveClassName = async () => {
+    if (!editedClassName.trim()) {
+      setClassNameError("Class name cannot be empty");
+      return;
+    }
+    setSavingClassName(true);
+    setClassNameError(null);
+    try {
+      const resp = await classService.updateClassName(currentClass.classId, editedClassName.trim());
+      if (resp.data) {
+        setClasses(prev => prev.map(cls =>
+          cls.classId === currentClass.classId ? { ...cls, className: editedClassName.trim() } : cls
+        ));
+        setIsEditingClassName(false);
+      } else {
+        setClassNameError("Failed to update class name");
+      }
+    } catch (err) {
+      setClassNameError("Failed to update class name");
+    } finally {
+      setSavingClassName(false);
+    }
+  };
+
   const { user } = useAuth();
   
   // State for classes data from API
@@ -112,9 +154,9 @@ const TeacherDashboard = () => {
   };
 
   const getProgressLabel = (progress: number) => {
-    if (progress >= 80) return 'Excellent';
-    if (progress >= 60) return 'Good';
-    return 'Needs Help';
+    if (progress >= 80) return 'Mahusay';
+    if (progress >= 60) return 'Magaling';
+    return 'Kailangang ng Tulong';
   };
 
   const copyClassCode = async (classCode: string) => {
@@ -140,9 +182,9 @@ const TeacherDashboard = () => {
                   <SidebarTrigger className="text-teal-600" />
                   <div>
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                      Teacher Dashboard
+                      Dashboard ng Guro
                     </h1>
-                    <p className="text-gray-600 text-sm">Overview of system statistics and activities</p>
+                    <p className="text-gray-600 text-sm">Pangkalahatang-ideya ng mga istatistika at aktibidad ng sistema</p>
                   </div>
                 </div>
               </div>
@@ -152,16 +194,16 @@ const TeacherDashboard = () => {
               {/* Welcome Section */}
               <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  Welcome back, {user?.name}! 👩‍🏫
+                  Maligayang pagbabalik, {user?.name}! 👩‍🏫
                 </h1>
-                <p className="text-gray-600">Monitor your students' progress and celebrate their achievements.</p>
+                <p className="text-gray-600">Subaybayan ang progreso ng iyong mga mag-aaral at ipagdiwang ang kanilang mga tagumpay.</p>
               </div>
 
               {/* Loading State */}
               {loading && (
                 <div className="flex justify-center items-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
-                  <span className="ml-4 text-gray-600">Loading your classes...</span>
+                  <span className="ml-4 text-gray-600">Ikinakarga ang iyong mga klase...</span>
                 </div>
               )}
 
@@ -185,13 +227,13 @@ const TeacherDashboard = () => {
                     <div className="mb-8">
                       <Card>
                         <CardHeader>
-                          <CardTitle>Select Class</CardTitle>
-                          <CardDescription>Choose a class to view detailed information</CardDescription>
+                          <CardTitle>Pumili ng Klase</CardTitle>
+                          <CardDescription>Pumili ng klase upang makita ang detalyadong impormasyon</CardDescription>
                         </CardHeader>
                         <CardContent>
                           <Select value={selectedClass} onValueChange={(value) => setSelectedClass(value)}>
                             <SelectTrigger className="w-full max-w-md">
-                              <SelectValue placeholder="Select a class" />
+                              <SelectValue placeholder="Pumili ng klase" />
                             </SelectTrigger>
                             <SelectContent>
                               {classes.map((cls) => (
@@ -199,7 +241,7 @@ const TeacherDashboard = () => {
                                   <div className="flex items-center justify-between w-full">
                                     <span className="font-medium">{cls.className}</span>
                                     <span className="text-sm text-gray-500 ml-4">
-                                      {cls.students?.length || 0} students
+                                      {cls.studentCount ?? 0} mga mag-aaral
                                     </span>
                                   </div>
                                 </SelectItem>
@@ -215,18 +257,43 @@ const TeacherDashboard = () => {
                   {currentClass && (
                     <Card className="mb-8 bg-gradient-to-r from-teal-500 to-cyan-600 text-white">
                       <CardContent className="p-6">
-                        <h2 className="text-2xl font-bold mb-2">{currentClass.className}</h2>
+                        <div className="flex items-center gap-2 mb-2">
+  {isEditingClassName ? (
+    <>
+      <input
+        className="text-2xl font-bold text-black rounded px-2 py-1 mr-2"
+        style={{ minWidth: 120 }}
+        value={editedClassName}
+        onChange={e => setEditedClassName(e.target.value)}
+        autoFocus
+      />
+      <Button size="sm" variant="secondary" className="mr-1" disabled={savingClassName}
+        onClick={handleSaveClassName}>
+        {savingClassName ? 'I-sine-save...' : 'I-save'}
+      </Button>
+      <Button size="sm" variant="ghost" onClick={handleCancelEditClassName} disabled={savingClassName}>Kanselahin</Button>
+    </>
+  ) : (
+    <>
+      <h2 className="text-2xl font-bold">{currentClass.className}</h2>
+      <Button size="sm" variant="ghost" className="ml-2 text-white border border-white/40 hover:bg-white/10"
+        onClick={handleEditClassName} title="Edit class name">
+        Edit
+      </Button>
+    </>
+  )}
+</div>
                         <p className="text-teal-100 mb-4">{currentClass.description}</p>
                         <div className="flex items-center space-x-4">
                           <div className="flex items-center space-x-2">
                             <Badge variant="secondary" className="bg-white text-teal-600">
-                              Class Code: {currentClass.classCode}
+                              Kodigo ng Klase: {currentClass.classCode}
                                <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => copyClassCode(currentClass.classCode)}
                               className="h-6 w-6 p-0 text-black hover:bg-white/20"
-                              title={copiedClassCode ? "Copied!" : "Copy class code"}
+                              title={copiedClassCode ? "Nakopya!" : "Kopyahin ang kodigo ng klase"}
                             >
                               {copiedClassCode ? (
                                 <Check className="h-3 w-3" />
@@ -238,7 +305,7 @@ const TeacherDashboard = () => {
                            
                           </div>
                           <Badge variant="secondary" className="bg-white text-teal-600">
-                            {currentClass.students?.length || 0} Students
+                            {currentClass.studentCount || 0}  mag-aaral
                           </Badge>
                         </div>
                       </CardContent>
@@ -250,8 +317,8 @@ const TeacherDashboard = () => {
                     <Card className="mb-8">
                       <CardContent className="p-6 text-center">
                         <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No Classes Found</h3>
-                        <p className="text-gray-600 mb-4">You don't have any classes assigned yet.</p>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Walang Natagpuang Klase</h3>
+                        <p className="text-gray-600 mb-4">Wala ka pang nakatalagang mga klase.</p>
                         <CreateClassForm />
                       </CardContent>
                     </Card>
@@ -271,7 +338,7 @@ const TeacherDashboard = () => {
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-teal-100">Total Students</p>
+                                <p className="text-teal-100">Kabuuang mag-aaral</p>
                                 <p className="text-2xl font-bold">{currentClass?.students?.length || classData.totalStudents}</p>
                               </div>
                               <Users className="h-8 w-8 text-teal-100" />
@@ -283,7 +350,7 @@ const TeacherDashboard = () => {
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-cyan-100">Active Today</p>
+                                <p className="text-cyan-100">Aktibo Ngayon</p>
                                 <p className="text-2xl font-bold">{classData.activeStudents}</p>
                               </div>
                               <TrendingUp className="h-8 w-8 text-cyan-100" />
@@ -295,7 +362,7 @@ const TeacherDashboard = () => {
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-teal-100">Avg Progress</p>
+                                <p className="text-teal-100">Karaniwang Progreso</p>
                                 <p className="text-2xl font-bold">{classData.averageProgress}%</p>
                               </div>
                               <Award className="h-8 w-8 text-teal-100" />
@@ -307,7 +374,7 @@ const TeacherDashboard = () => {
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-cyan-100">Stories Read</p>
+                                <p className="text-cyan-100">Mga Kuwento na Nabasa</p>
                                 <p className="text-2xl font-bold">{classData.completedStories}</p>
                               </div>
                               <BookOpen className="h-8 w-8 text-cyan-100" />
@@ -389,13 +456,13 @@ const TeacherDashboard = () => {
 
                         <CreateQuizForm />
 
-                        <AddCommonStoryToClass selectedClass={selectedClass} />
+                        
 
                         <Card className="border-2 border-dashed border-cyan-200 hover:border-cyan-400 transition-colors cursor-pointer">
                           <CardContent className="p-6 text-center">
                             <TrendingUp className="h-12 w-12 text-cyan-500 mx-auto mb-4" />
-                            <h3 className="font-semibold text-gray-900 mb-2">View Reports</h3>
-                            <p className="text-sm text-gray-500">Generate detailed progress reports</p>
+                            <h3 className="font-semibold text-gray-900 mb-2">Tingnan ang mga Ulat</h3>
+                            <p className="text-sm text-gray-500">Gumawa ng detalyadong ulat ng progreso</p>
                           </CardContent>
                         </Card>
                       </div>

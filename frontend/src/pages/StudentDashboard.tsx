@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Award, User, Play, Star, Loader2, Settings, Trophy, BarChart } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BookOpen, Award, User, Play, Star, Loader2, Settings, Trophy, BarChart, Filter } from 'lucide-react';
 import StudentEnrollment from '../components/StudentEnrollment';
 import { enrollmentService } from '@/lib/services/enrollmentService';
 import { classService } from '@/lib/services/classService';
@@ -15,7 +16,7 @@ import { leaderboardService } from '@/lib/services/leaderboardService';
 import { quizService } from '@/lib/services/quizService';
 import { toast } from '@/hooks/use-toast';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import type { Class } from '@/lib/services/types';
+import type { Class, CommonStoryDTO } from '@/lib/services/types';
 import type { LeaderboardEntry as BaseLeaderboardEntry } from '@/lib/services/types';
 
 // Extended LeaderboardEntry with percentage for our display purposes
@@ -124,6 +125,9 @@ const StudentDashboard = () => {
   const { safeExecute } = useErrorHandler();
   const [studentClasses, setStudentClasses] = useState<Class[]>([]);
   const [stories, setStories] = useState<ClassStory[]>([]);
+  const [commonStories, setCommonStories] = useState<CommonStoryDTO[]>([]);
+  const [filteredStories, setFilteredStories] = useState<(ClassStory | CommonStoryDTO)[]>([]);
+  const [storyFilter, setStoryFilter] = useState<'all' | 'teacher' | 'filiup'>('all');
   const [loading, setLoading] = useState(true);
   const [storiesLoading, setStoriesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +149,55 @@ const StudentDashboard = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [classLeaderboard, setClassLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+
+  // Helper function to check if a story is a CommonStoryDTO
+  const isCommonStory = (story: ClassStory | CommonStoryDTO): story is CommonStoryDTO => {
+    return 'createdByUserName' in story && 'classId' in story;
+  };
+
+  // Function to filter stories based on creator type
+  const filterStories = (allStories: ClassStory[], allCommonStories: CommonStoryDTO[], filter: 'all' | 'teacher' | 'filiup') => {
+    console.log('🔍 Filtering stories:', {
+      filter,
+      classStoriesCount: allStories.length,
+      commonStoriesCount: allCommonStories.length,
+      commonStories: allCommonStories.map(s => ({
+        title: s.title,
+        createdBy: s.createdByUserName
+      }))
+    });
+    
+    let filtered: (ClassStory | CommonStoryDTO)[] = [];
+    
+    switch (filter) {
+      case 'all':
+        filtered = [...allStories, ...allCommonStories];
+        break;
+      case 'teacher': {
+        // Class stories are created by teachers
+        const teacherCommonStories = allCommonStories.filter(story => 
+          story.createdByUserName && story.createdByUserName !== 'filiup'
+        );
+        console.log('👨‍🏫 Teacher filter - common stories by teachers:', teacherCommonStories.length);
+        filtered = [...allStories, ...teacherCommonStories];
+        break;
+      }
+      case 'filiup': {
+        // Only common stories created by 'filiup'
+        const filiupStories = allCommonStories.filter(story => 
+          story.createdByUserName === 'filiup'
+        );
+        console.log('🤖 FiliUp filter - stories by filiup:', filiupStories.length);
+        filtered = filiupStories;
+        break;
+      }
+      default:
+        filtered = [...allStories, ...allCommonStories];
+    }
+    
+    console.log('✅ Filtered results:', filtered.length, 'stories');
+    return filtered;
+  };
 
   // Function to fetch user statistics (extracted for reuse)
   const fetchUserStats = async () => {
@@ -282,10 +335,12 @@ const StudentDashboard = () => {
 
       setStoriesLoading(true);
       const allStories: ClassStory[] = [];
+      const allCommonStories: CommonStoryDTO[] = [];
 
       // Fetch stories for each class
       for (const studentClass of studentClasses) {
-        const { data: classStories, error } = await safeExecute(
+        // Fetch class stories
+        const { data: classStories, error: classStoriesError } = await safeExecute(
           () => storyService.getStoriesByClass(studentClass.classId),
           {
             showToast: false, // Don't show individual toasts for each class
@@ -299,12 +354,34 @@ const StudentDashboard = () => {
         if (classStories) {
           allStories.push(...classStories);
         }
+
+        // Fetch common stories for the class
+        const { data: commonStoriesResponse, error: commonStoriesError } = await safeExecute(
+          () => classService.getClassCommonStories(studentClass.classId),
+          {
+            showToast: false,
+            preventAutoRedirect: true,
+            onError: (appError) => {
+              console.error(`Error fetching common stories for class ${studentClass.className}:`, appError);
+            }
+          }
+        );
+
+        if (commonStoriesResponse?.data) {
+          console.log(`📚 Common stories for class ${studentClass.className}:`, commonStoriesResponse.data);
+          allCommonStories.push(...commonStoriesResponse.data);
+        }
       }
 
       setStories(allStories);
+      setCommonStories(allCommonStories);
+      
+      // Apply current filter to combined stories
+      const filtered = filterStories(allStories, allCommonStories, storyFilter);
+      setFilteredStories(filtered);
       
       // Show a single toast if no stories were loaded and there were errors
-      if (allStories.length === 0 && studentClasses.length > 0) {
+      if (allStories.length === 0 && allCommonStories.length === 0 && studentClasses.length > 0) {
         toast({
           title: "Info",
           description: "Hindi pa may mga kuwento sa inyong mga klase.",
@@ -316,7 +393,7 @@ const StudentDashboard = () => {
       // Update total stories count in userStats
       setUserStats(prev => ({
         ...prev,
-        totalStories: allStories.length
+        totalStories: allStories.length + allCommonStories.length
       }));
       
       // Refresh user stats after stories are loaded to get accurate completion percentages
@@ -325,6 +402,18 @@ const StudentDashboard = () => {
 
     fetchStoriesForClasses();
   }, [studentClasses, safeExecute]);
+
+  // Update filtered stories when filter changes
+  useEffect(() => {
+    console.log('🔄 Filter effect triggered:', {
+      storyFilter,
+      storiesCount: stories.length,
+      commonStoriesCount: commonStories.length
+    });
+    const filtered = filterStories(stories, commonStories, storyFilter);
+    setFilteredStories(filtered);
+    console.log('🎯 Set filtered stories count:', filtered.length);
+  }, [stories, commonStories, storyFilter]);
 
   // Function to refresh classes after successful enrollment
   const handleEnrollmentSuccess = async () => {
@@ -740,26 +829,6 @@ const StudentDashboard = () => {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="bg-gradient-to-r from-cyan-400 to-teal-500 text-white border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-cyan-100">Level</p>
-                  {statsLoading ? (
-                    <div className="flex items-center">
-                      <Loader2 className="h-4 w-4 animate-spin text-cyan-100 mr-2" />
-                      <p className="text-2xl font-bold">Loading...</p>
-                    </div>
-                  ) : (
-                    <p className="text-2xl font-bold">{userStats.level}</p>
-                  )}
-                </div>
-                <Award className="h-8 w-8 text-cyan-100" />
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="bg-gradient-to-r from-teal-500 to-cyan-400 text-white border-0">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -804,12 +873,32 @@ const StudentDashboard = () => {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <BookOpen className="h-5 w-5" />
-                  <span>Mga Kwento</span>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <BookOpen className="h-5 w-5" />
+                    <span>Mga Kwento</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <Select value={storyFilter} onValueChange={(value: 'all' | 'teacher' | 'filiup') => {
+                      console.log('📝 Filter changed to:', value);
+                      setStoryFilter(value);
+                    }}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Filter stories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Stories</SelectItem>
+                        <SelectItem value="teacher">By Teachers</SelectItem>
+                        <SelectItem value="filiup">By FiliUp</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardTitle>
                 <CardDescription>
                   Basahin ang mga kwento at sagutin ang mga tanong para makakuha ng points!
+                  {storyFilter === 'teacher' && ' (Teacher created stories)'}
+                  {storyFilter === 'filiup' && ' (AI generated stories)'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -818,11 +907,23 @@ const StudentDashboard = () => {
                     <Loader2 className="h-8 w-8 animate-spin text-teal-600 mr-3" />
                     <p className="text-gray-600">Loading stories...</p>
                   </div>
-                ) : stories.length === 0 ? (
+                ) : filteredStories.length === 0 ? (
                   <div className="text-center py-8">
                     <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600">No stories available yet.</p>
-                    <p className="text-sm text-gray-500">Your teachers will add stories to your classes soon!</p>
+                    <p className="text-gray-600">
+                      {storyFilter === 'all' 
+                        ? 'No stories available yet.' 
+                        : storyFilter === 'teacher' 
+                        ? 'No teacher-created stories available yet.'
+                        : 'No FiliUp AI stories available yet.'
+                      }
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {storyFilter === 'all' 
+                        ? 'Your teachers will add stories to your classes soon!'
+                        : 'Try changing the filter to see other stories.'
+                      }
+                    </p>
                   </div>
                 ) : (
                   <div className="relative">
@@ -830,9 +931,47 @@ const StudentDashboard = () => {
                     <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-teal-300 via-cyan-400 to-teal-500"></div>
                     
                     <div className="space-y-8">
-                      {stories.map((story, index) => {
-                        const difficulty = getDifficultyFromGenre(story.genre);
-                        const readingTime = getReadingTimeEstimate(story.content);
+                      {filteredStories.map((story, index) => {
+                        const isCommon = isCommonStory(story);
+                        
+                        let storyId: string;
+                        let storyTitle: string;
+                        let storyContent: string;
+                        let storyGenre: string;
+                        let storyFictionType: string;
+                        let storyCoverUrl: string | undefined;
+                        let storyCreatedAt: string;
+                        let storyIsActive: boolean;
+                        let storyClassName: string;
+                        let createdBy: string | undefined;
+                        
+                        if (isCommon) {
+                          storyId = story.storyId;
+                          storyTitle = story.title;
+                          storyContent = story.content;
+                          storyGenre = story.genre;
+                          storyFictionType = story.fictionType;
+                          storyCoverUrl = story.coverPictureUrl;
+                          storyCreatedAt = story.createdAt;
+                          storyIsActive = story.isActive;
+                          storyClassName = story.className;
+                          createdBy = story.createdByUserName;
+                        } else {
+                          // Type guard ensures this is a ClassStory
+                          storyId = story.storyId;
+                          storyTitle = story.title;
+                          storyContent = story.content;
+                          storyGenre = story.genre;
+                          storyFictionType = story.fictionType;
+                          storyCoverUrl = story.coverPictureUrl;
+                          storyCreatedAt = story.createdAt;
+                          storyIsActive = story.isActive;
+                          storyClassName = (story as any).classEntity?.className || 'Unknown Class';
+                          createdBy = 'teacher';
+                        }
+                        
+                        const difficulty = getDifficultyFromGenre(storyGenre);
+                        const readingTime = getReadingTimeEstimate(storyContent);
                         
                         // Color schemes for different genres
                         const bookColors = {
@@ -855,17 +994,17 @@ const StudentDashboard = () => {
                           'Mystery': 'shadow-gray-700/30'
                         };
                         
-                        const bookGradient = bookColors[story.genre as keyof typeof bookColors] || bookColors['MAIKLING_KWENTO'];
-                        const shadowColor = shadowColors[story.genre as keyof typeof shadowColors] || shadowColors['MAIKLING_KWENTO'];
+                        const bookGradient = bookColors[storyGenre as keyof typeof bookColors] || bookColors['MAIKLING_KWENTO'];
+                        const shadowColor = shadowColors[storyGenre as keyof typeof shadowColors] || shadowColors['MAIKLING_KWENTO'];
                         
                         return (
-                          <div key={story.storyId} className={`relative flex items-center ${index % 2 === 0 ? 'justify-start pl-20' : 'justify-end pr-20'}`}>
+                          <div key={`${isCommon ? 'common' : 'class'}-${storyId}`} className={`relative flex items-center ${index % 2 === 0 ? 'justify-start pl-20' : 'justify-end pr-20'}`}>
                             {/* Timeline Dot */}
                             <div className={`absolute ${index % 2 === 0 ? 'left-6' : 'right-6'} w-4 h-4 bg-gradient-to-r from-teal-400 to-cyan-500 rounded-full border-4 border-white shadow-lg z-10`}></div>
                             
                             {/* 3D Book Container */}
                             <div className={`group cursor-pointer transition-all duration-500 hover:scale-105 hover:-translate-y-2 ${index % 2 === 0 ? '' : 'flex-row-reverse'}`}>
-                              <Link to={`/story/${story.storyId}`}>
+                              <Link to={`/story/${storyId}`}>
                                 <div className="relative">
                                   {/* Book Main Body */}
                                   <div className={`relative w-48 h-64 bg-gradient-to-br ${bookGradient} rounded-r-lg rounded-l-sm shadow-2xl ${shadowColor} group-hover:shadow-3xl transition-all duration-500 transform perspective-1000`}>
@@ -882,10 +1021,10 @@ const StudentDashboard = () => {
                                     <div className="relative z-10 p-4 h-full flex flex-col justify-between">
                                       {/* Cover Image Area */}
                                       <div className="flex-1 mb-4">
-                                        {story.coverPictureUrl ? (
+                                        {storyCoverUrl ? (
                                           <img 
-                                            src={story.coverPictureUrl} 
-                                            alt={story.title}
+                                            src={storyCoverUrl} 
+                                            alt={storyTitle}
                                             className="w-full h-32 object-cover rounded-lg shadow-md border-2 border-white/30"
                                           />
                                         ) : (
@@ -898,15 +1037,28 @@ const StudentDashboard = () => {
                                       {/* Book Title */}
                                       <div className="text-center">
                                         <h3 className="text-white font-bold text-sm leading-tight mb-2 drop-shadow-lg">
-                                          {story.title}
+                                          {storyTitle}
                                         </h3>
                                         
                                         {/* Genre Badge */}
                                         <div className="mb-2">
                                           <span className="inline-block px-2 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-medium border border-white/30">
-                                            {story.genre}
+                                            {storyGenre}
                                           </span>
                                         </div>
+                                        
+                                        {/* Creator Badge */}
+                                        {createdBy && (
+                                          <div className="mb-2">
+                                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${
+                                              createdBy === 'filiup' 
+                                                ? 'bg-purple-500/20 border-purple-300/30 text-purple-100' 
+                                                : 'bg-blue-500/20 border-blue-300/30 text-blue-100'
+                                            }`}>
+                                              {createdBy === 'filiup' ? '🤖 AI Generated' : '👨‍🏫 Teacher'}
+                                            </span>
+                                          </div>
+                                        )}
                                         
                                         {/* Reading Time */}
                                         <div className="text-white/80 text-xs">
@@ -933,7 +1085,7 @@ const StudentDashboard = () => {
                                     <div className="absolute top-4 left-4 w-8 h-12 bg-white/10 rounded-lg transform rotate-12 opacity-60"></div>
                                     
                                     {/* Status Indicator */}
-                                    {story.isActive && (
+                                    {storyIsActive && (
                                       <div className="absolute top-2 left-2 w-3 h-3 bg-green-400 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
                                     )}
                                   </div>
@@ -953,20 +1105,25 @@ const StudentDashboard = () => {
                                     } className="text-xs">
                                       {difficulty}
                                     </Badge>
-                                    {story.fictionType && (
+                                    {storyFictionType && (
                                       <Badge variant="outline" className="text-xs">
-                                        {story.fictionType}
+                                        {storyFictionType}
+                                      </Badge>
+                                    )}
+                                    {createdBy && (
+                                      <Badge variant={createdBy === 'filiup' ? 'secondary' : 'default'} className="text-xs">
+                                        {createdBy === 'filiup' ? '🤖 AI' : '👨‍🏫 Teacher'}
                                       </Badge>
                                     )}
                                   </div>
                                   
                                   <p className="text-sm text-gray-600 line-clamp-3">
-                                    {story.content.substring(0, 120)}...
+                                    {storyContent.substring(0, 120)}...
                                   </p>
                                   
                                   <div className="flex items-center justify-between text-xs text-gray-500">
-                                    <span>📚 {story.classEntity.className}</span>
-                                    <span>🕒 {new Date(story.createdAt).toLocaleDateString()}</span>
+                                    <span>📚 {storyClassName}</span>
+                                    <span>🕒 {new Date(storyCreatedAt).toLocaleDateString()}</span>
                                   </div>
                                   
                                   <Button 
@@ -1085,7 +1242,7 @@ const StudentDashboard = () => {
             </Card>
 
             {/* Progress Card */}
-            <Card className="mt-6">
+            {/* <Card className="mt-6">
               <CardHeader>
                 <CardTitle>Overall Progress</CardTitle>
               </CardHeader>
@@ -1111,7 +1268,7 @@ const StudentDashboard = () => {
                   />
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </div>

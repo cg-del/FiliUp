@@ -14,6 +14,7 @@ import { ErrorType } from '@/lib/errors/types';
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -125,7 +126,7 @@ const Login = () => {
         <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
           <CardHeader className="space-y-4 p-4 md:p-6">
             <CardTitle className="text-xl md:text-2xl text-center">
-              Welcome to FiliUp
+              Maligayang Pagdating sa FiliUp
             </CardTitle>
             <CardDescription className="text-center text-sm md:text-base">
               Mag-login para magsimula ng inyong Filipino learning adventure!
@@ -134,11 +135,11 @@ const Login = () => {
           <CardContent className="p-4 md:p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-sm md:text-base">Username</Label>
+                <Label htmlFor="username" className="text-sm md:text-base">Pangalan ng Gumagamit</Label>
                 <Input
                   id="username"
                   type="text"
-                  placeholder="inyong-username"
+                  placeholder="Ilagay ang pangalan ng gumagamit"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -146,34 +147,48 @@ const Login = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm md:text-base">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Inyong password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-10 md:h-11 text-sm md:text-base"
-                />
+                <Label htmlFor="password" className="text-sm md:text-base">Lihim na Salita</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Ilagay ang lihim na salita"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-10 md:h-11 text-sm md:text-base pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-.39 1.21-1.063 2.296-1.958 3.163M15.362 17.362A9.953 9.953 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.293-3.95" /></svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.293-3.95m2.122-2.122A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7-.39 1.21-1.063 2.296-1.958 3.163M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    )}
+                  </button>
+                </div>
               </div>
               <Button
                 type="submit"
                 className="w-full h-10 md:h-11 text-base md:text-lg bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                 disabled={isLoading}
               >
-                {isLoading ? 'Logging in...' : 'Mag-login'}
+                {isLoading ? 'Nagla-log in...' : 'Mag-login'}
               </Button>
             </form>
             
             <div className="mt-4 text-center space-y-2">
               <p className="text-sm text-gray-600">
-                Wala pang account?{' '}
+                Wala ka pang account?{' '}
                 <Link 
                   to="/signup"
                   className="text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  Mag-sign up dito
+                  Magrehistro dito
                 </Link>
               </p>
             </div>
