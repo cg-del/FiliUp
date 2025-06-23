@@ -82,6 +82,24 @@ public class ClassService {
         return classRepository.findByTeacherUserId(teacherId);
     }
 
+    public List<edu.cit.filiup.dto.ClassWithStudentCountDto> getClassesWithStudentCountByTeacher(UUID teacherId) {
+        List<ClassEntity> classes = classRepository.findByTeacherUserId(teacherId);
+        List<edu.cit.filiup.dto.ClassWithStudentCountDto> result = new java.util.ArrayList<>();
+        for (ClassEntity c : classes) {
+            int studentCount = enrollmentRepository.findByClassCodeAndIsAccepted(c.getClassCode(), true).size();
+            result.add(new edu.cit.filiup.dto.ClassWithStudentCountDto(
+                c.getClassId(),
+                c.getClassName(),
+                c.getDescription(),
+                c.getCreatedAt(),
+                c.getIsActive(),
+                c.getClassCode(),
+                studentCount
+            ));
+        }
+        return result;
+    }
+
     public List<ClassEntity> getClassesByStudent(UUID studentId) {
         return classRepository.findByStudentsUserId(studentId);
     }
@@ -116,6 +134,16 @@ public class ClassService {
         }
 
         return response;
+    }
+
+    // Update
+    // Update class name only
+    @Transactional
+    public ClassEntity updateClassName(UUID classId, String newName) {
+        ClassEntity classEntity = classRepository.findById(classId)
+            .orElseThrow(() -> new RuntimeException("Class not found"));
+        classEntity.setClassName(newName);
+        return classRepository.save(classEntity);
     }
 
     // Update
@@ -269,7 +297,7 @@ public class ClassService {
     }
     
     @Transactional(readOnly = true)
-    public List<CommonStoryEntity> getClassCommonStories(UUID classId) {
+    public List<ClassCommonStoryEntity> getClassCommonStories(UUID classId) {
         // Check if class exists
         if (!classRepository.existsById(classId)) {
             throw new EntityNotFoundException("Class not found");
@@ -278,10 +306,8 @@ public class ClassService {
         // Get all ClassCommonStoryEntity records for this class
         List<ClassCommonStoryEntity> classCommonStories = classCommonStoryRepository.findByClassEntityClassId(classId);
         
-        // Extract and return just the CommonStoryEntity objects
-        return classCommonStories.stream()
-            .map(ClassCommonStoryEntity::getStory)
-            .collect(Collectors.toList());
+        // Return the join entities directly
+        return classCommonStories;
     }
     
     @Transactional

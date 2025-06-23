@@ -1,4 +1,4 @@
-import { api } from '@/lib/api';
+import { api } from '../api';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -23,6 +23,22 @@ interface CreateQuizRequestData {
   closesAt: string;
   isActive: boolean;
   storyId: string;
+  questions: {
+    questionText: string;
+    options: string[];
+    correctAnswer: string;
+    points: number;
+  }[];
+}
+
+export interface CreateCommonStoryQuizData {
+  title: string;
+  description: string;
+  category: string;
+  timeLimitMinutes: number;
+  opensAt: string;
+  closesAt: string;
+  isActive: boolean;
   questions: {
     questionText: string;
     options: string[];
@@ -59,11 +75,20 @@ export interface QuizData {
   timeLimitMinutes: number;
   opensAt: string;
   closesAt: string;
-  storyId: string;
-  storyTitle: string;
+  storyId?: string; // Optional for common story quizzes
+  storyTitle?: string; // Optional for common story quizzes
+  commonStoryId?: string; // For common story quizzes
+  commonStoryTitle?: string; // For common story quizzes
+  quizType?: string; // "STORY" or "COMMON_STORY"
   createdById: string;
   createdByName: string;
-  questions: QuizQuestion[];
+  questions: {
+    questionId: string;
+    questionText: string;
+    options: string[];
+    correctAnswer?: string;
+    points: number;
+  }[];
   createdAt: string;
   isActive: boolean;
 }
@@ -198,15 +223,17 @@ export const quizService = {
     return response.data;
   },
 
-  getQuizById: async (id: string): Promise<ApiResponse<QuizData>> => {
-    const response = await api.get(`/quizzes/${id}`);
+  getQuizById: async (quizId: string): Promise<QuizData> => {
+    const response = await api.get(`/v1/quizzes/${quizId}`);
     return response.data;
   },
 
-  createQuiz: async (data: Omit<QuizData, 'id'>): Promise<ApiResponse<QuizData>> => {
-    const response = await api.post('/quizzes', data);
+  createQuiz: async (quizData: QuizData): Promise<QuizData> => {
+    const response = await api.post('/v1/quizzes', quizData);
     return response.data;
   },
+
+
 
   // Method for creating quiz for a specific story
   createQuizForStory: async (data: CreateQuizRequestData): Promise<CreateQuizResponse> => {
@@ -214,14 +241,13 @@ export const quizService = {
     return response.data;
   },
 
-  updateQuiz: async (id: string, data: Partial<QuizData>): Promise<ApiResponse<QuizData>> => {
-    const response = await api.put(`/v1/quizzes/${id}`, data);
+  updateQuiz: async (quizId: string, quizData: QuizData): Promise<QuizData> => {
+    const response = await api.put(`/v1/quizzes/${quizId}`, quizData);
     return response.data;
   },
 
-  deleteQuiz: async (id: string): Promise<ApiResponse<void>> => {
-    const response = await api.delete(`/quizzes/${id}`);
-    return response.data;
+  deleteQuiz: async (quizId: string): Promise<void> => {
+    await api.delete(`/v1/quizzes/${quizId}`);
   },
 
   // Question Bank endpoints
@@ -450,7 +476,7 @@ export const quizService = {
     if (filters?.classId) params.append('classId', filters.classId);
     if (filters?.completedOnly !== undefined) params.append('completedOnly', String(filters.completedOnly));
 
-    const response = await api.get(`/v1/quizzes/reports?${params.toString()}`);
+    const response = await api.get(`/v1/quizzes/reports/attempts?${params.toString()}`);
     return response.data;
   },
 
@@ -459,8 +485,99 @@ export const quizService = {
     return response.data;
   },
 
-  submitQuiz: async (quizId: string, answers: Record<string, string>): Promise<ApiResponse<any>> => {
+  submitQuiz: async (quizId: string, answers: Record<string, string>): Promise<ApiResponse<QuizSubmissionResult>> => {
     const response = await api.post(`/quizzes/${quizId}/submit`, { answers });
     return response.data;
   },
+
+  getQuizzesByStoryId: async (storyId: string): Promise<QuizData[]> => {
+    const response = await api.get(`/v1/quizzes/story/${storyId}`);
+    return response.data;
+  },
+
+  // Common Story Quiz Methods
+
+  // Create common story quiz
+  async createCommonStoryQuiz(commonStoryId: string, quizData: CreateCommonStoryQuizData): Promise<QuizData> {
+    const response = await api.post('/v1/common-story-quizzes', {
+      ...quizData,
+      commonStoryId,
+      quizType: 'COMMON_STORY'
+    });
+    return response.data;
+  },
+
+  // Get quizzes for a common story
+  async getQuizzesByCommonStory(commonStoryId: string): Promise<QuizData[]> {
+    const response = await api.get(`/v1/common-story-quizzes/common-story/${commonStoryId}`);
+    return response.data;
+  },
+
+  // Get common story quizzes created by current user
+  async getMyCommonStoryQuizzes(): Promise<QuizData[]> {
+    const response = await api.get('/v1/common-story-quizzes/created-by');
+    return response.data;
+  },
+
+  // Get common story quizzes for a specific class
+  async getCommonStoryQuizzesByClass(classId: string): Promise<QuizData[]> {
+    const response = await api.get(`/v1/common-story-quizzes/class/${classId}`);
+    return response.data;
+  },
+
+  // Get all active common story quizzes
+  async getAllActiveCommonStoryQuizzes(): Promise<QuizData[]> {
+    const response = await api.get('/v1/common-story-quizzes');
+    return response.data;
+  },
+
+  // Common story quiz attempt methods (reusing core functionality)
+  
+  async startCommonStoryQuizAttempt(quizId: string): Promise<QuizAttempt> {
+    const response = await api.post(`/v1/common-story-quizzes/attempts/start/${quizId}`);
+    return response.data;
+  },
+
+  async submitCommonStoryQuizAttempt(attemptId: string, submission: QuizSubmission): Promise<QuizSubmissionResult> {
+    const response = await api.post(`/v1/common-story-quizzes/attempts/${attemptId}/submit`, submission);
+    return response.data;
+  },
+
+  async getMyCommonStoryQuizAttempts(commonStoryId: string): Promise<QuizAttempt[]> {
+    const response = await api.get(`/v1/common-story-quizzes/attempts/common-story/${commonStoryId}`);
+    return response.data;
+  },
+
+  async checkCommonStoryQuizEligibility(quizId: string): Promise<QuizEligibilityResponse> {
+    const response = await api.get(`/v1/common-story-quizzes/eligibility/${quizId}`);
+    return response.data;
+  },
+
+  async getOrCreateCommonStoryQuizAttempt(quizId: string): Promise<QuizAttempt> {
+    const response = await api.post(`/v1/common-story-quizzes/attempts/get-or-create/${quizId}`);
+    return response.data;
+  },
+
+  async saveCommonStoryQuizProgress(attemptId: string, progress: QuizProgressSave): Promise<void> {
+    await api.post(`/v1/common-story-quizzes/attempts/save-progress/${attemptId}`, progress);
+  },
+
+  async resumeCommonStoryQuizAttempt(quizId: string): Promise<QuizAttempt | null> {
+    try {
+      const response = await api.get(`/v1/common-story-quizzes/attempts/resume/${quizId}`);
+      return response.data;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // Common story quiz logging
+  async logCommonStoryQuizSuspiciousAction(attemptId: string, logEntry: QuizLogEntry): Promise<void> {
+    await api.post(`/v1/common-story-quizzes/attempts/log/${attemptId}`, logEntry);
+  },
+
+  async getCommonStoryQuizLogs(attemptId: string): Promise<QuizLog> {
+    const response = await api.get(`/v1/common-story-quizzes/attempts/logs/${attemptId}`);
+    return response.data;
+  }
 }; 

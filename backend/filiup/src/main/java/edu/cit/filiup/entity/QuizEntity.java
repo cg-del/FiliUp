@@ -30,9 +30,20 @@ public class QuizEntity {
     @Column(name = "closes_at", nullable = false)
     private LocalDateTime closesAt;
 
+    // Support for regular stories (nullable for common story quizzes)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "story_id", nullable = false)
+    @JoinColumn(name = "story_id")
     private StoryEntity story;
+
+    // Support for common stories (nullable for regular story quizzes)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "common_story_id")
+    private CommonStoryEntity commonStory;
+
+    // Quiz type to distinguish between regular and common story quizzes
+    @Enumerated(EnumType.STRING)
+    @Column(name = "quiz_type", nullable = false)
+    private QuizType quizType = QuizType.STORY;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id", nullable = false)
@@ -46,6 +57,12 @@ public class QuizEntity {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
+
+    // Enum for quiz types
+    public enum QuizType {
+        STORY,           // Regular story quiz (class-specific)
+        COMMON_STORY     // Common story quiz (can be shared across classes)
+    }
 
     // Default constructor
     public QuizEntity() {
@@ -65,7 +82,6 @@ public class QuizEntity {
     public String getTitle() {
         return title;
     }
-
 
     public void setTitle(String title) {
         this.title = title;
@@ -117,6 +133,22 @@ public class QuizEntity {
 
     public void setStory(StoryEntity story) {
         this.story = story;
+    }
+
+    public CommonStoryEntity getCommonStory() {
+        return commonStory;
+    }
+
+    public void setCommonStory(CommonStoryEntity commonStory) {
+        this.commonStory = commonStory;
+    }
+
+    public QuizType getQuizType() {
+        return quizType;
+    }
+
+    public void setQuizType(QuizType quizType) {
+        this.quizType = quizType;
     }
 
     public UserEntity getCreatedBy() {

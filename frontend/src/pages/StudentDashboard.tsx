@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Award, User, Play, Star, Loader2, Settings, Trophy, BarChart } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BookOpen, Award, User, Play, Star, Loader2, Settings, Trophy, BarChart, Filter } from 'lucide-react';
 import StudentEnrollment from '../components/StudentEnrollment';
 import { enrollmentService } from '@/lib/services/enrollmentService';
 import { classService } from '@/lib/services/classService';
@@ -13,9 +14,10 @@ import { storyService } from '@/lib/services/storyService';
 import { progressService } from '@/lib/services/progressService';
 import { leaderboardService } from '@/lib/services/leaderboardService';
 import { quizService } from '@/lib/services/quizService';
+import { badgeService, type StudentBadgeDTO } from '@/lib/services/badgeService';
 import { toast } from '@/hooks/use-toast';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import type { Class } from '@/lib/services/types';
+import type { Class, CommonStoryDTO, BadgeDTO } from '@/lib/services/types';
 import type { LeaderboardEntry as BaseLeaderboardEntry } from '@/lib/services/types';
 
 // Extended LeaderboardEntry with percentage for our display purposes
@@ -94,12 +96,8 @@ interface UserStats {
   completedQuizzes: number;
   totalQuizzes: number;
   level: number;
-  badges: Array<{
-    id: number;
-    name: string;
-    icon: string;
-    earned: boolean;
-  }>;
+  earnedBadges: StudentBadgeDTO[];
+  allBadges: BadgeDTO[];
 }
 
 // Interface for Quiz Summary from the API
@@ -122,8 +120,12 @@ interface QuizClassSummary {
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
   const { safeExecute } = useErrorHandler();
+  const navigate = useNavigate();
   const [studentClasses, setStudentClasses] = useState<Class[]>([]);
   const [stories, setStories] = useState<ClassStory[]>([]);
+  const [commonStories, setCommonStories] = useState<CommonStoryDTO[]>([]);
+  const [filteredStories, setFilteredStories] = useState<(ClassStory | CommonStoryDTO)[]>([]);
+  const [storyFilter, setStoryFilter] = useState<'all' | 'teacher' | 'filiup'>('all');
   const [loading, setLoading] = useState(true);
   const [storiesLoading, setStoriesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,17 +136,55 @@ const StudentDashboard = () => {
     completedQuizzes: 0,
     totalQuizzes: 0,
     level: 1,
-    badges: [
-      { id: 1, name: 'First Story', icon: '📖', earned: false },
-      { id: 2, name: 'Quiz Master', icon: '🎯', earned: false },
-      { id: 3, name: 'Story Explorer', icon: '🗺️', earned: false },
-      { id: 4, name: 'Fast Learner', icon: '⚡', earned: false },
-      { id: 5, name: 'Perfect Score', icon: '💯', earned: false },
-    ]
+    earnedBadges: [],
+    allBadges: []
   });
   const [statsLoading, setStatsLoading] = useState(true);
   const [classLeaderboard, setClassLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+
+  // Helper function to check if a story is a CommonStoryDTO
+  const isCommonStory = (story: ClassStory | CommonStoryDTO): story is CommonStoryDTO => {
+    return 'createdByUserName' in story && 'classId' in story;
+  };
+
+  // Function to filter stories based on creator type
+  const filterStories = (allStories: ClassStory[], allCommonStories: CommonStoryDTO[], filter: 'all' | 'teacher' | 'filiup') => {
+    console.log('🔍 Filtering stories:', {
+      filter,
+      classStoriesCount: allStories.length,
+      commonStoriesCount: allCommonStories.length,
+      commonStories: allCommonStories.map(s => ({
+        title: s.title,
+        createdBy: s.createdByUserName
+      }))
+    });
+    
+    let filtered: (ClassStory | CommonStoryDTO)[] = [];
+    
+    switch (filter) {
+      case 'all':
+        filtered = [...allStories, ...allCommonStories];
+        break;
+      case 'teacher': {
+        // Only class stories are created by teachers
+        console.log('👨‍🏫 Teacher filter - class stories:', allStories.length);
+        filtered = [...allStories];
+        break;
+      }
+      case 'filiup': {
+        // Only common stories are created by 'filiup'
+        console.log('🤖 FiliUp filter - common stories:', allCommonStories.length);
+        filtered = [...allCommonStories];
+        break;
+      }
+      default:
+        filtered = [...allStories, ...allCommonStories];
+    }
+    
+    console.log('✅ Filtered results:', filtered.length, 'stories');
+    return filtered;
+  };
 
   // Function to fetch user statistics (extracted for reuse)
   const fetchUserStats = async () => {
@@ -176,8 +216,33 @@ const StudentDashboard = () => {
           }
         }
       );
+
+      // Get student's earned badges
+      const { data: earnedBadgesResponse, error: badgesError } = await safeExecute(
+        () => badgeService.getMyBadges(),
+        {
+          showToast: false,
+          preventAutoRedirect: true,
+          onError: (appError) => {
+            console.error('Error fetching student badges:', appError);
+          }
+        }
+      );
+
+      // Get all available badges
+      const { data: allBadgesResponse, error: allBadgesError } = await safeExecute(
+        () => badgeService.getAllBadges(),
+        {
+          showToast: false,
+          preventAutoRedirect: true,
+          onError: (appError) => {
+            console.error('Error fetching all badges:', appError);
+            // Badge initialization is now handled automatically in the service
+          }
+        }
+      );
       
-      // If both API calls failed, use default values
+      // If critical API calls failed, use default values
       if ((!leaderboardResponse || leaderboardError) && (!progressResponse || progressError)) {
         console.warn('Using default values for user stats due to API errors');
         setUserStats({
@@ -185,7 +250,9 @@ const StudentDashboard = () => {
           totalPoints: 0,
           completedStories: 0,
           completedQuizzes: 0,
-          level: 1
+          level: 1,
+          earnedBadges: earnedBadgesResponse || [],
+          allBadges: allBadgesResponse || []
         });
         setStatsLoading(false);
         return;
@@ -210,15 +277,6 @@ const StudentDashboard = () => {
       // Calculate level based on points (example formula)
       const level = Math.max(1, Math.floor(points / 100) + 1);
       
-      // Update badges based on achievements
-      const updatedBadges = [
-        { id: 1, name: 'First Story', icon: '📖', earned: completedStories > 0 },
-        { id: 2, name: 'Quiz Master', icon: '🎯', earned: completedQuizzes >= 5 },
-        { id: 3, name: 'Story Explorer', icon: '🗺️', earned: completedStories >= 3 },
-        { id: 4, name: 'Fast Learner', icon: '⚡', earned: level >= 3 },
-        { id: 5, name: 'Perfect Score', icon: '💯', earned: points >= 500 },
-      ];
-      
       setUserStats({
         totalPoints: points,
         completedStories: completedStories,
@@ -226,7 +284,8 @@ const StudentDashboard = () => {
         completedQuizzes: completedQuizzes,
         totalQuizzes: completedQuizzes + 5, // Assuming there are more quizzes to complete
         level: level,
-        badges: updatedBadges
+        earnedBadges: earnedBadgesResponse || [],
+        allBadges: allBadgesResponse || []
       });
     } catch (err) {
       console.error('Error calculating user stats:', err);
@@ -236,7 +295,9 @@ const StudentDashboard = () => {
         totalPoints: 0,
         completedStories: 0,
         completedQuizzes: 0,
-        level: 1
+        level: 1,
+        earnedBadges: [],
+        allBadges: []
       });
     } finally {
       setStatsLoading(false);
@@ -282,10 +343,12 @@ const StudentDashboard = () => {
 
       setStoriesLoading(true);
       const allStories: ClassStory[] = [];
+      const allCommonStories: CommonStoryDTO[] = [];
 
       // Fetch stories for each class
       for (const studentClass of studentClasses) {
-        const { data: classStories, error } = await safeExecute(
+        // Fetch class stories
+        const { data: classStories, error: classStoriesError } = await safeExecute(
           () => storyService.getStoriesByClass(studentClass.classId),
           {
             showToast: false, // Don't show individual toasts for each class
@@ -299,12 +362,34 @@ const StudentDashboard = () => {
         if (classStories) {
           allStories.push(...classStories);
         }
+
+        // Fetch common stories for the class
+        const { data: commonStoriesResponse, error: commonStoriesError } = await safeExecute(
+          () => classService.getClassCommonStories(studentClass.classId),
+          {
+            showToast: false,
+            preventAutoRedirect: true,
+            onError: (appError) => {
+              console.error(`Error fetching common stories for class ${studentClass.className}:`, appError);
+            }
+          }
+        );
+
+        if (commonStoriesResponse?.data) {
+          console.log(`📚 Common stories for class ${studentClass.className}:`, commonStoriesResponse.data);
+          allCommonStories.push(...commonStoriesResponse.data);
+        }
       }
 
       setStories(allStories);
+      setCommonStories(allCommonStories);
+      
+      // Apply current filter to combined stories
+      const filtered = filterStories(allStories, allCommonStories, storyFilter);
+      setFilteredStories(filtered);
       
       // Show a single toast if no stories were loaded and there were errors
-      if (allStories.length === 0 && studentClasses.length > 0) {
+      if (allStories.length === 0 && allCommonStories.length === 0 && studentClasses.length > 0) {
         toast({
           title: "Info",
           description: "Hindi pa may mga kuwento sa inyong mga klase.",
@@ -316,7 +401,7 @@ const StudentDashboard = () => {
       // Update total stories count in userStats
       setUserStats(prev => ({
         ...prev,
-        totalStories: allStories.length
+        totalStories: allStories.length + allCommonStories.length
       }));
       
       // Refresh user stats after stories are loaded to get accurate completion percentages
@@ -325,6 +410,18 @@ const StudentDashboard = () => {
 
     fetchStoriesForClasses();
   }, [studentClasses, safeExecute]);
+
+  // Update filtered stories when filter changes
+  useEffect(() => {
+    console.log('🔄 Filter effect triggered:', {
+      storyFilter,
+      storiesCount: stories.length,
+      commonStoriesCount: commonStories.length
+    });
+    const filtered = filterStories(stories, commonStories, storyFilter);
+    setFilteredStories(filtered);
+    console.log('🎯 Set filtered stories count:', filtered.length);
+  }, [stories, commonStories, storyFilter]);
 
   // Function to refresh classes after successful enrollment
   const handleEnrollmentSuccess = async () => {
@@ -619,7 +716,7 @@ const StudentDashboard = () => {
                   <span className="text-sm font-medium">{user?.name}</span>
                 </div>
                 <Button variant="outline" onClick={logout}>
-                  Logout
+                  Umalis
                 </Button>
               </div>
             </div>
@@ -634,26 +731,26 @@ const StudentDashboard = () => {
             {loading ? (
               <div className="flex justify-center items-center py-4">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-600 mr-3"></div>
-                <p className="text-gray-600">Loading your classes...</p>
+                <p className="text-gray-600">Naglolowad ng inyong mga klase...</p>
               </div>
             ) : error ? (
               <div className="text-center py-4">
-                <p className="text-red-600 mb-2">Error loading classes. Please try again.</p>
+                <p className="text-red-600 mb-2">May mali sa pagkarga ng mga klase. Subukang muli.</p>
                 <Button 
                   onClick={() => window.location.reload()} 
                   variant="outline"
                   className="text-teal-600 border-teal-200 hover:bg-teal-50"
                 >
-                  Retry
+                  Subukan Muli
                 </Button>
               </div>
             ) : (
               <div>
                 <p className="text-gray-600 mb-2">
-                  You are not enrolled in any classes yet.
+                  Hindi ka pa naka-enroll sa anumang klase.
                 </p>
                 <p className="text-sm text-gray-500">
-                  Join your class to start your Filipino learning journey!
+                  Sumali sa inyong klase para magsimula ang inyong paglalakbay sa pag-aaral ng Filipino!
                 </p>
               </div>
             )}
@@ -685,7 +782,7 @@ const StudentDashboard = () => {
             <div className="flex items-center space-x-4">
               <Link to="/leaderboards">
                 <Button variant="outline" className="text-teal-600 border-teal-200 hover:bg-teal-50">
-                  Leaderboard
+                  Talaan ng mga Nangunguna
                 </Button>
               </Link>
               <Link to="/profile/edit">
@@ -694,7 +791,7 @@ const StudentDashboard = () => {
                   className="text-teal-600 border-teal-200 hover:bg-teal-50"
                 >
                   <Settings className="h-4 w-4 mr-2" />
-                  Profile
+                  Profayl
                 </Button>
               </Link>
               <div className="flex items-center space-x-2">
@@ -726,11 +823,11 @@ const StudentDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-teal-100">Total Points</p>
+                  <p className="text-teal-100">Kabuuang Puntos</p>
                   {statsLoading ? (
                     <div className="flex items-center">
                       <Loader2 className="h-4 w-4 animate-spin text-teal-100 mr-2" />
-                      <p className="text-2xl font-bold">Loading...</p>
+                      <p className="text-2xl font-bold">Naglolowad...</p>
                     </div>
                   ) : (
                     <p className="text-2xl font-bold">{userStats.totalPoints}</p>
@@ -740,35 +837,15 @@ const StudentDashboard = () => {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="bg-gradient-to-r from-cyan-400 to-teal-500 text-white border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-cyan-100">Level</p>
-                  {statsLoading ? (
-                    <div className="flex items-center">
-                      <Loader2 className="h-4 w-4 animate-spin text-cyan-100 mr-2" />
-                      <p className="text-2xl font-bold">Loading...</p>
-                    </div>
-                  ) : (
-                    <p className="text-2xl font-bold">{userStats.level}</p>
-                  )}
-                </div>
-                <Award className="h-8 w-8 text-cyan-100" />
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="bg-gradient-to-r from-teal-500 to-cyan-400 text-white border-0">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-teal-100">Stories Done</p>
+                  <p className="text-teal-100">Mga Natapos na Kwento</p>
                   {statsLoading ? (
                     <div className="flex items-center">
                       <Loader2 className="h-4 w-4 animate-spin text-teal-100 mr-2" />
-                      <p className="text-2xl font-bold">Loading...</p>
+                      <p className="text-2xl font-bold">Naglolowad...</p>
                     </div>
                   ) : (
                     <p className="text-2xl font-bold">{userStats.completedStories}/{userStats.totalStories}</p>
@@ -783,11 +860,11 @@ const StudentDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-cyan-100">Quiz Score</p>
+                  <p className="text-cyan-100">Mga Pagsusulit</p>
                   {statsLoading ? (
                     <div className="flex items-center">
                       <Loader2 className="h-4 w-4 animate-spin text-cyan-100 mr-2" />
-                      <p className="text-2xl font-bold">Loading...</p>
+                      <p className="text-2xl font-bold">Naglolowad...</p>
                     </div>
                   ) : (
                     <p className="text-2xl font-bold">{userStats.completedQuizzes}/{userStats.totalQuizzes}</p>
@@ -804,25 +881,57 @@ const StudentDashboard = () => {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <BookOpen className="h-5 w-5" />
-                  <span>Mga Kwento</span>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <BookOpen className="h-5 w-5" />
+                    <span>Mga Kwento</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <Select value={storyFilter} onValueChange={(value: 'all' | 'teacher' | 'filiup') => {
+                      console.log('📝 Filter changed to:', value);
+                      setStoryFilter(value);
+                    }}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Salain ang mga kwento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Lahat ng Kwento</SelectItem>
+                        <SelectItem value="teacher">Gawa ng mga Guro</SelectItem>
+                        <SelectItem value="filiup">Gawa ng FiliUp</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardTitle>
                 <CardDescription>
-                  Basahin ang mga kwento at sagutin ang mga tanong para makakuha ng points!
+                  Basahin ang mga kwento at sagutin ang mga tanong para makakuha ng puntos!
+                  {storyFilter === 'teacher' && ' (Mga kwentong ginawa ng mga guro)'}
+                  {storyFilter === 'filiup' && ' (Mga kwentong ginawa ng AI)'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {storiesLoading ? (
                   <div className="flex justify-center items-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-teal-600 mr-3" />
-                    <p className="text-gray-600">Loading stories...</p>
+                    <p className="text-gray-600">Naglolowad ng mga kwento...</p>
                   </div>
-                ) : stories.length === 0 ? (
+                ) : filteredStories.length === 0 ? (
                   <div className="text-center py-8">
                     <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600">No stories available yet.</p>
-                    <p className="text-sm text-gray-500">Your teachers will add stories to your classes soon!</p>
+                    <p className="text-gray-600">
+                      {storyFilter === 'all' 
+                        ? 'Wala pang mga kwentong available.' 
+                        : storyFilter === 'teacher' 
+                        ? 'Wala pang mga kwentong ginawa ng mga guro.'
+                        : 'Wala pang mga kwentong ginawa ng FiliUp AI.'
+                      }
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {storyFilter === 'all' 
+                        ? 'Magdadagdag pa ang inyong mga guro ng mga kwento sa inyong mga klase!'
+                        : 'Subukang baguhin ang filter para makita ang ibang mga kwento.'
+                      }
+                    </p>
                   </div>
                 ) : (
                   <div className="relative">
@@ -830,9 +939,47 @@ const StudentDashboard = () => {
                     <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-teal-300 via-cyan-400 to-teal-500"></div>
                     
                     <div className="space-y-8">
-                      {stories.map((story, index) => {
-                        const difficulty = getDifficultyFromGenre(story.genre);
-                        const readingTime = getReadingTimeEstimate(story.content);
+                      {filteredStories.map((story, index) => {
+                        const isCommon = isCommonStory(story);
+                        
+                        let storyId: string;
+                        let storyTitle: string;
+                        let storyContent: string;
+                        let storyGenre: string;
+                        let storyFictionType: string;
+                        let storyCoverUrl: string | undefined;
+                        let storyCreatedAt: string;
+                        let storyIsActive: boolean;
+                        let storyClassName: string;
+                        let createdBy: string | undefined;
+                        
+                        if (isCommon) {
+                          storyId = story.storyId;
+                          storyTitle = story.title;
+                          storyContent = story.content;
+                          storyGenre = story.genre;
+                          storyFictionType = story.fictionType;
+                          storyCoverUrl = story.coverPictureUrl;
+                          storyCreatedAt = story.createdAt;
+                          storyIsActive = story.isActive;
+                          storyClassName = story.className;
+                          createdBy = story.createdByUserName;
+                        } else {
+                          // Type guard ensures this is a ClassStory
+                          storyId = story.storyId;
+                          storyTitle = story.title;
+                          storyContent = story.content;
+                          storyGenre = story.genre;
+                          storyFictionType = story.fictionType;
+                          storyCoverUrl = story.coverPictureUrl;
+                          storyCreatedAt = story.createdAt;
+                          storyIsActive = story.isActive;
+                          storyClassName = (story as ClassStory).classEntity.className || 'Unknown Class';
+                          createdBy = 'teacher';
+                        }
+                        
+                        const difficulty = getDifficultyFromGenre(storyGenre);
+                        const readingTime = getReadingTimeEstimate(storyContent);
                         
                         // Color schemes for different genres
                         const bookColors = {
@@ -855,17 +1002,17 @@ const StudentDashboard = () => {
                           'Mystery': 'shadow-gray-700/30'
                         };
                         
-                        const bookGradient = bookColors[story.genre as keyof typeof bookColors] || bookColors['MAIKLING_KWENTO'];
-                        const shadowColor = shadowColors[story.genre as keyof typeof shadowColors] || shadowColors['MAIKLING_KWENTO'];
+                        const bookGradient = bookColors[storyGenre as keyof typeof bookColors] || bookColors['MAIKLING_KWENTO'];
+                        const shadowColor = shadowColors[storyGenre as keyof typeof shadowColors] || shadowColors['MAIKLING_KWENTO'];
                         
                         return (
-                          <div key={story.storyId} className={`relative flex items-center ${index % 2 === 0 ? 'justify-start pl-20' : 'justify-end pr-20'}`}>
+                          <div key={`${isCommon ? 'common' : 'class'}-${storyId}`} className={`relative flex items-center ${index % 2 === 0 ? 'justify-start pl-20' : 'justify-end pr-20'}`}>
                             {/* Timeline Dot */}
                             <div className={`absolute ${index % 2 === 0 ? 'left-6' : 'right-6'} w-4 h-4 bg-gradient-to-r from-teal-400 to-cyan-500 rounded-full border-4 border-white shadow-lg z-10`}></div>
                             
                             {/* 3D Book Container */}
                             <div className={`group cursor-pointer transition-all duration-500 hover:scale-105 hover:-translate-y-2 ${index % 2 === 0 ? '' : 'flex-row-reverse'}`}>
-                              <Link to={`/story/${story.storyId}`}>
+                              <Link to={`/story/${storyId}`}>
                                 <div className="relative">
                                   {/* Book Main Body */}
                                   <div className={`relative w-48 h-64 bg-gradient-to-br ${bookGradient} rounded-r-lg rounded-l-sm shadow-2xl ${shadowColor} group-hover:shadow-3xl transition-all duration-500 transform perspective-1000`}>
@@ -882,10 +1029,10 @@ const StudentDashboard = () => {
                                     <div className="relative z-10 p-4 h-full flex flex-col justify-between">
                                       {/* Cover Image Area */}
                                       <div className="flex-1 mb-4">
-                                        {story.coverPictureUrl ? (
+                                        {storyCoverUrl ? (
                                           <img 
-                                            src={story.coverPictureUrl} 
-                                            alt={story.title}
+                                            src={storyCoverUrl} 
+                                            alt={storyTitle}
                                             className="w-full h-32 object-cover rounded-lg shadow-md border-2 border-white/30"
                                           />
                                         ) : (
@@ -898,15 +1045,28 @@ const StudentDashboard = () => {
                                       {/* Book Title */}
                                       <div className="text-center">
                                         <h3 className="text-white font-bold text-sm leading-tight mb-2 drop-shadow-lg">
-                                          {story.title}
+                                          {storyTitle}
                                         </h3>
                                         
                                         {/* Genre Badge */}
                                         <div className="mb-2">
                                           <span className="inline-block px-2 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs text-white font-medium border border-white/30">
-                                            {story.genre}
+                                            {storyGenre}
                                           </span>
                                         </div>
+                                        
+                                        {/* Creator Badge */}
+                                        {createdBy && (
+                                          <div className="mb-2">
+                                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${
+                                              createdBy === 'filiup' 
+                                                ? 'bg-purple-500/20 border-purple-300/30 text-purple-100' 
+                                                : 'bg-blue-500/20 border-blue-300/30 text-blue-100'
+                                            }`}>
+                                              {createdBy === 'filiup' ? '🤖 AI Generated' : '👨‍🏫 Teacher'}
+                                            </span>
+                                          </div>
+                                        )}
                                         
                                         {/* Reading Time */}
                                         <div className="text-white/80 text-xs">
@@ -933,7 +1093,7 @@ const StudentDashboard = () => {
                                     <div className="absolute top-4 left-4 w-8 h-12 bg-white/10 rounded-lg transform rotate-12 opacity-60"></div>
                                     
                                     {/* Status Indicator */}
-                                    {story.isActive && (
+                                    {storyIsActive && (
                                       <div className="absolute top-2 left-2 w-3 h-3 bg-green-400 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
                                     )}
                                   </div>
@@ -953,28 +1113,81 @@ const StudentDashboard = () => {
                                     } className="text-xs">
                                       {difficulty}
                                     </Badge>
-                                    {story.fictionType && (
+                                    {storyFictionType && (
                                       <Badge variant="outline" className="text-xs">
-                                        {story.fictionType}
+                                        {storyFictionType}
+                                      </Badge>
+                                    )}
+                                    {createdBy && (
+                                      <Badge variant={createdBy === 'filiup' ? 'secondary' : 'default'} className="text-xs">
+                                        {createdBy === 'filiup' ? '🤖 AI' : '👨‍🏫 Teacher'}
                                       </Badge>
                                     )}
                                   </div>
                                   
                                   <p className="text-sm text-gray-600 line-clamp-3">
-                                    {story.content.substring(0, 120)}...
+                                    {storyContent.substring(0, 120)}...
                                   </p>
                                   
                                   <div className="flex items-center justify-between text-xs text-gray-500">
-                                    <span>📚 {story.classEntity.className}</span>
-                                    <span>🕒 {new Date(story.createdAt).toLocaleDateString()}</span>
+                                    <span>📚 {storyClassName}</span>
+                                    <span>🕒 {new Date(storyCreatedAt).toLocaleDateString()}</span>
                                   </div>
                                   
-                                  <Button 
-                                    size="sm"
-                                    className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
-                                  >
-                                    Basahin ang Kwento
-                                  </Button>
+                                  <div className="space-y-2">
+                                    <Button 
+                                      size="sm"
+                                      className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                                      asChild
+                                    >
+                                      <Link to={`/story/${storyId}`}>
+                                        📖 Basahin ang Kwento
+                                      </Link>
+                                    </Button>
+                                    
+                                    {/* Quiz button for common stories */}
+                                    {isCommon && (
+                                      <Button 
+                                        size="sm"
+                                        variant="outline"
+                                        className="w-full border-purple-300 text-purple-600 hover:bg-purple-50 hover:border-purple-400 shadow-sm hover:shadow-md transition-all duration-300"
+                                        onClick={async () => {
+                                          try {
+                                            // Get available quizzes for this common story
+                                            const { data: quizzes, error } = await safeExecute(
+                                              () => quizService.getQuizzesByCommonStory(storyId),
+                                              {
+                                                customMessage: "Hindi nakuha ang mga pagsusulit. Subukang muli.",
+                                                onError: (appError) => {
+                                                  console.error('Error fetching common story quizzes:', appError);
+                                                }
+                                              }
+                                            );
+
+                                            if (quizzes && quizzes.length > 0) {
+                                              // Navigate to quiz selection page with common story quizzes
+                                              navigate(`/story/${storyId}/quiz`);
+                                            } else {
+                                              toast({
+                                                title: "Walang Available na Pagsusulit",
+                                                description: "Wala pang mga pagsusulit para sa kwentong ito.",
+                                                variant: "default",
+                                              });
+                                            }
+                                          } catch (error) {
+                                            console.error('Error checking common story quizzes:', error);
+                                            toast({
+                                              title: "May Mali",
+                                              description: "Hindi ma-check ang mga pagsusulit. Subukang muli.",
+                                              variant: "destructive",
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        🧠 Kumuha ng Pagsusulit
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -995,18 +1208,18 @@ const StudentDashboard = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center space-x-2">
                   <Trophy className="h-5 w-5 text-green-600" />
-                  <span>Class Leaderboard</span>
+                  <span>Talaan ng mga Nangunguna sa Klase</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {leaderboardLoading ? (
                   <div className="flex justify-center items-center py-4">
                     <Loader2 className="h-6 w-6 animate-spin text-teal-600 mr-3" />
-                    <p className="text-gray-600">Loading leaderboard...</p>
+                    <p className="text-gray-600">Naglolowad ng talaan ng mga nangunguna...</p>
                   </div>
                 ) : classLeaderboard.length === 0 ? (
                   <div className="text-center py-4">
-                    <p className="text-gray-600">No leaderboard data available yet.</p>
+                    <p className="text-gray-600">Wala pang datos sa talaan ng mga nangunguna.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1031,9 +1244,9 @@ const StudentDashboard = () => {
                             </div>
                             <div className="w-8 h-8 bg-gray-200 rounded-full mx-2"></div>
                             <div>
-                              <div className="font-medium">
-                                {isCurrentUser ? 'You' : entry.studentName}
-                              </div>
+                                                          <div className="font-medium">
+                              {isCurrentUser ? 'Ikaw' : entry.studentName}
+                            </div>
                             </div>
                           </div>
                           <div className="font-bold text-indigo-600">
@@ -1047,15 +1260,63 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
 
+            {/* Recent Badges Section */}
+            {!statsLoading && userStats.earnedBadges.length > 0 && (
+              <Card className="mb-4">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center space-x-2 text-lg">
+                    <Star className="h-4 w-4 text-yellow-500" />
+                    <span>Mga Kamakailang Badge</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex space-x-2 overflow-x-auto pb-2">
+                    {userStats.earnedBadges
+                      .filter((earnedBadge) => earnedBadge.badge && earnedBadge.badge.title) // Filter out badges without proper data
+                      .sort((a, b) => new Date(b.badgeEarnedAt).getTime() - new Date(a.badgeEarnedAt).getTime())
+                      .slice(0, 5)
+                      .map((earnedBadge) => (
+                        <div
+                          key={earnedBadge.studentBadgeId}
+                          className="flex-shrink-0 w-16 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 border-2 border-yellow-300 rounded-lg p-2 text-center shadow-md"
+                        >
+                          <div className="text-xl mb-1">🏆</div>
+                          <div className="text-xs font-medium text-gray-700 truncate">
+                            {earnedBadge.badge.title}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {earnedBadge.badge.pointsValue} puntos
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Badges Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Award className="h-5 w-5" />
-                  <span>Mga Badge</span>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Award className="h-5 w-5" />
+                    <span>Mga Badge</span>
+                  </div>
+                  {!statsLoading && (
+                    <div className="text-sm text-teal-600 font-medium">
+                      {userStats.earnedBadges.length}/{userStats.allBadges.length} nakuha
+                    </div>
+                  )}
                 </CardTitle>
-                <CardDescription>
-                  Collect badges by completing stories and quizzes!
+                <CardDescription className="flex items-center justify-between">
+                  <span>Makakuha ng mga badge sa pamamagitan ng pagkumpleto ng mga kwento at pagsusulit!</span>
+                  {!statsLoading && userStats.earnedBadges.length > 0 && (
+                    <div className="text-xs text-gray-500">
+                      Kabuuan: {userStats.earnedBadges
+                        .filter((badge) => badge.badge && badge.badge.pointsValue)
+                        .reduce((sum, badge) => sum + badge.badge.pointsValue, 0)} puntos mula sa mga badge
+                    </div>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1063,29 +1324,74 @@ const StudentDashboard = () => {
                   {statsLoading ? (
                     <div className="col-span-2 flex justify-center items-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-teal-600 mr-3" />
-                      <p className="text-gray-600">Loading badges...</p>
+                      <p className="text-gray-600">Naglolowad ng mga badge...</p>
+                    </div>
+                  ) : userStats.allBadges.length === 0 ? (
+                    <div className="col-span-2 text-center py-8">
+                      <Award className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-600">Wala pang mga badge na available.</p>
+                      <p className="text-sm text-gray-500">Kumpletuhin ang mga pagsusulit para makakuha ng mga badge!</p>
                     </div>
                   ) : (
-                    userStats.badges.map((badge) => (
-                      <div
-                        key={badge.id}
-                        className={`p-4 rounded-lg text-center transition-all duration-300 ${
-                          badge.earned
-                            ? 'bg-gradient-to-br from-teal-100 to-cyan-100 border-2 border-teal-300 shadow-lg'
-                            : 'bg-gray-100 border-2 border-gray-200 opacity-50'
-                        }`}
-                      >
-                        <div className="text-2xl mb-2">{badge.icon}</div>
-                        <div className="text-sm font-medium text-gray-700">{badge.name}</div>
-                      </div>
-                    ))
+                    userStats.allBadges.map((badge) => {
+                      // Check if this badge is earned by the student
+                      const earnedBadge = userStats.earnedBadges.find(
+                        (earned) => earned.badgeId === badge.badgeId
+                      );
+                      const isEarned = !!earnedBadge;
+                      
+                      return (
+                        <div
+                          key={badge.badgeId}
+                          className={`p-4 rounded-lg text-center transition-all duration-300 relative group ${
+                            isEarned
+                              ? 'bg-gradient-to-br from-teal-100 to-cyan-100 border-2 border-teal-300 shadow-lg'
+                              : 'bg-gray-100 border-2 border-gray-200 opacity-50'
+                          }`}
+                        >
+                          {/* Badge Icon */}
+                          <div className="text-3xl mb-2">🏆</div>
+                          
+                          {/* Badge Name */}
+                          <div className="text-sm font-medium text-gray-700 mb-1">
+                            {badge.title}
+                          </div>
+                          
+                          {/* Badge Points */}
+                          <div className="text-xs text-gray-500 mb-2">
+                            {badge.pointsValue} puntos
+                          </div>
+                          
+                          {/* Earned Badge Info */}
+                          {isEarned && earnedBadge && (
+                            <div className="text-xs text-teal-600 font-medium">
+                              ✅ Nakuha na!
+                              {earnedBadge.performanceScore && (
+                                <div className="text-xs text-gray-500">
+                                  Puntos: {earnedBadge.performanceScore}%
+                                </div>
+                              )}
+                              <div className="text-xs text-gray-400">
+                                {new Date(earnedBadge.badgeEarnedAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Tooltip with description */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 whitespace-nowrap">
+                            {badge.description}
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-l-transparent border-r-transparent border-t-black"></div>
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Progress Card */}
-            <Card className="mt-6">
+            {/* <Card className="mt-6">
               <CardHeader>
                 <CardTitle>Overall Progress</CardTitle>
               </CardHeader>
@@ -1111,7 +1417,7 @@ const StudentDashboard = () => {
                   />
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </div>

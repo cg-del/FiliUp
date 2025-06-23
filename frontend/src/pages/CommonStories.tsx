@@ -5,7 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { 
   BookOpen, 
@@ -17,9 +18,12 @@ import {
   Calendar,
   Globe,
   Heart,
-  BookmarkPlus
+  BookmarkPlus,
+  CheckSquare
 } from 'lucide-react';
 import { commonStoryService, type CommonStory } from '@/lib/services/commonStoryService';
+import CommonStoryQuizList from '@/components/CommonStoryQuizList';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StoryFilters {
   genre: string;
@@ -28,6 +32,7 @@ interface StoryFilters {
 }
 
 export default function CommonStories() {
+  const { user } = useAuth();
   const [stories, setStories] = useState<CommonStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<StoryFilters>({
@@ -40,8 +45,10 @@ export default function CommonStories() {
   
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [viewingStory, setViewingStory] = useState<CommonStory | null>(null);
+  const [activeTab, setActiveTab] = useState('content');
 
   const { toast } = useToast();
+  const isTeacher = user?.role === 'TEACHER' || user?.role === 'ADMIN';
 
   const fetchStories = async () => {
     setLoading(true);
@@ -107,6 +114,12 @@ export default function CommonStories() {
 
   const truncateContent = (content: string, maxLength: number = 150) => {
     return content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
+  };
+
+  const handleOpenStoryDialog = (story: CommonStory) => {
+    setViewingStory(story);
+    setIsViewDialogOpen(true);
+    setActiveTab('content'); // Reset to content tab when opening dialog
   };
 
   return (
@@ -241,129 +254,100 @@ export default function CommonStories() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        setViewingStory(story);
-                        setIsViewDialogOpen(true);
-                      }}
+                      onClick={() => handleOpenStoryDialog(story)}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <User className="w-4 h-4" />
-                    <span>{story.createdBy?.userName || 'Unknown Author'}</span>
-                  </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                    {truncateContent(story.content)}
-                  </p>
+                  <div className="flex items-center mb-3 text-sm text-gray-600">
+                    <User className="w-4 h-4 mr-1" />
+                    <span>{story.createdBy?.userName || 'Unknown'}</span>
+                    <span className="mx-2">•</span>
+                    <Calendar className="w-4 h-4 mr-1" />
+                    <span>{formatDate(story.createdAt)}</span>
+                  </div>
                   
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <Badge variant="outline" className="text-xs">
+                  <div className="mb-3 text-sm text-gray-700 line-clamp-3">
+                    {truncateContent(story.content)}
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="bg-teal-100 text-teal-800 hover:bg-teal-200">
                       {story.genre}
                     </Badge>
                     {story.fictionType && (
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="outline" className="border-cyan-200 text-cyan-800">
                         {story.fictionType}
                       </Badge>
                     )}
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-1 text-xs text-gray-500">
-                      <Calendar className="w-3 h-3" />
-                      <span>{formatDate(story.createdAt)}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <Heart className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <BookmarkPlus className="w-4 h-4" />
-                      </Button>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
-
-        {/* Story Count */}
-        {!loading && stories.length > 0 && (
-          <div className="mt-8 text-center text-gray-600">
-            Showing {stories.length} {stories.length === 1 ? 'story' : 'stories'}
-          </div>
-        )}
-
-        {/* View Story Dialog */}
-        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl">{viewingStory?.title}</DialogTitle>
-              <DialogDescription>
-                <div className="flex items-center space-x-4 text-sm">
-                  <div className="flex items-center space-x-1">
-                    <User className="w-4 h-4" />
-                    <span>by {viewingStory?.createdBy?.userName || 'Unknown Author'}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>{viewingStory ? formatDate(viewingStory.createdAt) : ''}</span>
-                  </div>
-                </div>
-              </DialogDescription>
-            </DialogHeader>
-            {viewingStory && (
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">
-                    {viewingStory.genre}
-                  </Badge>
-                  {viewingStory.fictionType && (
-                    <Badge variant="secondary">
-                      {viewingStory.fictionType}
-                    </Badge>
-                  )}
-                </div>
-                
-                {viewingStory.coverPictureUrl && (
-                  <div className="w-full max-w-md mx-auto">
-                    <img 
-                      src={viewingStory.coverPictureUrl} 
-                      alt={`Cover for ${viewingStory.title}`}
-                      className="w-full h-auto rounded-lg shadow-md"
-                    />
-                  </div>
-                )}
-                
-                <div className="prose max-w-none">
-                  <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                    {viewingStory.content}
-                  </p>
-                </div>
-                
-                <div className="flex justify-between items-center pt-4 border-t">
-                  <div className="flex items-center space-x-4">
-                    <Button variant="outline" size="sm">
-                      <Heart className="w-4 h-4 mr-2" />
-                      Like
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <BookmarkPlus className="w-4 h-4 mr-2" />
-                      Save
-                    </Button>
-                  </div>
-                  <Button onClick={() => setIsViewDialogOpen(false)}>
-                    Close
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Story View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          {viewingStory && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold">{viewingStory.title}</DialogTitle>
+                <DialogDescription className="flex items-center text-sm text-gray-600">
+                  <User className="w-4 h-4 mr-1" />
+                  <span>{viewingStory.createdBy?.userName || 'Unknown'}</span>
+                  <span className="mx-2">•</span>
+                  <Calendar className="w-4 h-4 mr-1" />
+                  <span>{formatDate(viewingStory.createdAt)}</span>
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge variant="secondary" className="bg-teal-100 text-teal-800">
+                  {viewingStory.genre}
+                </Badge>
+                {viewingStory.fictionType && (
+                  <Badge variant="outline" className="border-cyan-200 text-cyan-800">
+                    {viewingStory.fictionType}
+                  </Badge>
+                )}
+              </div>
+
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid grid-cols-2 mb-4">
+                  <TabsTrigger value="content" className="flex items-center">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Story Content
+                  </TabsTrigger>
+                  <TabsTrigger value="quizzes" className="flex items-center">
+                    <CheckSquare className="w-4 h-4 mr-2" />
+                    Quizzes
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="content" className="mt-0">
+                  <div className="prose max-w-none">
+                    {viewingStory.content.split('\n').map((paragraph, index) => (
+                      <p key={index}>{paragraph}</p>
+                    ))}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="quizzes" className="mt-0">
+                  <CommonStoryQuizList 
+                    storyId={viewingStory.storyId} 
+                    storyTitle={viewingStory.title} 
+                  />
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

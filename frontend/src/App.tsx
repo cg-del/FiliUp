@@ -23,6 +23,7 @@ import QuizModule from './pages/QuizModule';
 import NotFound from './pages/NotFound';
 import DashboardRedirect from './components/DashboardRedirect';
 import AuthTest from './pages/AuthTest';
+import ChangePassword from './pages/ChangePassword';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -248,6 +249,9 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+
+              {/* Change Password Route (not protected) */}
+              <Route path="/change-password" element={<ChangePassword />} />
 
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />

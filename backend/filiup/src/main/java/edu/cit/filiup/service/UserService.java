@@ -27,6 +27,17 @@ public class UserService {
 
     public UserEntity postUser(UserEntity user) {
         user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
+        // If the user is a TEACHER, force password change on first login
+        if ("TEACHER".equalsIgnoreCase(user.getUserRole())) {
+            user.setMustChangePassword(true);
+        }
+        return urepo.save(user);
+    }
+
+    public UserEntity changePassword(UUID userId, String newPassword) {
+        UserEntity user = urepo.findById(userId).orElseThrow(() -> new NoSuchElementException("User not found"));
+        user.setUserPassword(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(false);
         return urepo.save(user);
     }
 

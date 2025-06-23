@@ -6,10 +6,47 @@ import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Clock, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { useEffect, useRef } from 'react';
+
 const QuizModule = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Ref for the quiz container
+  const quizContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Function to request fullscreen on the quiz container
+    const requestFullscreen = () => {
+      const elem = quizContainerRef.current;
+      if (elem && !document.fullscreenElement) {
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen();
+        } else if ((elem as any).webkitRequestFullscreen) {
+          (elem as any).webkitRequestFullscreen();
+        } else if ((elem as any).msRequestFullscreen) {
+          (elem as any).msRequestFullscreen();
+        }
+      }
+    };
+
+    // Handler for fullscreen change
+    const handleFullscreenChange = () => {
+      // If fullscreen is exited, re-enter
+      if (!document.fullscreenElement) {
+        requestFullscreen();
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    // Enter fullscreen on mount
+    requestFullscreen();
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
   
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -192,7 +229,7 @@ const QuizModule = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div ref={quizContainerRef} className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">

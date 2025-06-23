@@ -51,9 +51,13 @@ public class UserEntity {
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
     private List<BadgeEntity> createdBadges = new ArrayList<>();
 
+    @Column(name = "must_change_password", nullable = false)
+    private Boolean mustChangePassword = false;
+
     // Constructors
     public UserEntity() {
         this.createdAt = LocalDateTime.now();
+        this.mustChangePassword = false;
     }
 
     public UserEntity(UUID userId, String userName, String userPassword, String userEmail, String userRole) {
@@ -63,6 +67,15 @@ public class UserEntity {
         this.userPassword = userPassword;
         this.userEmail = userEmail;
         this.userRole = userRole;
+        this.mustChangePassword = false;
+    }
+
+    public Boolean getMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(Boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
     }
 
     // Getters and Setters

@@ -46,6 +46,22 @@ export interface Story {
   updatedAt: string;
 }
 
+// Common Story types (from backend CommonStoryDTO)
+export interface CommonStoryDTO {
+  storyId: string;
+  title: string;
+  content: string;
+  coverPictureUrl?: string;
+  coverPictureType?: string;
+  createdAt: string;
+  isActive: boolean;
+  genre: string;
+  fictionType: string;
+  createdByUserName?: string;
+  classId: string;
+  className: string;
+}
+
 // Quiz types
 export interface Quiz {
   id: string;
@@ -88,6 +104,7 @@ export interface Class {
   classCode: string;
   createdAt: string;
   isActive: boolean;
+  studentCount: number;
   students?: any[]; // Optional since it might not always be included
 }
 
@@ -149,5 +166,33 @@ export interface LegacyLeaderboardEntry {
   studentId: string;
   username: string;
   points: number;
+  rank: number;
+}
+
+// Badge types
+export interface BadgeDTO {
+  badgeId: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  pointsValue: number;
+  criteria: string;
+  isActive: boolean;
+  createdAt: string;
+  // Student-specific fields
+  isEarned?: boolean;
+  earnedAt?: string;
+  performanceScore?: number;
+  earnedFromQuizTitle?: string;
+  earnedFromStoryTitle?: string;
+  earnedFromClassName?: string;
+  notes?: string;
+}
+
+export interface StudentBadgeStatsDTO {
+  totalBadges: number;
+  totalPoints: number;
+  badgesByCategory: { [category: string]: number };
+  recentBadges: number;
   rank: number;
 }

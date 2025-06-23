@@ -49,12 +49,12 @@ const menuItems = [
     icon: BookOpen,
     submenu: [
       {
-        title: "Class Stories",
+        title: "Teacher Stories (View)",
         url: "/admin/stories",
         icon: BookOpen,
       },
       {
-        title: "Common Stories",
+        title: "Common Stories (Manage)",
         url: "/admin/common-stories",
         icon: Globe,
       }
@@ -65,23 +65,23 @@ const menuItems = [
     url: "/admin/reports",
     icon: FileText,
   },
-  {
-    title: "Analytics",
-    url: "/admin/analytics",
-    icon: TrendingUp,
-    submenu: [
-      {
-        title: "User Growth",
-        url: "/admin/analytics/user-growth",
-        icon: TrendingUp,
-      },
-      {
-        title: "Activity",
-        url: "/admin/analytics/activity",
-        icon: Activity,
-      }
-    ]
-  },
+  // {
+  //   title: "Analytics",
+  //   url: "/admin/analytics",
+  //   icon: TrendingUp,
+  //   submenu: [
+  //     {
+  //       title: "User Growth",
+  //       url: "/admin/analytics/user-growth",
+  //       icon: TrendingUp,
+  //     },
+  //     {
+  //       title: "Activity",
+  //       url: "/admin/analytics/activity",
+  //       icon: Activity,
+  //     }
+  //   ]
+  // },
   {
     title: "System",
     url: "/admin/system",

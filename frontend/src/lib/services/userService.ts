@@ -32,4 +32,8 @@ export const userService = {
   getAllUsers: async () => {
     return userApiClient.get<User[]>('/users');
   },
+
+  changePassword: async ({ userId, newPassword }: { userId: string; newPassword: string }) => {
+    return userApiClient.post('/user/change-password', { userId, newPassword });
+  },
 }; 

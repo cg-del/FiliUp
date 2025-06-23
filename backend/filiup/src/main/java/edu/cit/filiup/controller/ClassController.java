@@ -1,6 +1,7 @@
 package edu.cit.filiup.controller;
 
 import edu.cit.filiup.dto.ClassDetailsDTO;
+import edu.cit.filiup.dto.ClassWithStudentCountDto;
 import edu.cit.filiup.entity.ClassEntity;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.entity.EnrollmentEntity;
@@ -145,7 +146,7 @@ public class ClassController {
                 return ResponseUtil.forbidden("Only teachers and admins can access their classes");
             }
             
-            List<ClassEntity> classes = classService.getClassesByTeacher(user.getUserId());
+            List<ClassWithStudentCountDto> classes = classService.getClassesWithStudentCountByTeacher(user.getUserId());
             return ResponseUtil.success("Classes retrieved successfully", classes);
         } catch (Exception e) {
             return ResponseUtil.serverError("Failed to retrieve classes: " + e.getMessage());
@@ -201,6 +202,24 @@ public class ClassController {
         try {
             ClassEntity updated = classService.updateClass(classId, updatedClass);
             return ResponseUtil.success("Class updated successfully", updated);
+        } catch (RuntimeException e) {
+            return ResponseUtil.notFound("Class with ID " + classId + " not found: " + e.getMessage());
+        }
+    }
+
+    // Update only the class name
+    @PutMapping("/{classId}/name")
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> updateClassName(
+            @PathVariable UUID classId,
+            @RequestBody Map<String, String> payload) {
+        try {
+            String newName = payload.get("className");
+            if (newName == null || newName.trim().isEmpty()) {
+                return ResponseUtil.badRequest("Class name is required");
+            }
+            ClassEntity updated = classService.updateClassName(classId, newName);
+            return ResponseUtil.success("Class name updated successfully", updated);
         } catch (RuntimeException e) {
             return ResponseUtil.notFound("Class with ID " + classId + " not found: " + e.getMessage());
         }

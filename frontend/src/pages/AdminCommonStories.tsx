@@ -208,6 +208,65 @@ const AdminCommonStories = () => {
     }
   };
 
+  const handleUpdateStory = async () => {
+    if (!editingStory) return;
+    
+    try {
+      // Validate required fields
+      if (!editingStory.title || !editingStory.content || !editingStory.genre) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await commonStoryService.updateCommonStory(editingStory.storyId, {
+        title: editingStory.title,
+        content: editingStory.content,
+        genre: editingStory.genre,
+        fictionType: editingStory.fictionType,
+        coverPictureUrl: editingStory.coverPictureUrl
+      });
+      
+      toast({
+        title: "Success",
+        description: "Common story updated successfully",
+      });
+      setIsEditDialogOpen(false);
+      setEditingStory(null);
+      fetchStories();
+    } catch (error) {
+      console.error('Error updating story:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update story. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteStory = async (storyId: string) => {
+    if (!confirm('Are you sure you want to delete this common story? This action cannot be undone.')) return;
+    
+    try {
+      await commonStoryService.deleteCommonStory(storyId);
+      toast({
+        title: "Success",
+        description: "Common story deleted successfully",
+      });
+      fetchStories();
+    } catch (error) {
+      console.error('Error deleting story:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete story. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -398,6 +457,22 @@ const AdminCommonStories = () => {
                                     <Eye className="w-4 h-4 mr-2" />
                                     View
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setEditingStory(story);
+                                      setIsEditDialogOpen(true);
+                                    }}
+                                  >
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteStory(story.storyId)}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -550,6 +625,79 @@ const AdminCommonStories = () => {
                       <div className="flex justify-end">
                         <Button onClick={() => setIsViewDialogOpen(false)}>
                           Close
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              {/* Edit Story Dialog */}
+              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Edit Common Story</DialogTitle>
+                    <DialogDescription>
+                      Update the story information
+                    </DialogDescription>
+                  </DialogHeader>
+                  {editingStory && (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="editTitle">Title*</Label>
+                        <Input
+                          id="editTitle"
+                          value={editingStory.title}
+                          onChange={(e) => setEditingStory(prev => prev ? ({ ...prev, title: e.target.value }) : null)}
+                          placeholder="Enter story title"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="editGenre">Genre*</Label>
+                          <Select 
+                            value={editingStory.genre} 
+                            onValueChange={(value) => setEditingStory(prev => prev ? ({ ...prev, genre: value }) : null)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select genre" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STORY_GENRES.map((genre) => (
+                                <SelectItem key={genre.value} value={genre.value}>
+                                  {genre.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="editFictionType">Fiction Type</Label>
+                          <Input
+                            id="editFictionType"
+                            value={editingStory.fictionType || ''}
+                            onChange={(e) => setEditingStory(prev => prev ? ({ ...prev, fictionType: e.target.value }) : null)}
+                            placeholder="e.g., Short Story, Novel"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="editContent">Content*</Label>
+                        <Textarea
+                          id="editContent"
+                          value={editingStory.content}
+                          onChange={(e) => setEditingStory(prev => prev ? ({ ...prev, content: e.target.value }) : null)}
+                          placeholder="Write your story content here..."
+                          rows={10}
+                          className="resize-none"
+                        />
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleUpdateStory}>
+                          Update Story
                         </Button>
                       </div>
                     </div>
