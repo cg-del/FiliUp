@@ -17,8 +17,6 @@ import {
   BookOpen,
   Search,
   MoreHorizontal,
-  Edit,
-  Trash2,
   Eye,
   Filter,
   Download,
@@ -42,9 +40,7 @@ export default function AdminStories() {
     search: ''
   });
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [viewingStory, setViewingStory] = useState<AdminStory | null>(null);
-  const [editingStory, setEditingStory] = useState<AdminStory | null>(null);
   const { toast } = useToast();
 
   const fetchStories = async () => {
@@ -83,52 +79,9 @@ export default function AdminStories() {
     fetchStories();
   }, [filters]);
 
-  const handleUpdateStory = async () => {
-    if (!editingStory) return;
-    
-    try {
-      await adminService.updateStory(editingStory.storyId, {
-        title: editingStory.title,
-        content: editingStory.content,
-        genre: editingStory.genre,
-        fictionType: editingStory.fictionType
-      });
-      toast({
-        title: "Success",
-        description: "Story updated successfully",
-      });
-      setIsEditDialogOpen(false);
-      setEditingStory(null);
-      fetchStories();
-    } catch (error) {
-      console.error('Error updating story:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update story. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteStory = async (storyId: string) => {
-    if (!confirm('Are you sure you want to delete this story?')) return;
-    
-    try {
-      await adminService.deleteStory(storyId);
-      toast({
-        title: "Success",
-        description: "Story deleted successfully",
-      });
-      fetchStories();
-    } catch (error) {
-      console.error('Error deleting story:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete story. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  // Note: Admin can only view teacher-created stories, not edit or delete them
+  // Edit and delete functionality has been removed for teacher-created stories
+  // Only common stories can be managed through the Admin Common Stories page
 
   const getStatusBadgeVariant = (status: boolean) => {
     return status ? 'default' : 'secondary';
@@ -159,9 +112,9 @@ export default function AdminStories() {
                   <SidebarTrigger className="text-teal-600" />
                   <div>
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                      Story Management
+                      Teacher Stories (View Only)
                     </h1>
-                    <p className="text-gray-600 text-sm">Review and manage stories in the system</p>
+                    <p className="text-gray-600 text-sm">Review stories created by teachers - read-only access</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -177,10 +130,26 @@ export default function AdminStories() {
               {/* Welcome Section */}
               <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  Story Management 📚
+                  Teacher Stories 📚
                 </h1>
-                <p className="text-gray-600">Review, edit, and manage all stories in the system.</p>
+                <p className="text-gray-600">Review and view all stories created by teachers. These stories cannot be edited or deleted by admin.</p>
               </div>
+
+          {/* Notice */}
+          <Card className="mb-6 bg-amber-50 border border-amber-200">
+            <CardContent className="pt-6">
+              <div className="flex items-center space-x-3">
+                <BookOpen className="w-6 h-6 text-amber-600" />
+                <div>
+                  <h3 className="font-semibold text-amber-800">Teacher Stories - View Only</h3>
+                  <p className="text-sm text-amber-700">
+                    These stories were created by teachers. You can view them but cannot edit or delete them. 
+                    To create and manage stories as an admin, use the Common Stories section.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Filters and Search */}
           <Card className="mb-6 bg-white shadow-sm border border-teal-100">
@@ -341,22 +310,6 @@ export default function AdminStories() {
                                 <Eye className="w-4 h-4 mr-2" />
                                 View
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setEditingStory(story);
-                                  setIsEditDialogOpen(true);
-                                }}
-                              >
-                                <Edit className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteStory(story.storyId)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -415,65 +368,7 @@ export default function AdminStories() {
             </DialogContent>
           </Dialog>
 
-          {/* Edit Story Dialog */}
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Edit Story</DialogTitle>
-                <DialogDescription>
-                  Update story information
-                </DialogDescription>
-              </DialogHeader>
-              {editingStory && (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="editTitle">Title</Label>
-                    <Input
-                      id="editTitle"
-                      value={editingStory.title}
-                      onChange={(e) => setEditingStory(prev => prev ? ({ ...prev, title: e.target.value }) : null)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="editGenre">Genre</Label>
-                      <Input
-                        id="editGenre"
-                        value={editingStory.genre}
-                        onChange={(e) => setEditingStory(prev => prev ? ({ ...prev, genre: e.target.value }) : null)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="editFictionType">Fiction Type</Label>
-                      <Input
-                        id="editFictionType"
-                        value={editingStory.fictionType || ''}
-                        onChange={(e) => setEditingStory(prev => prev ? ({ ...prev, fictionType: e.target.value }) : null)}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="editContent">Content</Label>
-                    <Textarea
-                      id="editContent"
-                      value={editingStory.content}
-                      onChange={(e) => setEditingStory(prev => prev ? ({ ...prev, content: e.target.value }) : null)}
-                      rows={10}
-                      className="resize-none"
-                    />
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleUpdateStory}>
-                      Update Story
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+
             </div>
           </div>
         </SidebarInset>

@@ -299,49 +299,13 @@ public class AdminController {
         }
     }
 
-    @PutMapping("/stories/{storyId}")
-    public ResponseEntity<?> updateStory(@PathVariable UUID storyId, @RequestBody StoryEntity storyUpdates) {
-        try {
-            StoryEntity existingStory = storyRepository.findByStoryId(storyId);
-            if (existingStory == null) {
-                return ResponseUtil.notFound("Story not found");
-            }
+    // Admin cannot update teacher-created stories
+    // This endpoint has been removed to prevent admin from modifying teacher stories
+    // Only common stories can be updated through /common-stories endpoints
 
-            // Update allowed fields
-            if (storyUpdates.getTitle() != null) {
-                existingStory.setTitle(storyUpdates.getTitle());
-            }
-            if (storyUpdates.getContent() != null) {
-                existingStory.setContent(storyUpdates.getContent());
-            }
-            if (storyUpdates.getFictionType() != null) {
-                existingStory.setFictionType(storyUpdates.getFictionType());
-            }
-            if (storyUpdates.getGenre() != null) {
-                existingStory.setGenre(storyUpdates.getGenre());
-            }
-
-            StoryEntity updatedStory = storyRepository.save(existingStory);
-            return ResponseUtil.success("Story updated successfully", updatedStory);
-        } catch (Exception e) {
-            return ResponseUtil.badRequest("Failed to update story: " + e.getMessage());
-        }
-    }
-
-    @DeleteMapping("/stories/{storyId}")
-    public ResponseEntity<?> deleteStory(@PathVariable UUID storyId) {
-        try {
-            StoryEntity story = storyRepository.findByStoryId(storyId);
-            if (story == null) {
-                return ResponseUtil.notFound("Story not found");
-            }
-
-            storyRepository.delete(story);
-            return ResponseUtil.success("Story deleted successfully");
-        } catch (Exception e) {
-            return ResponseUtil.badRequest("Failed to delete story: " + e.getMessage());
-        }
-    }
+    // Admin cannot delete teacher-created stories
+    // This endpoint has been removed to prevent admin from deleting teacher stories
+    // Only common stories can be deleted through /common-stories endpoints
 
     // ================================
     // COMMON STORY MANAGEMENT

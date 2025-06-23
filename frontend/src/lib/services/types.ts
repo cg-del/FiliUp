@@ -168,3 +168,31 @@ export interface LegacyLeaderboardEntry {
   points: number;
   rank: number;
 }
+
+// Badge types
+export interface BadgeDTO {
+  badgeId: string;
+  title: string;
+  description: string;
+  imageUrl?: string;
+  pointsValue: number;
+  criteria: string;
+  isActive: boolean;
+  createdAt: string;
+  // Student-specific fields
+  isEarned?: boolean;
+  earnedAt?: string;
+  performanceScore?: number;
+  earnedFromQuizTitle?: string;
+  earnedFromStoryTitle?: string;
+  earnedFromClassName?: string;
+  notes?: string;
+}
+
+export interface StudentBadgeStatsDTO {
+  totalBadges: number;
+  totalPoints: number;
+  badgesByCategory: { [category: string]: number };
+  recentBadges: number;
+  rank: number;
+}

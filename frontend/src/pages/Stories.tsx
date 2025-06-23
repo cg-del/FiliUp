@@ -531,6 +531,56 @@ const TeacherStories = () => {
                                   />
                                 </div>
                               )}
+
+                              {/* Create Quiz Button for Common Stories */}
+                              <div className="mb-3">
+                                <CreateQuizForm 
+                                  triggerClassName="w-full" 
+                                  isCommonStory={true} 
+                                  commonStoryId={story.storyId}
+                                />
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="flex-1 text-teal-600 border-teal-200 hover:bg-teal-50"
+                                  onClick={() => handleViewQuiz(story.storyId)}
+                                  disabled={loadingOperation === 'loading-quiz'}
+                                >
+                                  {loadingOperation === 'loading-quiz' ? (
+                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                  ) : (
+                                    <Eye className="h-4 w-4 mr-1" />
+                                  )}
+                                  Quiz
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="flex-1 text-cyan-600 border-cyan-200 hover:bg-cyan-50"
+                                  onClick={() => handleEditStory(story)}
+                                  disabled={!!loadingOperation}
+                                >
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="text-red-600 border-red-200 hover:bg-red-50"
+                                  onClick={() => setDeleteStoryId(story.storyId)}
+                                  disabled={!!loadingOperation}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              <div className="text-xs text-gray-500 text-center">
+                                Created: {createdDate.toLocaleDateString()}
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
@@ -616,7 +666,10 @@ const TeacherStories = () => {
 
                           {/* Create Quiz Button */}
                           <div className="mb-3">
-                            <CreateQuizForm triggerClassName="w-full" />
+                            <CreateQuizForm 
+                              triggerClassName="w-full" 
+                              classId={story.classEntity.classId}
+                            />
                           </div>
 
                           {/* Action Buttons */}

@@ -12,15 +12,18 @@ import edu.cit.filiup.entity.QuizAttemptEntity;
 import edu.cit.filiup.entity.QuizEntity;
 import edu.cit.filiup.entity.QuizQuestionEntity;
 import edu.cit.filiup.entity.StoryEntity;
+import edu.cit.filiup.entity.CommonStoryEntity;
 import edu.cit.filiup.entity.UserEntity;
 import edu.cit.filiup.repository.QuizAttemptRepository;
 import edu.cit.filiup.repository.QuizRepository;
 import edu.cit.filiup.repository.StoryRepository;
+import edu.cit.filiup.repository.CommonStoryRepository;
 import edu.cit.filiup.repository.UserRepository;
 import edu.cit.filiup.service.QuizScoringService;
 import edu.cit.filiup.service.QuizService;
 import edu.cit.filiup.service.StudentProfileService;
 import edu.cit.filiup.service.QuizTimerService;
+import edu.cit.filiup.service.BadgeService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -48,6 +51,7 @@ public class QuizServiceImpl implements QuizService {
     private final QuizRepository quizRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final StoryRepository storyRepository;
+    private final CommonStoryRepository commonStoryRepository;
     private final UserRepository userRepository;
     private final StudentProfileService studentProfileService;
     private final QuizScoringService quizScoringService;
@@ -55,21 +59,25 @@ public class QuizServiceImpl implements QuizService {
     private final QuizTimerService quizTimerService;
     private final edu.cit.filiup.repository.EnrollmentRepository enrollmentRepository;
     private final edu.cit.filiup.repository.ClassRepository classRepository;
+    private final BadgeService badgeService;
 
     @Autowired
     public QuizServiceImpl(QuizRepository quizRepository, 
                           QuizAttemptRepository quizAttemptRepository,
                           StoryRepository storyRepository,
+                          CommonStoryRepository commonStoryRepository,
                           UserRepository userRepository,
                           StudentProfileService studentProfileService,
                           QuizScoringService quizScoringService,
                           ObjectMapper objectMapper,
                           QuizTimerService quizTimerService,
                           edu.cit.filiup.repository.EnrollmentRepository enrollmentRepository,
-                          edu.cit.filiup.repository.ClassRepository classRepository) {
+                          edu.cit.filiup.repository.ClassRepository classRepository,
+                          BadgeService badgeService) {
         this.quizRepository = quizRepository;
         this.quizAttemptRepository = quizAttemptRepository;
         this.storyRepository = storyRepository;
+        this.commonStoryRepository = commonStoryRepository;
         this.userRepository = userRepository;
         this.studentProfileService = studentProfileService;
         this.quizScoringService = quizScoringService;
@@ -77,6 +85,7 @@ public class QuizServiceImpl implements QuizService {
         this.quizTimerService = quizTimerService;
         this.enrollmentRepository = enrollmentRepository;
         this.classRepository = classRepository;
+        this.badgeService = badgeService;
     }
 
     @Override
@@ -370,9 +379,31 @@ public class QuizServiceImpl implements QuizService {
         quiz.setOpensAt(quizDTO.getOpensAt());
         quiz.setClosesAt(quizDTO.getClosesAt());
         
-        StoryEntity story = storyRepository.findById(quizDTO.getStoryId())
-                .orElseThrow(() -> new EntityNotFoundException("Story not found with id: " + quizDTO.getStoryId()));
-        quiz.setStory(story);
+        // Handle both regular stories and common stories
+        if (quizDTO.getStoryId() != null) {
+            // Regular story quiz
+            StoryEntity story = storyRepository.findById(quizDTO.getStoryId())
+                    .orElseThrow(() -> new EntityNotFoundException("Story not found with id: " + quizDTO.getStoryId()));
+            quiz.setStory(story);
+            quiz.setQuizType(QuizEntity.QuizType.STORY);
+        } else if (quizDTO.getCommonStoryId() != null) {
+            // Common story quiz
+            CommonStoryEntity commonStory = commonStoryRepository.findById(quizDTO.getCommonStoryId())
+                    .orElseThrow(() -> new EntityNotFoundException("Common story not found with id: " + quizDTO.getCommonStoryId()));
+            quiz.setCommonStory(commonStory);
+            quiz.setQuizType(QuizEntity.QuizType.COMMON_STORY);
+        } else {
+            throw new IllegalArgumentException("Either storyId or commonStoryId must be provided");
+        }
+        
+        // Set quiz type from DTO if provided
+        if (quizDTO.getQuizType() != null) {
+            try {
+                quiz.setQuizType(QuizEntity.QuizType.valueOf(quizDTO.getQuizType()));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid quiz type: " + quizDTO.getQuizType());
+            }
+        }
         
         UserEntity creator = userRepository.findById(quizDTO.getCreatedById())
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + quizDTO.getCreatedById()));
@@ -434,8 +465,19 @@ public class QuizServiceImpl implements QuizService {
         dto.setTimeLimitMinutes(quiz.getTimeLimitMinutes());
         dto.setOpensAt(quiz.getOpensAt());
         dto.setClosesAt(quiz.getClosesAt());
-        dto.setStoryId(quiz.getStory().getStoryId());
-        dto.setStoryTitle(quiz.getStory().getTitle());
+        
+        // Set quiz type
+        dto.setQuizType(quiz.getQuizType().name());
+        
+        // Handle both regular stories and common stories
+        if (quiz.getQuizType() == QuizEntity.QuizType.STORY && quiz.getStory() != null) {
+            dto.setStoryId(quiz.getStory().getStoryId());
+            dto.setStoryTitle(quiz.getStory().getTitle());
+        } else if (quiz.getQuizType() == QuizEntity.QuizType.COMMON_STORY && quiz.getCommonStory() != null) {
+            dto.setCommonStoryId(quiz.getCommonStory().getStoryId());
+            dto.setCommonStoryTitle(quiz.getCommonStory().getTitle());
+        }
+        
         dto.setCreatedById(quiz.getCreatedBy().getUserId());
         dto.setCreatedByName(quiz.getCreatedBy().getUserName());
         dto.setCreatedAt(quiz.getCreatedAt());
@@ -995,6 +1037,88 @@ public class QuizServiceImpl implements QuizService {
                 })
                 .map(this::convertToAttemptDTO)
                 .sorted(Comparator.comparing(QuizAttemptDTO::getStartedAt).reversed())
+                .collect(Collectors.toList());
+    }
+
+    // Common Story Quiz Methods Implementation
+    
+    @Override
+    @Transactional
+    public QuizDTO createCommonStoryQuiz(UUID commonStoryId, QuizDTO quizDTO) {
+        // Validate common story exists
+        CommonStoryEntity commonStory = commonStoryRepository.findById(commonStoryId)
+                .orElseThrow(() -> new EntityNotFoundException("Common story not found with id: " + commonStoryId));
+        
+        // Set the commonStoryId in the DTO if not already set
+        if (quizDTO.getCommonStoryId() == null) {
+            quizDTO.setCommonStoryId(commonStoryId);
+        }
+        
+        QuizEntity quiz = new QuizEntity();
+        updateQuizFromDTO(quiz, quizDTO);
+        
+        // Set quiz type and common story relationship
+        quiz.setQuizType(QuizEntity.QuizType.COMMON_STORY);
+        quiz.setCommonStory(commonStory);
+        
+        // Set creator
+        UserEntity creator = userRepository.findById(quizDTO.getCreatedById())
+                .orElseThrow(() -> new EntityNotFoundException("Creator not found with id: " + quizDTO.getCreatedById()));
+        quiz.setCreatedBy(creator);
+        
+        QuizEntity savedQuiz = quizRepository.save(quiz);
+        return convertToDTO(savedQuiz);
+    }
+
+    @Override
+    public List<QuizDTO> getQuizzesByCommonStoryId(UUID commonStoryId) {
+        List<QuizEntity> quizzes = quizRepository.findByCommonStoryStoryId(commonStoryId);
+        return quizzes.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<QuizDTO> getCommonStoryQuizzesByCreatedBy(UUID userId) {
+        List<QuizEntity> quizzes = quizRepository.findByCreatedByUserIdAndQuizType(userId, QuizEntity.QuizType.COMMON_STORY);
+        return quizzes.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<QuizDTO> getCommonStoryQuizzesByClassId(UUID classId) {
+        List<QuizEntity> quizzes = quizRepository.findCommonStoryQuizzesByClassId(classId);
+        return quizzes.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<QuizDTO> getAllActiveCommonStoryQuizzes() {
+        List<QuizEntity> quizzes = quizRepository.findByQuizTypeAndIsActiveTrue(QuizEntity.QuizType.COMMON_STORY);
+        return quizzes.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<QuizAttemptDTO> getQuizAttemptsByStudentAndCommonStory(UUID studentId, UUID commonStoryId) {
+        // Get all quiz attempts by student
+        List<QuizAttemptEntity> allAttempts = quizAttemptRepository.findByStudentUserIdOrderByStartedAtDesc(studentId);
+        
+        // Filter to only include attempts for quizzes related to the specified common story
+        List<QuizAttemptEntity> filteredAttempts = allAttempts.stream()
+                .filter(attempt -> {
+                    QuizEntity quiz = attempt.getQuiz();
+                    return quiz.getQuizType() == QuizEntity.QuizType.COMMON_STORY &&
+                           quiz.getCommonStory() != null &&
+                           quiz.getCommonStory().getStoryId().equals(commonStoryId);
+                })
+                .collect(Collectors.toList());
+        
+        return filteredAttempts.stream()
+                .map(this::convertToAttemptDTO)
                 .collect(Collectors.toList());
     }
 } 

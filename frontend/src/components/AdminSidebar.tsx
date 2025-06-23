@@ -49,12 +49,12 @@ const menuItems = [
     icon: BookOpen,
     submenu: [
       {
-        title: "Class Stories",
+        title: "Teacher Stories (View)",
         url: "/admin/stories",
         icon: BookOpen,
       },
       {
-        title: "Common Stories",
+        title: "Common Stories (Manage)",
         url: "/admin/common-stories",
         icon: Globe,
       }

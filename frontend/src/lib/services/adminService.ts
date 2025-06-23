@@ -172,15 +172,9 @@ class AdminService {
     return response.data.data; // Extract data from wrapped response
   }
 
-  async updateStory(storyId: string, storyData: Partial<AdminStory>) {
-    const response = await api.put(`/admin/stories/${storyId}`, storyData);
-    return response.data;
-  }
-
-  async deleteStory(storyId: string) {
-    const response = await api.delete(`/admin/stories/${storyId}`);
-    return response.data;
-  }
+  // Note: updateStory and deleteStory methods have been removed
+  // Admin can only view teacher-created stories, not modify them
+  // Use common story endpoints for managing admin-created content
 
   // Analytics and Dashboard
   async getDashboardData(): Promise<DashboardData> {

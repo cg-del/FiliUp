@@ -47,6 +47,7 @@ interface QuizComponentProps {
   storyTitle: string;
   isQuizLocked: boolean;
   setIsQuizLocked: (locked: boolean) => void;
+  isCommonStory?: boolean;
 }
 
 const StoryModule = () => {
@@ -67,6 +68,7 @@ const StoryModule = () => {
   const [quizStarted, setQuizStarted] = useState(false);
   const [isQuizLocked, setIsQuizLocked] = useState(false);
   const [fullscreenWarnings, setFullscreenWarnings] = useState(0);
+  const [isCommonStory, setIsCommonStory] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -99,27 +101,108 @@ const StoryModule = () => {
 
       setLoading(true);
       
-      // Fetch story using the new error handling system
+      // Try to fetch as a regular story first
       const { data: fetchedStory, error: storyError } = await safeExecute(
         () => storyService.getStoryById(storyId),
         {
           customMessage: "Hindi nakuha ang kuwento. Subukang muli.",
-          preventAutoRedirect: true, // Don't redirect to login for story access issues
+          preventAutoRedirect: true,
+          showToast: false, // Don't show toast for the first attempt
           onError: (appError) => {
-            console.error('Error fetching story:', appError);
-            setError(`Failed to load story: ${appError.message}`);
-            
-            // If it's an authentication error, provide more specific guidance
-            if (appError.type === 'AUTHENTICATION_ERROR') {
-              setError('You may not have permission to access this story. Please check with your teacher.');
-            }
+            console.error('Error fetching regular story:', appError);
           }
         }
       );
 
-      if (storyError) {
-        setLoading(false);
-        return;
+      // If regular story fetch failed, try as a common story
+      if (!fetchedStory && storyError) {
+        console.log('Regular story not found, trying as common story');
+        
+        const { data: commonStoryData, error: commonStoryError } = await safeExecute(
+          () => import('@/lib/services/commonStoryService').then(module => {
+            const commonStoryService = module.commonStoryService;
+            return commonStoryService.getStoryById(storyId);
+          }),
+          {
+            customMessage: "Hindi nakuha ang kuwento. Subukang muli.",
+            preventAutoRedirect: true,
+            onError: (appError) => {
+              console.error('Error fetching common story:', appError);
+              setError(`Failed to load story: ${appError.message}`);
+              
+              // If it's an authentication error, provide more specific guidance
+              if (appError.type === 'AUTHENTICATION_ERROR') {
+                setError('You may not have permission to access this story. Please check with your teacher.');
+              }
+            }
+          }
+        );
+        
+        if (commonStoryData) {
+          console.log('Common story fetched successfully:', commonStoryData);
+          // Transform common story to match StoryData format
+          const transformedStory: StoryData = {
+            storyId: commonStoryData.storyId,
+            title: commonStoryData.title,
+            content: commonStoryData.content,
+            createdAt: commonStoryData.createdAt,
+            isActive: commonStoryData.isActive || true,
+            genre: commonStoryData.genre,
+            fictionType: commonStoryData.fictionType || '',
+            coverPictureUrl: commonStoryData.coverPictureUrl,
+            coverPictureType: commonStoryData.coverPictureType,
+            // Create a minimal class entity since common stories don't have one
+            classEntity: {
+              className: 'Common Story',
+              description: 'FiliUp Common Story',
+              createdAt: commonStoryData.createdAt,
+              isActive: true,
+              classCode: '',
+              classId: ''
+            }
+          };
+          
+          setStory(transformedStory);
+          setIsCommonStory(true);
+          
+          // Split content into pages based on paragraphs
+          const paragraphs = transformedStory.content
+            .split(/\\n\\n|\\n|\\r\\n/)
+            .filter(paragraph => paragraph.trim().length > 0)
+            .map(paragraph => paragraph.trim());
+
+          const pages: StoryPage[] = paragraphs.map(paragraph => ({
+            text: paragraph,
+            image: transformedStory.coverPictureUrl
+          }));
+
+          console.log('Common story pages created:', pages.length);
+          setStoryPages(pages);
+          
+          // Fetch available quizzes for this common story
+          const { data: commonStoryQuizzes, error: commonQuizError } = await safeExecute(
+            () => quizService.getQuizzesByCommonStory(storyId),
+            {
+              customMessage: "Hindi nakuha ang mga quiz. Magpatuloy sa pagbabasa.",
+              showToast: false, // Don't show toast for quiz errors, they're not critical
+              onError: (appError) => {
+                console.error('Error fetching common story quizzes:', appError);
+                // Set empty array if quizzes fail to load
+                setAvailableQuizzes([]);
+              }
+            }
+          );
+
+          if (commonStoryQuizzes) {
+            console.log('Available common story quizzes:', commonStoryQuizzes);
+            setAvailableQuizzes(commonStoryQuizzes);
+          } else {
+            setAvailableQuizzes([]);
+          }
+          
+          setLoading(false);
+          return;
+        }
       }
 
       if (fetchedStory) {
@@ -160,6 +243,8 @@ const StoryModule = () => {
         } else {
           setAvailableQuizzes([]);
         }
+      } else {
+        setError('Story not found. It may have been deleted or you may not have access to it.');
       }
       
       setLoading(false);
@@ -355,6 +440,7 @@ const StoryModule = () => {
               storyTitle={story.title}
               isQuizLocked={isQuizLocked}
               setIsQuizLocked={setIsQuizLocked}
+              isCommonStory={isCommonStory}
             />
           </div>
         </div>
@@ -440,6 +526,29 @@ const StoryModule = () => {
           </CardContent>
         </Card>
 
+        {/* Quiz Section for Common Stories */}
+        {isCommonStory && availableQuizzes.length > 0 && (
+          <Card className="mb-6 shadow-xl border-0 bg-gradient-to-r from-purple-50 to-indigo-50 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  🧠 Test Your Understanding!
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Ready to take a quiz about this story? Test your comprehension and earn points!
+                </p>
+                <Button
+                  onClick={() => setShowQuiz(true)}
+                  className="bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                  size="lg"
+                >
+                  🎯 Take Quiz ({availableQuizzes.length} available)
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Navigation */}
         <div className="flex justify-between">
           <Button
@@ -465,7 +574,7 @@ const StoryModule = () => {
   );
 };
 
-const QuizComponent = ({ quiz, onComplete, storyTitle, isQuizLocked, setIsQuizLocked }: QuizComponentProps) => {
+const QuizComponent = ({ quiz, onComplete, storyTitle, isQuizLocked, setIsQuizLocked, isCommonStory = false }: QuizComponentProps) => {
   const { toast } = useToast();
   const { safeExecute } = useErrorHandler();
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -511,7 +620,9 @@ const QuizComponent = ({ quiz, onComplete, storyTitle, isQuizLocked, setIsQuizLo
     
     try {
       await safeExecute(
-        () => quizService.logSuspiciousAction(quizAttempt.attemptId, logEntry),
+        () => isCommonStory 
+          ? quizService.logCommonStoryQuizSuspiciousAction(quizAttempt.attemptId, logEntry)
+          : quizService.logSuspiciousAction(quizAttempt.attemptId, logEntry),
         {
           showToast: false, // Don't show toast for logging
           preventAutoRedirect: true,
@@ -541,7 +652,9 @@ const QuizComponent = ({ quiz, onComplete, storyTitle, isQuizLocked, setIsQuizLo
     };
 
     const { error } = await safeExecute(
-      () => quizService.saveQuizProgress(quizAttempt.attemptId, progress),
+      () => isCommonStory 
+        ? quizService.saveCommonStoryQuizProgress(quizAttempt.attemptId, progress)
+        : quizService.saveQuizProgress(quizAttempt.attemptId, progress),
       {
         showToast: false, // Don't show toast for auto-save
         preventAutoRedirect: true,
@@ -735,7 +848,9 @@ const QuizComponent = ({ quiz, onComplete, storyTitle, isQuizLocked, setIsQuizLo
       
       // First, check if student can attempt this quiz or has existing attempt
       const { data: eligibility, error: eligibilityError } = await safeExecute(
-        () => quizService.checkQuizEligibility(quiz.quizId),
+        () => isCommonStory 
+          ? quizService.checkCommonStoryQuizEligibility(quiz.quizId)
+          : quizService.checkQuizEligibility(quiz.quizId),
         {
           customMessage: "Hindi ma-check ang quiz eligibility. Subukang muli.",
           preventAutoRedirect: true,
@@ -818,7 +933,9 @@ const QuizComponent = ({ quiz, onComplete, storyTitle, isQuizLocked, setIsQuizLo
         } else {
           // Start new attempt
           const { data: newAttempt, error: attemptError } = await safeExecute(
-            () => quizService.getOrCreateQuizAttempt(quiz.quizId),
+            () => isCommonStory 
+              ? quizService.getOrCreateCommonStoryQuizAttempt(quiz.quizId)
+              : quizService.getOrCreateQuizAttempt(quiz.quizId),
             {
               customMessage: "Hindi ma-start ang quiz. Subukang muli.",
               preventAutoRedirect: true,
@@ -1013,7 +1130,9 @@ const QuizComponent = ({ quiz, onComplete, storyTitle, isQuizLocked, setIsQuizLo
       // Submit the quiz
       const autoSubmit = async () => {
         const { data: submissionResult, error } = await safeExecute(
-          () => quizService.submitQuizAttempt(quizAttempt.attemptId, submission),
+          () => isCommonStory 
+            ? quizService.submitCommonStoryQuizAttempt(quizAttempt.attemptId, submission)
+            : quizService.submitQuizAttempt(quizAttempt.attemptId, submission),
           {
             customMessage: "Quiz auto-submitted due to security violations.",
             preventAutoRedirect: true,
@@ -1120,7 +1239,9 @@ const QuizComponent = ({ quiz, onComplete, storyTitle, isQuizLocked, setIsQuizLo
 
     // Submit quiz using error handling
     const { data: submissionResult, error } = await safeExecute(
-      () => quizService.submitQuizAttempt(quizAttempt.attemptId, submission),
+      () => isCommonStory 
+        ? quizService.submitCommonStoryQuizAttempt(quizAttempt.attemptId, submission)
+        : quizService.submitQuizAttempt(quizAttempt.attemptId, submission),
       {
         customMessage: "Hindi ma-submit ang quiz. Subukang muli.",
         preventAutoRedirect: true,

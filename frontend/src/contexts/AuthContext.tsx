@@ -1,5 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { userService } from '@/lib/services';
 
 interface User {
   id: string;
@@ -56,26 +56,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string, userType: 'student' | 'teacher' | 'admin'): Promise<boolean> => {
+  const login = async (username: string, password: string, userType: 'student' | 'teacher' | 'admin'): Promise<boolean> => {
     setIsLoading(true);
     
-    // Mock authentication - in real app, this would be an API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (email && password) {
-      const mockUser: User = {
-        id: Math.random().toString(36),
-        name: userType === 'student' ? 'Juan Dela Cruz' : userType === 'teacher' ? 'Guro Maria' : 'Admin User',
-        email,
-        type: userType,
-        ...(userType === 'teacher' && { classes: ['3-matatag', '3-masigla', '3-mabini'] }),
-        ...(userType === 'student' && { enrollmentStatus: 'none' })
-      };
+    try {
+      // Use real authentication instead of mock
+      const response = await userService.login({ userName: username, userPassword: password });
       
-      setUser(mockUser);
-      localStorage.setItem('filiup_user', JSON.stringify(mockUser));
-      setIsLoading(false);
-      return true;
+      if (response && response.data) {
+        const { accessToken, refreshToken, mustChangePassword, userId } = response.data;
+        
+        // Clear all existing localStorage data before setting new values
+        localStorage.clear();
+        
+        // Store tokens
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('token', accessToken); // Also store as 'token' for compatibility
+        
+        // Decode JWT to get user info
+        const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+        const userRole = tokenPayload.role;
+        const userName = tokenPayload.sub;
+
+        // Create user object and store in localStorage
+        const user = {
+          id: userId || tokenPayload.jti || Math.random().toString(36),
+          name: userName, // Use username directly
+          email: userName, // Keep email field for compatibility, using username value
+          type: userRole.toLowerCase() as 'student' | 'teacher' | 'admin',
+          ...(userRole === 'TEACHER' && { classes: ['3-matatag', '3-masigla', '3-mabini'] }),
+          ...(userRole === 'STUDENT' && { enrollmentStatus: 'none' as const })
+        };
+
+        setUser(user);
+        localStorage.setItem('filiup_user', JSON.stringify(user));
+        setIsLoading(false);
+        return true;
+      }
+    } catch (error) {
+      console.error('Login error:', error);
     }
     
     setIsLoading(false);

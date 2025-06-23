@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface QuizService {
+    // Regular story quiz methods
     QuizDTO createQuiz(UUID storyId, QuizDTO quizDTO);
     QuizDTO getQuizById(UUID quizId);
     List<QuizDTO> getQuizzesByStoryId(UUID storyId);
@@ -21,10 +22,17 @@ public interface QuizService {
     void deleteQuiz(UUID quizId);
     List<QuizDTO> getAllActiveQuizzes();
     
+    // Common story quiz methods
+    QuizDTO createCommonStoryQuiz(UUID commonStoryId, QuizDTO quizDTO);
+    List<QuizDTO> getQuizzesByCommonStoryId(UUID commonStoryId);
+    List<QuizDTO> getCommonStoryQuizzesByCreatedBy(UUID userId);
+    List<QuizDTO> getCommonStoryQuizzesByClassId(UUID classId);
+    List<QuizDTO> getAllActiveCommonStoryQuizzes();
+    
     // Method for getting quiz details with correct answers (admin/teacher only)
     QuizDTO getQuizWithCorrectAnswers(UUID quizId);
     
-    // Methods for quiz attempts
+    // Methods for quiz attempts (works for both regular and common story quizzes)
     QuizDTO getQuizForStudent(UUID quizId);
     QuizAttemptDTO startQuizAttempt(UUID quizId, UUID studentId);
     QuizAttemptDTO submitQuizAttempt(UUID attemptId, QuizSubmissionDTO submission);
@@ -33,6 +41,9 @@ public interface QuizService {
     List<QuizAttemptDTO> getQuizAttemptsByQuiz(UUID quizId);
     QuizAttemptDTO getQuizAttemptById(UUID attemptId);
     List<QuizAttemptDTO> getQuizAttemptsByStudentAndStory(UUID studentId, UUID storyId);
+    
+    // New method for common story quiz attempts
+    List<QuizAttemptDTO> getQuizAttemptsByStudentAndCommonStory(UUID studentId, UUID commonStoryId);
     
     // Method for handling expired quiz auto-submission
     QuizSubmissionResultDTO autoSubmitExpiredQuiz(UUID attemptId);

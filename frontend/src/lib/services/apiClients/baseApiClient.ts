@@ -11,6 +11,7 @@ export class BaseApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      withCredentials: true, // Enable sending cookies with cross-origin requests
       timeout: 30000, // 30 seconds timeout
     });
 
@@ -24,6 +25,9 @@ export class BaseApiClient {
         
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
+          // Log token for debugging
+          console.log('Token found:', token ? 'Yes (length: ' + token.length + ')' : 'No');
+          console.log('Authorization header set:', `Bearer ${token.substring(0, 10)}...`);
         }
         
         // Add request timestamp for debugging

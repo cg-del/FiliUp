@@ -1,4 +1,5 @@
 import { api } from '../api';
+import { QuizData } from './quizService';
 
 export interface CommonStory {
   storyId: string;
@@ -23,6 +24,28 @@ export interface CreateCommonStoryRequest {
   fictionType?: string;
   coverPictureUrl?: string;
   coverPictureType?: string;
+}
+
+export interface CreateQuizRequest {
+  title: string;
+  description: string;
+  category: string;
+  timeLimitMinutes: number;
+  opensAt: string;
+  closesAt: string;
+  isActive: boolean;
+  storyId: string;
+  questions: {
+    questionId?: string;
+    questionText: string;
+    options: string[];
+    correctAnswer: string;
+    points: number;
+  }[];
+  createdById?: string;
+  createdByName?: string;
+  storyTitle?: string;
+  createdAt?: string;
 }
 
 class CommonStoryService {
@@ -131,6 +154,28 @@ class CommonStoryService {
   async deleteStory(storyId: string) {
     const response = await api.delete(`/common-stories/${storyId}`);
     return response.data;
+  }
+
+  // Quiz related endpoints for common stories
+  // Note: These methods now delegate to the dedicated quiz service
+  // which has the correct URL patterns for the backend controller
+  
+  async createQuizForCommonStory(storyId: string, quizData: CreateQuizRequest) {
+    // Import and use the quiz service method
+    const { quizService } = await import('./quizService');
+    return quizService.createCommonStoryQuiz(storyId, quizData);
+  }
+
+  async getQuizzesForCommonStory(storyId: string) {
+    // Import and use the quiz service method
+    const { quizService } = await import('./quizService');
+    return quizService.getQuizzesByCommonStory(storyId);
+  }
+
+  async getQuizForCommonStory(storyId: string, quizId: string) {
+    // Import and use the quiz service method
+    const { quizService } = await import('./quizService');
+    return quizService.getQuizById(quizId);
   }
 }
 

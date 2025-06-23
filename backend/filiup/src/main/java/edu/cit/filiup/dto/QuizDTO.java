@@ -12,8 +12,18 @@ public class QuizDTO {
     private Integer timeLimitMinutes;
     private LocalDateTime opensAt;
     private LocalDateTime closesAt;
+    
+    // Regular story fields (nullable for common story quizzes)
     private UUID storyId;
     private String storyTitle;
+    
+    // Common story fields (nullable for regular story quizzes)
+    private UUID commonStoryId;
+    private String commonStoryTitle;
+    
+    // Quiz type to distinguish between regular and common story quizzes
+    private String quizType; // "STORY" or "COMMON_STORY"
+    
     private UUID createdById;
     private String createdByName;
     private List<QuizQuestionDTO> questions;
@@ -141,6 +151,30 @@ public class QuizDTO {
 
     public void setStoryTitle(String storyTitle) {
         this.storyTitle = storyTitle;
+    }
+
+    public UUID getCommonStoryId() {
+        return commonStoryId;
+    }
+
+    public void setCommonStoryId(UUID commonStoryId) {
+        this.commonStoryId = commonStoryId;
+    }
+
+    public String getCommonStoryTitle() {
+        return commonStoryTitle;
+    }
+
+    public void setCommonStoryTitle(String commonStoryTitle) {
+        this.commonStoryTitle = commonStoryTitle;
+    }
+
+    public String getQuizType() {
+        return quizType;
+    }
+
+    public void setQuizType(String quizType) {
+        this.quizType = quizType;
     }
 
     public UUID getCreatedById() {

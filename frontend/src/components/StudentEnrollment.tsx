@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { GraduationCap, Loader2, Copy, Wifi, WifiOff } from 'lucide-react';
+import { GraduationCap, Loader2, Copy, Wifi, WifiOff, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { enrollmentService } from '@/lib/services/enrollmentService';
 import { enrollmentWebSocketService, type EnrollmentWebSocketMessage } from '@/lib/services/enrollmentWebSocketService';
@@ -19,10 +19,44 @@ const StudentEnrollment = ({ onEnrollmentSuccess }: StudentEnrollmentProps) => {
   const [classCode, setClassCode] = useState('');
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [webSocketConnected, setWebSocketConnected] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
 
   // Enrollment status state
   const [enrollmentStatus, setEnrollmentStatus] = useState<string | null>(null);
   const [statusLoading, setStatusLoading] = useState<boolean>(true);
+
+  // Debug info
+  const getDebugInfo = () => {
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    let tokenInfo = null;
+    
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        tokenInfo = {
+          subject: payload.sub,
+          role: payload.role,
+          expiry: new Date(payload.exp * 1000).toLocaleString(),
+          isExpired: payload.exp * 1000 < Date.now()
+        };
+      } catch (e) {
+        tokenInfo = { error: 'Invalid token format' };
+      }
+    }
+    
+    return {
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      tokenInfo,
+      user,
+      localStorage: {
+        accessToken: !!localStorage.getItem('accessToken'),
+        token: !!localStorage.getItem('token'),
+        refreshToken: !!localStorage.getItem('refreshToken'),
+        filiup_user: !!localStorage.getItem('filiup_user')
+      }
+    };
+  };
 
   useEffect(() => {
     const fetchEnrollmentStatus = async () => {
@@ -224,12 +258,21 @@ const StudentEnrollment = ({ onEnrollmentSuccess }: StudentEnrollmentProps) => {
             <GraduationCap className="h-5 w-5 text-blue-600" />
             <span>Join a Class</span>
           </div>
-          <div className="flex items-center space-x-2" title={webSocketConnected ? "Real-time notifications active" : "Real-time notifications inactive"}>
-            {webSocketConnected ? (
-              <Wifi className="h-4 w-4 text-green-500" />
-            ) : (
-              <WifiOff className="h-4 w-4 text-gray-400" />
-            )}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowDebugInfo(!showDebugInfo)}
+              className="text-gray-400 hover:text-gray-600"
+              title="Toggle debug info"
+            >
+              <AlertCircle className="h-4 w-4" />
+            </button>
+            <div title={webSocketConnected ? "Real-time notifications active" : "Real-time notifications inactive"}>
+              {webSocketConnected ? (
+                <Wifi className="h-4 w-4 text-green-500" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-gray-400" />
+              )}
+            </div>
           </div>
         </CardTitle>
         <CardDescription>
@@ -240,6 +283,14 @@ const StudentEnrollment = ({ onEnrollmentSuccess }: StudentEnrollmentProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {showDebugInfo && (
+          <div className="p-3 bg-gray-50 rounded-lg text-xs">
+            <h4 className="font-medium mb-2">Debug Info:</h4>
+            <pre className="whitespace-pre-wrap overflow-auto">
+              {JSON.stringify(getDebugInfo(), null, 2)}
+            </pre>
+          </div>
+        )}
         {getStatusBadge()}
         {user?.enrollmentStatus !== 'approved' && (
           <>
