@@ -12,7 +12,8 @@ import {
   FileText,
   User,
   Settings,
-  LogOut
+  LogOut,
+  Globe
 } from 'lucide-react';
 import {
   Sidebar,
@@ -40,6 +41,7 @@ const menuItems = [
     url: "/stories",
     icon: BookOpen,
   },
+  
   {
     title: "Students",
     url: "/students",

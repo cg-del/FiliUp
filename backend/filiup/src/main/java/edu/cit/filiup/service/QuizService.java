@@ -65,6 +65,7 @@ public interface QuizService {
     
     // New method for class record matrix
     edu.cit.filiup.dto.ClassRecordDTO getClassRecordMatrix(UUID teacherId);
+    edu.cit.filiup.dto.ClassRecordDTO getClassRecordMatrix(UUID teacherId, String quizType);
     
     // New method for class average summary
     ClassAverageSummaryDTO getClassAverageSummary(UUID userId, String userRole);

@@ -59,6 +59,7 @@ public class QuizServiceImpl implements QuizService {
     private final QuizTimerService quizTimerService;
     private final edu.cit.filiup.repository.EnrollmentRepository enrollmentRepository;
     private final edu.cit.filiup.repository.ClassRepository classRepository;
+    private final edu.cit.filiup.repository.ClassCommonStoryRepository classCommonStoryRepository;
     private final BadgeService badgeService;
 
     @Autowired
@@ -73,6 +74,7 @@ public class QuizServiceImpl implements QuizService {
                           QuizTimerService quizTimerService,
                           edu.cit.filiup.repository.EnrollmentRepository enrollmentRepository,
                           edu.cit.filiup.repository.ClassRepository classRepository,
+                          edu.cit.filiup.repository.ClassCommonStoryRepository classCommonStoryRepository,
                           BadgeService badgeService) {
         this.quizRepository = quizRepository;
         this.quizAttemptRepository = quizAttemptRepository;
@@ -85,6 +87,7 @@ public class QuizServiceImpl implements QuizService {
         this.quizTimerService = quizTimerService;
         this.enrollmentRepository = enrollmentRepository;
         this.classRepository = classRepository;
+        this.classCommonStoryRepository = classCommonStoryRepository;
         this.badgeService = badgeService;
     }
 
@@ -802,20 +805,67 @@ public class QuizServiceImpl implements QuizService {
     
     @Override
     public edu.cit.filiup.dto.ClassRecordDTO getClassRecordMatrix(UUID teacherId) {
+        return getClassRecordMatrix(teacherId, null);
+    }
+    
+    @Override
+    public edu.cit.filiup.dto.ClassRecordDTO getClassRecordMatrix(UUID teacherId, String quizType) {
         // Get all completed quiz attempts for students in teacher's classes
         List<QuizAttemptEntity> attempts = quizAttemptRepository.findCompletedQuizAttemptsByTeacherClasses(teacherId);
         
         // Filter attempts to only include students who are enrolled and accepted in the specific class
         List<QuizAttemptEntity> filteredAttempts = new ArrayList<>();
         for (QuizAttemptEntity attempt : attempts) {
-            String classCode = attempt.getQuiz().getStory().getClassEntity().getClassCode();
+            QuizEntity quiz = attempt.getQuiz();
             UUID studentId = attempt.getStudent().getUserId();
+            boolean shouldInclude = false;
             
-            // Check if student is enrolled and accepted in this specific class
-            Optional<edu.cit.filiup.entity.EnrollmentEntity> enrollment = 
-                enrollmentRepository.findByUserIdAndClassCode(studentId, classCode);
+            // Apply quiz type filter if specified
+            if (quizType != null && !quizType.isEmpty()) {
+                boolean matchesFilter = false;
+                if ("STORY".equalsIgnoreCase(quizType) && quiz.getQuizType() == QuizEntity.QuizType.STORY) {
+                    matchesFilter = true;
+                } else if ("COMMON_STORY".equalsIgnoreCase(quizType) && quiz.getQuizType() == QuizEntity.QuizType.COMMON_STORY) {
+                    matchesFilter = true;
+                }
+                
+                if (!matchesFilter) {
+                    continue; // Skip this attempt if it doesn't match the filter
+                }
+            }
             
-            if (enrollment.isPresent() && Boolean.TRUE.equals(enrollment.get().getIsAccepted())) {
+            // Handle regular story quizzes
+            if (quiz.getQuizType() == QuizEntity.QuizType.STORY && quiz.getStory() != null) {
+                String classCode = quiz.getStory().getClassEntity().getClassCode();
+                
+                // Check if student is enrolled and accepted in this specific class
+                Optional<edu.cit.filiup.entity.EnrollmentEntity> enrollment = 
+                    enrollmentRepository.findByUserIdAndClassCode(studentId, classCode);
+                
+                if (enrollment.isPresent() && Boolean.TRUE.equals(enrollment.get().getIsAccepted())) {
+                    shouldInclude = true;
+                }
+            } 
+            // Handle common story quizzes - filter by classes that have this common story
+            else if (quiz.getQuizType() == QuizEntity.QuizType.COMMON_STORY && quiz.getCommonStory() != null) {
+                // Get all classes that have this common story
+                List<edu.cit.filiup.entity.ClassCommonStoryEntity> classCommonStories = 
+                    classCommonStoryRepository.findByStoryStoryId(quiz.getCommonStory().getStoryId());
+                
+                // Check if student is enrolled in any of these classes
+                for (edu.cit.filiup.entity.ClassCommonStoryEntity ccs : classCommonStories) {
+                    String classCode = ccs.getClassEntity().getClassCode();
+                    Optional<edu.cit.filiup.entity.EnrollmentEntity> enrollment = 
+                        enrollmentRepository.findByUserIdAndClassCode(studentId, classCode);
+                    
+                    if (enrollment.isPresent() && Boolean.TRUE.equals(enrollment.get().getIsAccepted())) {
+                        shouldInclude = true;
+                        break; // Student is enrolled in at least one class with this common story
+                    }
+                }
+            }
+            
+            if (shouldInclude) {
                 filteredAttempts.add(attempt);
             }
         }
@@ -829,22 +879,63 @@ public class QuizServiceImpl implements QuizService {
         for (QuizAttemptEntity attempt : filteredAttempts) {
             String studentName = attempt.getStudent().getUserName();
             String quizTitle = attempt.getQuiz().getTitle();
-            String storyTitle = attempt.getQuiz().getStory().getTitle();
-            String storyId = attempt.getQuiz().getStory().getStoryId().toString();
-            String classId = attempt.getQuiz().getStory().getClassEntity().getClassId().toString();
-            String className = attempt.getQuiz().getStory().getClassEntity().getClassName();
+            QuizEntity quiz = attempt.getQuiz();
             
-            // Store class info
-            classInfo.put(classId, className);
-            
-            // Store quiz metadata
-            if (!quizMetadata.containsKey(quizTitle)) {
-                quizMetadata.put(quizTitle, new edu.cit.filiup.dto.ClassRecordDTO.QuizMetadataDTO(
-                    quizTitle, storyTitle, storyId, classId, className
-                ));
+            // Handle both regular story quizzes and common story quizzes
+            if (quiz.getQuizType() == QuizEntity.QuizType.STORY && quiz.getStory() != null) {
+                String storyTitle = quiz.getStory().getTitle();
+                String storyId = quiz.getStory().getStoryId().toString();
+                String classId = quiz.getStory().getClassEntity().getClassId().toString();
+                String className = quiz.getStory().getClassEntity().getClassName();
+                
+                // Store class info
+                classInfo.put(classId, className);
+                
+                // Store quiz metadata
+                if (!quizMetadata.containsKey(quizTitle)) {
+                    quizMetadata.put(quizTitle, new edu.cit.filiup.dto.ClassRecordDTO.QuizMetadataDTO(
+                        quizTitle, storyTitle, storyId, classId, className
+                    ));
+                }
+            } else if (quiz.getQuizType() == QuizEntity.QuizType.COMMON_STORY && quiz.getCommonStory() != null) {
+                String storyTitle = quiz.getCommonStory().getTitle();
+                String storyId = quiz.getCommonStory().getStoryId().toString();
+                
+                // For common stories, get all classes that have this story
+                List<edu.cit.filiup.entity.ClassCommonStoryEntity> classCommonStories = 
+                    classCommonStoryRepository.findByStoryStoryId(quiz.getCommonStory().getStoryId());
+                
+                // Add entries for each class that has this common story
+                for (edu.cit.filiup.entity.ClassCommonStoryEntity ccs : classCommonStories) {
+                    String classId = ccs.getClassEntity().getClassId().toString();
+                    String className = ccs.getClassEntity().getClassName();
+                    
+                    // Store class info
+                    classInfo.put(classId, className);
+                    
+                    // Create a unique quiz title for each class-common story combination
+                    String classSpecificQuizTitle = quizTitle + " (" + className + ")";
+                    
+                    // Store quiz metadata
+                    if (!quizMetadata.containsKey(classSpecificQuizTitle)) {
+                        quizMetadata.put(classSpecificQuizTitle, new edu.cit.filiup.dto.ClassRecordDTO.QuizMetadataDTO(
+                            classSpecificQuizTitle, storyTitle, storyId, classId, className
+                        ));
+                    }
+                    
+                    // Group by student with class-specific quiz title
+                    studentQuizMatrix.computeIfAbsent(studentName, k -> new HashMap<>())
+                            .put(classSpecificQuizTitle, attempt);
+                    
+                    allQuizTitles.add(classSpecificQuizTitle);
+                }
+                continue; // Skip the common processing below
+            } else {
+                // Skip invalid quiz attempts
+                continue;
             }
             
-            // Group by student
+            // Group by student (for regular stories only)
             studentQuizMatrix.computeIfAbsent(studentName, k -> new HashMap<>())
                     .put(quizTitle, attempt);
             
@@ -872,21 +963,20 @@ public class QuizServiceImpl implements QuizService {
             for (String quizTitle : allQuizTitles) {
                 QuizAttemptEntity attempt = studentAttempts.get(quizTitle);
                 if (attempt != null) {
-                    String storyTitle = attempt.getQuiz().getStory().getTitle();
-                    String storyId = attempt.getQuiz().getStory().getStoryId().toString();
-                    String classId = attempt.getQuiz().getStory().getClassEntity().getClassId().toString();
-                    String className = attempt.getQuiz().getStory().getClassEntity().getClassName();
-                    
-                    edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO.ScoreDTO scoreDTO = 
-                            new edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO.ScoreDTO(
-                                    attempt.getScore(), 
-                                    attempt.getMaxPossibleScore(),
-                                    storyTitle,
-                                    storyId,
-                                    classId,
-                                    className
-                            );
-                    quizScores.put(quizTitle, scoreDTO);
+                    // Get the metadata for this quiz title (contains class info)
+                    edu.cit.filiup.dto.ClassRecordDTO.QuizMetadataDTO metadata = quizMetadata.get(quizTitle);
+                    if (metadata != null) {
+                        edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO.ScoreDTO scoreDTO = 
+                                new edu.cit.filiup.dto.ClassRecordDTO.StudentRecordDTO.ScoreDTO(
+                                        attempt.getScore(), 
+                                        attempt.getMaxPossibleScore(),
+                                        metadata.getStoryTitle(),
+                                        metadata.getStoryId(),
+                                        metadata.getClassId(),
+                                        metadata.getClassName()
+                                );
+                        quizScores.put(quizTitle, scoreDTO);
+                    }
                 }
                 // If no attempt, leave null in the map (will be handled in frontend)
             }
@@ -954,14 +1044,42 @@ public class QuizServiceImpl implements QuizService {
             
             // Filter attempts to only include students who are enrolled and accepted in the specific class
             for (QuizAttemptEntity attempt : attempts) {
-                String classCode = attempt.getQuiz().getStory().getClassEntity().getClassCode();
+                QuizEntity quiz = attempt.getQuiz();
                 UUID studentId = attempt.getStudent().getUserId();
+                boolean shouldInclude = false;
                 
-                // Check if student is enrolled and accepted in this specific class
-                Optional<edu.cit.filiup.entity.EnrollmentEntity> enrollment = 
-                    enrollmentRepository.findByUserIdAndClassCode(studentId, classCode);
+                // Handle regular story quizzes
+                if (quiz.getQuizType() == QuizEntity.QuizType.STORY && quiz.getStory() != null) {
+                    String classCode = quiz.getStory().getClassEntity().getClassCode();
+                    
+                    // Check if student is enrolled and accepted in this specific class
+                    Optional<edu.cit.filiup.entity.EnrollmentEntity> enrollment = 
+                        enrollmentRepository.findByUserIdAndClassCode(studentId, classCode);
+                    
+                    if (enrollment.isPresent() && Boolean.TRUE.equals(enrollment.get().getIsAccepted())) {
+                        shouldInclude = true;
+                    }
+                } 
+                // Handle common story quizzes - filter by classes that have this common story
+                else if (quiz.getQuizType() == QuizEntity.QuizType.COMMON_STORY && quiz.getCommonStory() != null) {
+                    // Get all classes that have this common story
+                    List<edu.cit.filiup.entity.ClassCommonStoryEntity> classCommonStories = 
+                        classCommonStoryRepository.findByStoryStoryId(quiz.getCommonStory().getStoryId());
+                    
+                    // Check if student is enrolled in any of these classes
+                    for (edu.cit.filiup.entity.ClassCommonStoryEntity ccs : classCommonStories) {
+                        String classCode = ccs.getClassEntity().getClassCode();
+                        Optional<edu.cit.filiup.entity.EnrollmentEntity> enrollment = 
+                            enrollmentRepository.findByUserIdAndClassCode(studentId, classCode);
+                        
+                        if (enrollment.isPresent() && Boolean.TRUE.equals(enrollment.get().getIsAccepted())) {
+                            shouldInclude = true;
+                            break; // Student is enrolled in at least one class with this common story
+                        }
+                    }
+                }
                 
-                if (enrollment.isPresent() && Boolean.TRUE.equals(enrollment.get().getIsAccepted())) {
+                if (shouldInclude) {
                     filteredAttempts.add(attempt);
                 }
             }

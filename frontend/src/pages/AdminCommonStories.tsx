@@ -12,12 +12,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from '@/hooks/use-toast';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import CreateCommonStoryForm from '@/components/CreateCommonStoryForm';
 import { 
   Filter, 
   Search, 
-  RefreshCw, 
-  Download, 
-  Plus,
+  RefreshCw,
   Eye, 
   Edit, 
   Trash2, 
@@ -27,7 +26,7 @@ import {
   Globe,
   Loader2
 } from 'lucide-react';
-import { commonStoryService, type CommonStory, type CreateCommonStoryRequest } from '@/lib/services/commonStoryService';
+import { commonStoryService, type CommonStory } from '@/lib/services/commonStoryService';
 import { STORY_GENRES } from '@/constants/storyGenres';
 
 interface StoryFilters {
@@ -43,69 +42,14 @@ const AdminCommonStories = () => {
     search: ''
   });
   
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [viewingStory, setViewingStory] = useState<CommonStory | null>(null);
   const [editingStory, setEditingStory] = useState<CommonStory | null>(null);
-  
-  const [newStory, setNewStory] = useState<CreateCommonStoryRequest>({
-    title: '',
-    content: '',
-    genre: '',
-    fictionType: '',
-    coverPictureUrl: ''
-  });
-
-  const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string>('');
-  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   const { toast } = useToast();
 
-  const handleCoverFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Error",
-          description: "Please select a valid image file",
-          variant: "destructive",
-        });
-        return;
-      }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Error",
-          description: "File size must be less than 5MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setSelectedCoverFile(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setCoverPreview(result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const clearCoverImage = () => {
-    setSelectedCoverFile(null);
-    setCoverPreview('');
-    setNewStory(prev => ({ 
-      ...prev, 
-      coverPictureUrl: ''
-    }));
-  };
 
   const fetchStories = async () => {
     setLoading(true);
@@ -138,75 +82,7 @@ const AdminCommonStories = () => {
     fetchStories();
   }, [filters]);
 
-  const handleCreateStory = async () => {
-    if (!newStory.title || !newStory.content || !newStory.genre) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    try {
-      let coverPictureUrl = '';
-      let coverPictureType = '';
-
-      // Step 1: Upload cover image to Cloudinary if provided
-      if (selectedCoverFile) {
-        setIsUploadingCover(true);
-        try {
-          const uploadResult = await commonStoryService.uploadCoverImage(selectedCoverFile);
-          coverPictureUrl = uploadResult.url;
-          coverPictureType = selectedCoverFile.type;
-          toast({
-            title: "Cover Image Uploaded",
-            description: "Cover image uploaded successfully.",
-          });
-        } catch (uploadError) {
-          console.error('Error uploading cover image:', uploadError);
-          toast({
-            title: "Error",
-            description: "Failed to upload cover image. Please try again.",
-            variant: "destructive",
-          });
-          setIsUploadingCover(false);
-          return;
-        }
-        setIsUploadingCover(false);
-      }
-
-      // Step 2: Create the story with Cloudinary URL
-      const storyData = {
-        ...newStory,
-        coverPictureUrl,
-        coverPictureType
-      };
-
-      await commonStoryService.createCommonStory(storyData);
-      toast({
-        title: "Success",
-        description: "Common story created successfully",
-      });
-      setIsCreateDialogOpen(false);
-      setNewStory({
-        title: '',
-        content: '',
-        genre: '',
-        fictionType: '',
-        coverPictureUrl: ''
-      });
-      clearCoverImage();
-      fetchStories();
-    } catch (error) {
-      console.error('Error creating story:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create story. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleUpdateStory = async () => {
     if (!editingStory) return;
@@ -301,10 +177,6 @@ const AdminCommonStories = () => {
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Refresh
                   </Button>
-                  <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Story
-                  </Button>
                 </div>
               </div>
             </header>
@@ -315,6 +187,11 @@ const AdminCommonStories = () => {
                   Common Stories Management 🌍
                 </h1>
                 <p className="text-gray-600">Create and manage public stories that are accessible to all users.</p>
+              </div>
+
+              {/* Create Story Card */}
+              <div className="mb-6">
+                <CreateCommonStoryForm onSuccess={fetchStories} />
               </div>
 
               <Card className="mb-6 bg-white shadow-sm border border-teal-100">
@@ -484,119 +361,7 @@ const AdminCommonStories = () => {
                 </CardContent>
               </Card>
 
-              {/* Create Story Dialog */}
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Create Common Story</DialogTitle>
-                    <DialogDescription>
-                      Create a new story that will be accessible to all users
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="newTitle">Title*</Label>
-                      <Input
-                        id="newTitle"
-                        value={newStory.title}
-                        onChange={(e) => setNewStory(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Enter story title"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="newGenre">Genre*</Label>
-                        <Select 
-                          value={newStory.genre} 
-                          onValueChange={(value) => setNewStory(prev => ({ ...prev, genre: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select genre" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STORY_GENRES.map((genre) => (
-                              <SelectItem key={genre.value} value={genre.value}>
-                                {genre.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="newFictionType">Fiction Type</Label>
-                        <Input
-                          id="newFictionType"
-                          value={newStory.fictionType}
-                          onChange={(e) => setNewStory(prev => ({ ...prev, fictionType: e.target.value }))}
-                          placeholder="e.g., Short Story, Novel"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Cover Image Upload */}
-                    <div>
-                      <Label htmlFor="coverImage">Cover Image (Optional)</Label>
-                      <div className="space-y-4">
-                        <div className="flex items-center space-x-4">
-                          <Input
-                            id="coverImage"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleCoverFileChange}
-                            className="flex-1"
-                          />
-                          {coverPreview && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={clearCoverImage}
-                            >
-                              Clear
-                            </Button>
-                          )}
-                        </div>
-                        {coverPreview && (
-                          <div className="flex justify-center">
-                            <img
-                              src={coverPreview}
-                              alt="Cover preview"
-                              className="max-w-xs max-h-40 object-cover rounded-lg border"
-                            />
-                          </div>
-                        )}
-                        <p className="text-sm text-gray-500">
-                          Supported formats: JPG, PNG, GIF. Max size: 5MB
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="newContent">Content*</Label>
-                      <Textarea
-                        id="newContent"
-                        value={newStory.content}
-                        onChange={(e) => setNewStory(prev => ({ ...prev, content: e.target.value }))}
-                        placeholder="Write your story content here..."
-                        rows={10}
-                        className="resize-none"
-                      />
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => {
-                        setIsCreateDialogOpen(false);
-                        clearCoverImage();
-                      }}>
-                        Cancel
-                      </Button>
-                      <Button onClick={handleCreateStory} disabled={isUploadingCover}>
-                        {isUploadingCover && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {isUploadingCover ? 'Uploading Image...' : 'Create Story'}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+
 
               {/* View Story Dialog */}
               <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>

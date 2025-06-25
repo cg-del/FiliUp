@@ -440,8 +440,15 @@ export const quizService = {
   },
   
   // Get class record matrix
-  async getClassRecordMatrix(): Promise<ClassRecordMatrix> {
-    const response = await api.get('/v1/quizzes/class-record-matrix');
+  async getClassRecordMatrix(quizType?: string): Promise<ClassRecordMatrix> {
+    const params = new URLSearchParams();
+    if (quizType) params.append('quizType', quizType);
+    
+    const url = params.toString() 
+      ? `/v1/quizzes/class-record-matrix?${params.toString()}`
+      : '/v1/quizzes/class-record-matrix';
+    
+    const response = await api.get(url);
     return response.data;
   },
 

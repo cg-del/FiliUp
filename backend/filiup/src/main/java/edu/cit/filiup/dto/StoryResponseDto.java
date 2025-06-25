@@ -44,15 +44,7 @@ public class StoryResponseDTO {
         this.createdById = createdById;
         this.createdByName = createdByName;
     }
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * Retrieves the title of the story.
- *
- * @return the title of the story
- */
-
-/*******  39d2b9e7-2d61-4422-adff-1c0fc4ca762c  *******/
-  
+    
     // Getters and setters
     public UUID getStoryId() {
         return storyId;
@@ -158,5 +150,17 @@ public class StoryResponseDTO {
         this.createdByName = createdByName;
     }
     
-    
+    @Override
+    public String toString() {
+        return "StoryResponseDTO{" +
+                "storyId=" + storyId +
+                ", title='" + title + '\'' +
+                ", genre='" + genre + '\'' +
+                ", fictionType='" + fictionType + '\'' +
+                ", className='" + className + '\'' +
+                ", createdByName='" + createdByName + '\'' +
+                ", createdAt=" + createdAt +
+                ", isActive=" + isActive +
+                '}';
+    }
 } 

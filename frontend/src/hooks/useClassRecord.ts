@@ -9,7 +9,7 @@ export interface UseClassRecordReturn {
   refreshData: () => void;
 }
 
-export const useClassRecord = (): UseClassRecordReturn => {
+export const useClassRecord = (quizType?: string): UseClassRecordReturn => {
   const [classRecordData, setClassRecordData] = useState<ClassRecordMatrix | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export const useClassRecord = (): UseClassRecordReturn => {
     setError(null);
     
     try {
-      const data = await quizService.getClassRecordMatrix();
+      const data = await quizService.getClassRecordMatrix(quizType && quizType !== 'all' ? quizType : undefined);
       setClassRecordData(data);
     } catch (err) {
       const appError = handleError(err, { 
@@ -32,7 +32,7 @@ export const useClassRecord = (): UseClassRecordReturn => {
     } finally {
       setLoading(false);
     }
-  }, [handleError]);
+  }, [handleError, quizType]);
 
   const refreshData = useCallback(() => {
     fetchClassRecord();

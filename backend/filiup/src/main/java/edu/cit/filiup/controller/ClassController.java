@@ -373,4 +373,27 @@ public class ClassController {
             return ResponseUtil.serverError("Failed to accept enrollment: " + e.getMessage());
         }
     }
+
+    // Get class dashboard statistics
+    @GetMapping("/{classId}/dashboard-stats")
+    @RequireRole({"TEACHER", "ADMIN"})
+    public ResponseEntity<?> getClassDashboardStats(@PathVariable UUID classId) {
+        try {
+            // Get the authenticated user to verify ownership
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String userIdentifier = authentication.getName();
+            UserEntity user = userService.getUserByEmail(userIdentifier);
+            if (user == null) {
+                user = userService.getUserByUsername(userIdentifier);
+            }
+            if (user == null) {
+                return ResponseUtil.unauthorized("User not found");
+            }
+
+            Map<String, Object> stats = classService.getClassDashboardStats(classId, user.getUserId());
+            return ResponseUtil.success("Dashboard stats retrieved successfully", stats);
+        } catch (Exception e) {
+            return ResponseUtil.serverError("Failed to retrieve dashboard stats: " + e.getMessage());
+        }
+    }
 }

@@ -23,14 +23,15 @@ import { storyService } from '@/lib/services/storyService';
 import { quizService, type QuizData, type CreateCommonStoryQuizData } from '@/lib/services/quizService';
 import type { Class } from '@/lib/services/types';
 import { commonStoryService } from '@/lib/services/commonStoryService';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 
 interface QuizFormData {
   title: string;
   description: string;
   category: string;
   timeLimitMinutes: number;
-  opensAt: string;
-  closesAt: string;
+  opensAt: Date | undefined;
+  closesAt: Date | undefined;
   storyId: string;
 }
 
@@ -110,8 +111,8 @@ const CreateQuizForm = ({
     description: '',
     category: '',
     timeLimitMinutes: 30,
-    opensAt: '',
-    closesAt: '',
+    opensAt: new Date(),
+    closesAt: undefined,
     storyId: commonStoryId || '',
   });
 
@@ -142,8 +143,8 @@ const CreateQuizForm = ({
         description: existingQuiz.description,
         category: existingQuiz.category,
         timeLimitMinutes: existingQuiz.timeLimitMinutes,
-        opensAt: existingQuiz.opensAt,
-        closesAt: existingQuiz.closesAt,
+        opensAt: new Date(existingQuiz.opensAt),
+        closesAt: new Date(existingQuiz.closesAt),
         storyId: existingQuiz.storyId,
       });
 
@@ -224,25 +225,25 @@ const CreateQuizForm = ({
         setLoadingStories(true);
         let allStories: Story[] = [];
 
-        if (isCommonStory) {
-          // Fetch common stories
-          const response = await commonStoryService.getActiveCommonStories();
-          const formattedStories = response.map(story => ({
-            id: story.storyId,
-            title: story.title
-          }));
-          allStories = formattedStories;
-        } else {
-          // Fetch teacher's stories
-          const teacherStories = await storyService.getStoriesByTeacher();
-          const formattedTeacherStories = teacherStories.map(story => ({
-            id: story.storyId,
-            title: story.title
-          }));
-          allStories = formattedTeacherStories;
+        // Always try to fetch teacher's stories first (unless we only want common stories)
+        if (!isCommonStory || !commonStoryId) {
+          try {
+            const teacherStories = await storyService.getStoriesByTeacher();
+            const formattedTeacherStories = teacherStories.map(story => ({
+              id: story.storyId,
+              title: story.title
+            }));
+            allStories = [...formattedTeacherStories];
+            console.log('Fetched teacher stories:', formattedTeacherStories.length);
+          } catch (error) {
+            console.warn('Error fetching teacher stories:', error);
+            // Continue even if teacher stories fail
+          }
+        }
 
-          // If classId is provided, also fetch class common stories
-          if (classId) {
+        // If classId is provided, fetch class common stories
+        if (classId) {
+          try {
             const classCommonStoriesResponse = await classService.getClassCommonStories(classId);
             const classCommonStories = Array.isArray(classCommonStoriesResponse) 
               ? classCommonStoriesResponse 
@@ -253,24 +254,70 @@ const CreateQuizForm = ({
               title: `[Common Story] ${story.title}`
             }));
             allStories = [...allStories, ...formattedClassCommonStories];
+            console.log('Fetched class common stories:', formattedClassCommonStories.length);
+          } catch (error) {
+            console.warn('Error fetching class common stories:', error);
+            // Continue even if class common stories fail
           }
         }
 
+        // If we want common stories or have no stories yet, try to fetch all common stories
+        if (isCommonStory || allStories.length === 0) {
+          try {
+            const response = await commonStoryService.getActiveCommonStories();
+            console.log('Common stories response:', response);
+            
+            // Handle different response formats
+            let commonStoriesArray = [];
+            if (Array.isArray(response)) {
+              commonStoriesArray = response;
+            } else if (response && Array.isArray(response.stories)) {
+              commonStoriesArray = response.stories;
+            } else if (response && Array.isArray(response.data)) {
+              commonStoriesArray = response.data;
+            } else {
+              console.warn('Unexpected common stories response format:', response);
+              commonStoriesArray = [];
+            }
+            
+            const formattedCommonStories = commonStoriesArray.map(story => ({
+              id: story.storyId,
+              title: isCommonStory && !classId ? story.title : `[Common Story] ${story.title}`
+            }));
+            
+            // If isCommonStory is true and no classId, replace all stories with common stories only
+            if (isCommonStory && !classId) {
+              allStories = formattedCommonStories;
+            } else {
+              // Add to existing stories, but avoid duplicates
+              const existingIds = new Set(allStories.map(s => s.id));
+              const newCommonStories = formattedCommonStories.filter(s => !existingIds.has(s.id));
+              allStories = [...allStories, ...newCommonStories];
+            }
+            console.log('Fetched common stories:', formattedCommonStories.length);
+          } catch (error) {
+            console.warn('Error fetching common stories:', error);
+          }
+        }
+
+        console.log('Total stories loaded:', allStories.length);
         setStories(allStories);
       } catch (error) {
+        console.error('Error fetching stories:', error);
         toast({
           title: "Mali",
           description: "Hindi nakuha ang mga kuwento. Subukang muli.",
           variant: "destructive",
         });
-        console.error('Error fetching stories:', error);
+        // Set empty stories array to prevent infinite loading
+        setStories([]);
       } finally {
         setLoadingStories(false);
       }
     };
 
     fetchStories();
-  }, [dialogOpen, isCommonStory, classId]);
+  }, [dialogOpen, isCommonStory, classId, commonStoryId]);
 
   // Fetch story details when storyId changes
   useEffect(() => {
@@ -280,43 +327,124 @@ const CreateQuizForm = ({
         return;
       }
 
+      // Check if the selected story exists in our stories list
+      const selectedStory = stories.find(s => s.id === formData.storyId);
+      if (!selectedStory) {
+        console.warn('Selected story not found in stories list:', formData.storyId);
+        setStoryDetails(null);
+        setLoadingStoryDetails(false);
+        return;
+      }
+
       try {
         setLoadingStoryDetails(true);
         
-        // Check if it's a common story
-        const selectedStory = stories.find(s => s.id === formData.storyId);
-        const isSelectedStoryCommon = selectedStory?.title.startsWith('[Common Story]') || isCommonStory;
+        // Check if it's a common story by looking at the story title or the isCommonStory flag
+        const isSelectedStoryCommon = selectedStory.title.startsWith('[Common Story]') || isCommonStory;
+
+        let storyDetailsResult = null;
+        let fetchError = null;
 
         if (isSelectedStoryCommon) {
-          // Fetch common story details
-          const response = await commonStoryService.getCommonStoryById(formData.storyId);
-          setStoryDetails({
-            storyId: response.storyId,
-            title: response.title,
-            content: response.content,
-            authorName: response.authorName,
-            createdAt: response.createdAt,
-            genre: response.genre,
-            summary: response.summary
-          });
+          // Try to fetch common story details first
+          try {
+            const response = await commonStoryService.getCommonStoryById(formData.storyId);
+            storyDetailsResult = {
+              storyId: response.storyId,
+              title: response.title,
+              content: response.content,
+              authorName: response.authorName,
+              createdAt: response.createdAt,
+              genre: response.genre,
+              summary: response.summary
+            };
+          } catch (error) {
+            console.warn('Common story fetch failed, trying regular story fetch:', error);
+            fetchError = error;
+            
+            // Fallback to regular story fetch if common story fetch fails
+            try {
+              const response = await storyService.getStoryById(formData.storyId);
+              storyDetailsResult = {
+                storyId: response.storyId,
+                title: response.title,
+                content: response.content,
+                authorName: response.classEntity?.className || 'Guro',
+                createdAt: response.createdAt,
+                genre: response.genre,
+                summary: ''
+              };
+            } catch (regularStoryError) {
+              console.warn('Regular story fetch also failed:', regularStoryError);
+              fetchError = regularStoryError;
+            }
+          }
         } else {
-          // Fetch regular story details
-          const response = await storyService.getStoryById(formData.storyId);
+          // Try to fetch regular story details first
+          try {
+            const response = await storyService.getStoryById(formData.storyId);
+            storyDetailsResult = {
+              storyId: response.storyId,
+              title: response.title,
+              content: response.content,
+              authorName: response.classEntity?.className || 'Guro',
+              createdAt: response.createdAt,
+              genre: response.genre,
+              summary: ''
+            };
+          } catch (error) {
+            console.warn('Regular story fetch failed, trying common story fetch:', error);
+            fetchError = error;
+            
+            // Fallback to common story fetch if regular story fetch fails
+            try {
+              const response = await commonStoryService.getCommonStoryById(formData.storyId);
+              storyDetailsResult = {
+                storyId: response.storyId,
+                title: response.title,
+                content: response.content,
+                authorName: response.authorName,
+                createdAt: response.createdAt,
+                genre: response.genre,
+                summary: response.summary
+              };
+            } catch (commonStoryError) {
+              console.warn('Common story fetch also failed:', commonStoryError);
+              fetchError = commonStoryError;
+            }
+          }
+        }
+
+        if (storyDetailsResult) {
+          setStoryDetails(storyDetailsResult);
+        } else {
+          // Both fetches failed, but don't show error toast for 404s
+          console.error('Failed to fetch story details from both endpoints:', fetchError);
           setStoryDetails({
-            storyId: response.storyId,
-            title: response.title,
-            content: response.content,
-            authorName: response.classEntity?.className || 'Guro',
-            createdAt: response.createdAt,
-            genre: response.genre,
+            storyId: formData.storyId,
+            title: selectedStory.title.replace('[Common Story] ', ''),
+            content: 'Hindi ma-load ang detalye ng kuwento. Maaaring hindi na available ang kuwentong ito.',
+            authorName: 'Hindi alam',
+            createdAt: new Date().toISOString(),
+            genre: 'Hindi alam',
             summary: ''
           });
+
+          // Only show error toast for non-404 errors
+          if (fetchError && !fetchError.message?.includes('404') && !fetchError.message?.includes('not found')) {
+            toast({
+              title: "Babala",
+              description: "Hindi nakuha ang detalye ng kuwento, ngunit maaari pa ring magpatuloy.",
+              variant: "destructive",
+            });
+          }
         }
       } catch (error) {
-        console.error('Error fetching story details:', error);
+        console.error('Unexpected error in fetchStoryDetails:', error);
+        setStoryDetails(null);
         toast({
           title: "Mali",
-          description: "Hindi nakuha ang detalye ng kuwento.",
+          description: "May naganap na hindi inaasahang error. Subukang muli.",
           variant: "destructive",
         });
       } finally {
@@ -327,7 +455,7 @@ const CreateQuizForm = ({
     fetchStoryDetails();
   }, [formData.storyId, dialogOpen, stories, isCommonStory]);
 
-  const handleInputChange = (field: keyof QuizFormData, value: string | number) => {
+  const handleInputChange = (field: keyof QuizFormData, value: string | number | Date | undefined) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -426,8 +554,8 @@ const CreateQuizForm = ({
           description: formData.description,
           category: formData.category,
           timeLimitMinutes: formData.timeLimitMinutes,
-          opensAt: formData.opensAt,
-          closesAt: formData.closesAt,
+          opensAt: formData.opensAt!.toISOString(),
+          closesAt: formData.closesAt!.toISOString(),
           storyId: existingQuiz.storyId,
           storyTitle: existingQuiz.storyTitle,
           createdById: existingQuiz.createdById,
@@ -449,7 +577,7 @@ const CreateQuizForm = ({
         const selectedStory = stories.find(s => s.id === formData.storyId);
         
         // Use the appropriate endpoint based on whether it's a common story
-        const isSelectedStoryCommon = selectedStory?.title.startsWith('[Common Story]');
+        const isSelectedStoryCommon = selectedStory?.title.startsWith('[Common Story]') || isCommonStory;
 
         if (isSelectedStoryCommon || isCommonStory) {
           // For common story quizzes, use the quiz service directly
@@ -458,8 +586,8 @@ const CreateQuizForm = ({
             description: formData.description,
             category: formData.category,
             timeLimitMinutes: Number(formData.timeLimitMinutes),
-            opensAt: new Date(formData.opensAt).toISOString(),
-            closesAt: new Date(formData.closesAt).toISOString(),
+            opensAt: formData.opensAt!.toISOString(),
+            closesAt: formData.closesAt!.toISOString(),
             isActive: true,
             questions: questions.map(q => ({
               questionText: q.questionText,
@@ -468,7 +596,31 @@ const CreateQuizForm = ({
               points: Number(q.points)
             }))
           };
-          await quizService.createCommonStoryQuiz(formData.storyId, commonStoryCreateData);
+          
+          try {
+            await quizService.createCommonStoryQuiz(formData.storyId, commonStoryCreateData);
+          } catch (error) {
+            console.error('Error creating common story quiz:', error);
+            // If common story quiz creation fails, try regular quiz creation as fallback
+            const createData: CreateQuizRequestData = {
+              title: formData.title,
+              description: formData.description,
+              category: formData.category,
+              timeLimitMinutes: Number(formData.timeLimitMinutes),
+              opensAt: formData.opensAt!.toISOString(),
+              closesAt: formData.closesAt!.toISOString(),
+              isActive: true,
+              storyId: formData.storyId,
+              storyTitle: selectedStory?.title.replace('[Common Story] ', '') || '',
+              questions: questions.map(q => ({
+                questionText: q.questionText,
+                options: q.options.filter(option => option.trim()),
+                correctAnswer: q.correctAnswer,
+                points: Number(q.points)
+              }))
+            };
+            await quizService.createQuizForStory(createData);
+          }
         } else {
           // For regular story quizzes, include storyId
           const createData: CreateQuizRequestData = {
@@ -476,8 +628,8 @@ const CreateQuizForm = ({
             description: formData.description,
             category: formData.category,
             timeLimitMinutes: Number(formData.timeLimitMinutes),
-            opensAt: new Date(formData.opensAt).toISOString(),
-            closesAt: new Date(formData.closesAt).toISOString(),
+            opensAt: formData.opensAt!.toISOString(),
+            closesAt: formData.closesAt!.toISOString(),
             isActive: true,
             storyId: formData.storyId,
             storyTitle: selectedStory?.title || '',
@@ -488,7 +640,33 @@ const CreateQuizForm = ({
               points: Number(q.points)
             }))
           };
-          await quizService.createQuizForStory(createData);
+          
+          try {
+            await quizService.createQuizForStory(createData);
+          } catch (error) {
+            console.error('Error creating regular quiz:', error);
+            // If regular quiz creation fails and story might be a common story, try common story quiz creation as fallback
+            if (selectedStory?.title.includes('Common') || storyDetails?.authorName) {
+              const commonStoryCreateData: CreateCommonStoryQuizData = {
+                title: formData.title,
+                description: formData.description,
+                category: formData.category,
+                timeLimitMinutes: Number(formData.timeLimitMinutes),
+                opensAt: formData.opensAt!.toISOString(),
+                closesAt: formData.closesAt!.toISOString(),
+                isActive: true,
+                questions: questions.map(q => ({
+                  questionText: q.questionText,
+                  options: q.options.filter(option => option.trim()),
+                  correctAnswer: q.correctAnswer,
+                  points: Number(q.points)
+                }))
+              };
+              await quizService.createCommonStoryQuiz(formData.storyId, commonStoryCreateData);
+            } else {
+              throw error; // Re-throw if no fallback is possible
+            }
+          }
         }
       }
 
@@ -532,8 +710,8 @@ const CreateQuizForm = ({
           </Card>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
+              <DialogContent className="max-w-8xl max-h-[90vh] overflow-hidden p-6">
+        <DialogHeader className="mb-4">
           <DialogTitle className="flex items-center space-x-2">
             {mode === 'edit' ? <Edit className="h-5 w-5" /> : <HelpCircle className="h-5 w-5" />}
             <span>{mode === 'edit' ? 'I-edit ang Pagsusulit' : 'Gumawa ng Bagong Pagsusulit'}</span>
@@ -546,10 +724,10 @@ const CreateQuizForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(90vh-120px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(90vh-180px)]">
           {/* Left Column - Quiz Form */}
-          <div className="overflow-y-auto pr-4">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="overflow-y-auto pr-4 pb-4">
+            <form onSubmit={handleSubmit} className="space-y-6 pb-6">
           {/* Basic Information */}
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -599,10 +777,15 @@ const CreateQuizForm = ({
               onChange={(e) => handleInputChange('storyId', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
-              disabled={mode === 'edit' || !!commonStoryId} // Use !! to convert to boolean
+              disabled={mode === 'edit' || !!commonStoryId || loadingStories}
             >
               <option value="">
-                {loadingStories ? 'Kumukuha ng mga kuwento...' : 'Pumili ng Kuwento ng Pagsusulit'}
+                {loadingStories 
+                  ? 'Kumukuha ng mga kuwento...' 
+                  : stories.length === 0 
+                    ? 'Walang available na kuwento'
+                    : 'Pumili ng Kuwento ng Pagsusulit'
+                }
               </option>
               {stories.map(story => (
                 <option key={story.id} value={story.id}>{story.title}</option>
@@ -614,12 +797,22 @@ const CreateQuizForm = ({
             {commonStoryId && (
               <p className="text-xs text-gray-500">Ang pagsusulit ay para sa napiling common story</p>
             )}
+            {!loadingStories && stories.length === 0 && !isCommonStory && (
+              <p className="text-xs text-orange-600">
+                Walang nakitang kuwento. Gumawa muna ng kuwento o magdagdag ng common story sa klase.
+              </p>
+            )}
+            {!loadingStories && stories.length === 0 && isCommonStory && (
+              <p className="text-xs text-orange-600">
+                Walang available na common stories sa ngayon.
+              </p>
+            )}
           </div>
 
           {/* Quiz Settings */}
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div className="space-y-2">
-              <Label htmlFor="timeLimitMinutes" className="flex items-center space-x-1">
+              <Label htmlFor="timeLimitMinutes" className="flex items-center space-x-2 text-sm font-medium">
                 <Clock className="h-4 w-4" />
                 <span>Limitasyon ng Oras (minuto) *</span>
               </Label>
@@ -630,31 +823,35 @@ const CreateQuizForm = ({
                 onChange={(e) => handleInputChange('timeLimitMinutes', parseInt(e.target.value))}
                 min="5"
                 max="180"
+                className="h-10"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="opensAt" className="flex items-center space-x-1">
+              <Label className="flex items-center space-x-2 text-sm font-medium">
                 <Calendar className="h-4 w-4" />
                 <span>Bubukas Sa *</span>
               </Label>
-              <Input
-                id="opensAt"
-                type="datetime-local"
-                value={formData.opensAt}
-                onChange={(e) => handleInputChange('opensAt', e.target.value)}
-                required
-              />
+              <div className="h-10">
+                <DateTimePicker
+                  date={formData.opensAt}
+                  onDateChange={(date) => handleInputChange('opensAt', date)}
+                  placeholder="Pumili ng petsa at oras"
+                />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="closesAt">Sasara Sa *</Label>
-              <Input
-                id="closesAt"
-                type="datetime-local"
-                value={formData.closesAt}
-                onChange={(e) => handleInputChange('closesAt', e.target.value)}
-                required
-              />
+              <Label className="flex items-center space-x-2 text-sm font-medium">
+                <Calendar className="h-4 w-4" />
+                <span>Sasara Sa *</span>
+              </Label>
+              <div className="h-10">
+                <DateTimePicker
+                  date={formData.closesAt}
+                  onDateChange={(date) => handleInputChange('closesAt', date)}
+                  placeholder="Pumili ng petsa at oras"
+                />
+              </div>
             </div>
           </div>
 
@@ -673,8 +870,8 @@ const CreateQuizForm = ({
             </div>
 
             {questions.map((question, questionIndex) => (
-              <Card key={questionIndex} className="border-teal-100">
-                <CardHeader className="pb-3">
+              <Card key={questionIndex} className="border-teal-100 mb-4">
+                <CardHeader className="pb-3 px-6 pt-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">Tanong {questionIndex + 1}</CardTitle>
                     <div className="flex items-center space-x-2">
@@ -696,16 +893,16 @@ const CreateQuizForm = ({
                           onClick={() => removeQuestion(questionIndex)}
                           size="sm"
                           variant="outline"
-                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          className="text-red-600 border-red-200 hover:bg-red-50 px-3 py-1"
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-4 w-4 mr-1" />
                           Alisin ang Tanong
                         </Button>
                       )}
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 px-6 pb-6">
                   <div className="space-y-2">
                     <Label htmlFor={`question-${questionIndex}`}>Teksto ng Tanong *</Label>
                     <Textarea
@@ -726,7 +923,7 @@ const CreateQuizForm = ({
                         onClick={() => addOption(questionIndex)}
                         size="sm"
                         variant="outline"
-                        className="text-teal-600 border-teal-200"
+                        className="text-teal-600 border-teal-200 px-3 py-1"
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Magdagdag ng Pagpipilian
@@ -747,9 +944,9 @@ const CreateQuizForm = ({
                               onClick={() => removeOption(questionIndex, optionIndex)}
                               size="sm"
                               variant="outline"
-                              className="text-red-600 border-red-200 hover:bg-red-50 px-2"
+                              className="text-red-600 border-red-200 hover:bg-red-50 px-3 py-1 whitespace-nowrap"
                             >
-                              <Minus className="h-4 w-4" />
+                              <Minus className="h-4 w-4 mr-1" />
                               Alisin ang Pagpipilian
                             </Button>
                           )}
@@ -784,30 +981,33 @@ const CreateQuizForm = ({
                 
               </Card>
             ))}
-             <Button
+             <div className="flex justify-center pt-4">
+               <Button
                   type="button"
                   onClick={addQuestion}
                   size="sm"
-                  className="bg-teal-500 hover:bg-teal-600 display-flex right"
+                  className="bg-teal-500 hover:bg-teal-600 px-4 py-2"
                 >
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus className="h-4 w-4 mr-2" />
                   Magdagdag ng Tanong
                 </Button>
+             </div>
           </div>
 
               {/* Submit Button */}
-              <div className="flex justify-end space-x-4 pt-6 border-t">
+              <div className="flex justify-end space-x-4 pt-6 border-t mt-8 bg-white sticky bottom-0 pb-4">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setDialogOpen(false)}
+                  className="px-6 py-2"
                 >
                   Kanselahin
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !formData.storyId || loadingStories}
-                  className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
+                  disabled={isSubmitting || !formData.storyId || loadingStories || stories.length === 0}
+                  className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 px-6 py-2"
                 >
                   {isSubmitting ? (
                     <>
@@ -823,7 +1023,7 @@ const CreateQuizForm = ({
           </div>
 
           {/* Right Column - Story Details */}
-          <div className="border-l border-gray-200 pl-6">
+          <div className="border-l border-gray-200 pl-6 pr-2">
             <div className="sticky top-0 bg-white z-10 pb-4 border-b border-gray-100 mb-4">
               <div className="flex items-center space-x-2 mb-2">
                 <BookOpen className="h-5 w-5 text-teal-600" />
@@ -835,7 +1035,7 @@ const CreateQuizForm = ({
             </div>
 
             {formData.storyId && (
-              <ScrollArea className="h-[calc(100vh-250px)]">
+              <ScrollArea className="h-[calc(100vh-300px)] pr-4">
                 {loadingStoryDetails ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-teal-600" />

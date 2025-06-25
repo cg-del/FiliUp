@@ -3,8 +3,19 @@ package edu.cit.filiup.service.impl;
 import edu.cit.filiup.dto.StudentProfileDTO;
 import edu.cit.filiup.entity.StudentProfileEntity;
 import edu.cit.filiup.entity.UserEntity;
+import edu.cit.filiup.entity.EnrollmentEntity;
+import edu.cit.filiup.entity.ClassEntity;
+import edu.cit.filiup.entity.QuizAttemptEntity;
+import edu.cit.filiup.entity.ProgressEntity;
+import edu.cit.filiup.entity.LeaderboardEntity;
 import edu.cit.filiup.repository.StudentProfileRepository;
 import edu.cit.filiup.repository.UserRepository;
+import edu.cit.filiup.repository.EnrollmentRepository;
+import edu.cit.filiup.repository.ClassRepository;
+import edu.cit.filiup.repository.QuizAttemptRepository;
+import edu.cit.filiup.repository.ProgressRepository;
+import edu.cit.filiup.repository.LeaderboardRepository;
+import edu.cit.filiup.repository.StoryRepository;
 import edu.cit.filiup.service.StudentProfileService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,18 +24,40 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class StudentProfileServiceImpl implements StudentProfileService {
 
     private final StudentProfileRepository studentProfileRepository;
     private final UserRepository userRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final ClassRepository classRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
+    private final ProgressRepository progressRepository;
+    private final LeaderboardRepository leaderboardRepository;
+    private final StoryRepository storyRepository;
 
     @Autowired
     public StudentProfileServiceImpl(StudentProfileRepository studentProfileRepository,
-                                   UserRepository userRepository) {
+                                   UserRepository userRepository,
+                                   EnrollmentRepository enrollmentRepository,
+                                   ClassRepository classRepository,
+                                   QuizAttemptRepository quizAttemptRepository,
+                                   ProgressRepository progressRepository,
+                                   LeaderboardRepository leaderboardRepository,
+                                   StoryRepository storyRepository) {
         this.studentProfileRepository = studentProfileRepository;
         this.userRepository = userRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.classRepository = classRepository;
+        this.quizAttemptRepository = quizAttemptRepository;
+        this.progressRepository = progressRepository;
+        this.leaderboardRepository = leaderboardRepository;
+        this.storyRepository = storyRepository;
     }
 
     @Override
@@ -170,5 +203,130 @@ public class StudentProfileServiceImpl implements StudentProfileService {
         dto.setUpdatedAt(profile.getUpdatedAt());
         dto.setIsActive(profile.getIsActive());
         return dto;
+    }
+
+    @Override
+    @Transactional
+    public void incrementClassesManaged(UUID userId) {
+        // This method is typically for teacher profiles, but we'll implement it here for compatibility
+        // In a real system, this might be moved to a separate TeacherProfileService
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+        
+        // For now, this is a no-op since we don't have a classes managed field in student profiles
+        // In a real implementation, you might want to create a separate teacher profile entity
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getStudentDashboardStats(UUID userId) {
+        Map<String, Object> stats = new HashMap<>();
+        
+        try {
+            // Verify user exists and is a student
+            UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+            
+            if (!"STUDENT".equals(user.getUserRole())) {
+                throw new IllegalArgumentException("Dashboard stats are only available for students");
+            }
+            
+            // Get student's enrolled classes
+            List<EnrollmentEntity> enrollments = enrollmentRepository.findByUserIdAndIsAcceptedTrue(userId);
+            List<String> classCodes = enrollments.stream()
+                    .map(EnrollmentEntity::getClassCode)
+                    .collect(Collectors.toList());
+            
+            List<ClassEntity> enrolledClasses = classRepository.findByClassCodeInAndIsActiveTrue(classCodes);
+            
+            // Get completed quiz attempts first for calculations
+            List<QuizAttemptEntity> completedQuizzes = quizAttemptRepository.findCompletedAttemptsByStudent(userId, null);
+            int completedQuizzesCount = completedQuizzes.size();
+            
+            // Calculate total points from quiz scores if no leaderboard entry exists
+            List<LeaderboardEntity> leaderboardEntries = leaderboardRepository.findByStudentUserId(userId);
+            int totalPoints = leaderboardEntries.stream()
+                    .mapToInt(LeaderboardEntity::getScore)
+                    .max()
+                    .orElse(0);
+            
+            // If no leaderboard points, calculate from quiz scores
+            if (totalPoints == 0 && !completedQuizzes.isEmpty()) {
+                totalPoints = completedQuizzes.stream()
+                        .mapToInt(quiz -> quiz.getScore() != null ? quiz.getScore().intValue() : 0)
+                        .sum();
+            }
+            
+            // Calculate total available stories and quizzes across all enrolled classes
+            int totalStoriesAvailable = 0;
+            int totalQuizzesAvailable = 0;
+            
+            for (ClassEntity classEntity : enrolledClasses) {
+                totalStoriesAvailable += classEntity.getStories().size();
+                // For now, assume each story has at least one quiz
+                // In the future, you might want to add a relationship between stories and quizzes
+                totalQuizzesAvailable += classEntity.getStories().size();
+            }
+            
+            // Count completed stories based on quiz attempts
+            // A story is considered completed if the student has completed at least one quiz for it
+            long completedStories = completedQuizzes.stream()
+                    .filter(quiz -> quiz.getQuiz() != null && quiz.getQuiz().getStory() != null)
+                    .map(quiz -> quiz.getQuiz().getStory().getStoryId())
+                    .distinct()
+                    .count();
+            
+            // Calculate level based on points (improved formula)
+            int level = Math.max(1, (totalPoints / 100) + 1);
+            
+            // Calculate average quiz score
+            double averageQuizScore = completedQuizzes.stream()
+                    .filter(quiz -> quiz.getMaxPossibleScore() > 0)
+                    .mapToDouble(quiz -> (double) quiz.getScore() / quiz.getMaxPossibleScore() * 100)
+                    .average()
+                    .orElse(0.0);
+            
+            // Get student profile for additional stats
+            StudentProfileEntity profile = studentProfileRepository.findByUserUserId(userId).orElse(null);
+            double profileAverageScore = profile != null ? profile.getAverageScore() : 0.0;
+            int profileQuizTakes = profile != null ? profile.getNumberOfQuizTakes() : 0;
+            
+            // Build response
+            stats.put("userId", userId);
+            stats.put("userName", user.getUserName());
+            stats.put("totalPoints", totalPoints);
+            stats.put("completedStories", (int) completedStories);
+            stats.put("totalStories", totalStoriesAvailable);
+            stats.put("completedQuizzes", completedQuizzesCount);
+            stats.put("totalQuizzes", totalQuizzesAvailable);
+            stats.put("level", level);
+            stats.put("averageQuizScore", Math.round(averageQuizScore * 100.0) / 100.0);
+            stats.put("profileAverageScore", Math.round(profileAverageScore * 100.0) / 100.0);
+            stats.put("profileQuizTakes", profileQuizTakes);
+            stats.put("enrolledClassesCount", enrolledClasses.size());
+            stats.put("lastUpdated", LocalDateTime.now());
+            
+            // Add recent activity
+            List<Map<String, Object>> recentQuizzes = completedQuizzes.stream()
+                    .limit(5)
+                    .map(quiz -> {
+                        Map<String, Object> quizInfo = new HashMap<>();
+                        quizInfo.put("quizTitle", quiz.getQuiz().getTitle());
+                        quizInfo.put("score", quiz.getScore());
+                        quizInfo.put("maxScore", quiz.getMaxPossibleScore());
+                        quizInfo.put("percentage", quiz.getMaxPossibleScore() > 0 ? 
+                            Math.round((double) quiz.getScore() / quiz.getMaxPossibleScore() * 100) : 0);
+                        quizInfo.put("completedAt", quiz.getCompletedAt());
+                        return quizInfo;
+                    })
+                    .collect(Collectors.toList());
+            
+            stats.put("recentQuizzes", recentQuizzes);
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate student dashboard statistics: " + e.getMessage());
+        }
+        
+        return stats;
     }
 } 

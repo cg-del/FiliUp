@@ -31,9 +31,6 @@ import AdminUsers from './pages/AdminUsers';
 import AdminStories from './pages/AdminStories';
 import AdminCommonStories from './pages/AdminCommonStories';
 import CommonStories from './pages/CommonStories';
-import AdminSystemStatus from './pages/AdminSystemStatus';
-import AdminSettings from './pages/AdminSettings';
-import AdminReports from './pages/AdminReports';
 import AdminUserGrowth from './pages/AdminUserGrowth';
 import AdminActivity from './pages/AdminActivity';
 
@@ -172,30 +169,6 @@ function App() {
                 element={
                   <ProtectedRoute allowedUserTypes={['admin']}>
                     <AdminCommonStories />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/system/status" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['admin']}>
-                    <AdminSystemStatus />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/settings" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['admin']}>
-                    <AdminSettings />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/reports" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['admin']}>
-                    <AdminReports />
                   </ProtectedRoute>
                 } 
               />

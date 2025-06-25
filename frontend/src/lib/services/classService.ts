@@ -82,5 +82,67 @@ export const classService = {
   removeCommonStoryFromClass: async (classId: string, storyId: string): Promise<ApiResponse<void>> => {
     const response = await api.delete(`/classes/${classId}/common-stories/${storyId}`);
     return response.data;
+  },
+
+  // Get class quiz summary for dashboard statistics
+  getClassQuizSummary: async (classId: string): Promise<ApiResponse<{
+    totalStudents: number;
+    totalQuizzes: number;
+    averageScore: number;
+    averageAccuracy: number;
+    averageTimeMinutes: number;
+    classId: string;
+  }>> => {
+    const response = await api.get(`/leaderboard/class/${classId}/summary`);
+    return response.data;
+  },
+
+  // Get class students with detailed info for dashboard
+  getClassStudentsDetailed: async (classId: string): Promise<ApiResponse<Array<{
+    id: string;
+    user: {
+      id: string;
+      username: string;
+      email: string;
+      role: string;
+    };
+    studentProfile?: {
+      id: string;
+      userId: string;
+      grade: string;
+      readingLevel: string;
+    };
+  }>>> => {
+    const response = await api.get(`/classes/${classId}/students`);
+    return response.data;
+  },
+
+  // Get comprehensive dashboard statistics for a class
+  getClassDashboardStats: async (classId: string): Promise<ApiResponse<{
+    classId: string;
+    className: string;
+    totalStudents: number;
+    activeStudents: number;
+    storiesCount: number;
+    quizStats: {
+      totalQuizzes: number;
+      averageScore: number;
+      averageAccuracy: number;
+      completedQuizzes: number;
+    };
+    studentActivity: Array<{
+      id: string;
+      username: string;
+      email: string;
+      enrolledAt: string;
+      lastActiveHours: number;
+      storiesRead: number;
+      quizzesCompleted: number;
+      averageScore: number;
+    }>;
+    lastUpdated: string;
+  }>> => {
+    const response = await api.get(`/classes/${classId}/dashboard-stats`);
+    return response.data;
   }
 }; 

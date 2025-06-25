@@ -24,8 +24,8 @@ const Signup = () => {
     
     if (password !== confirmPassword) {
       toast({
-        title: "Hindi magkatugma ang password",
-        description: "Pakitiyak na pareho ang password at confirm password.",
+        title: "Passwords don't match",
+        description: "Please ensure password and confirm password match.",
         variant: "destructive",
       });
       return;
@@ -37,7 +37,7 @@ const Signup = () => {
       const response = await userService.register(username, email, password);
       
       toast({
-        title: "Maligayang pagdating!",
+        title: "Welcome!",
         description: "Successfully created your account. Please log in.",
       });
 
@@ -45,8 +45,8 @@ const Signup = () => {
       navigate('/login?type=student');
     } catch (error) {
       toast({
-        title: "Hindi matagumpay ang pag-sign up",
-        description: "May error sa pag-create ng account. Pakisubukan ulit.",
+        title: "Sign up failed",
+        description: "There was an error creating the account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -74,24 +74,24 @@ const Signup = () => {
             <div className="flex justify-center">
               <div className="flex items-center space-x-2 text-sm md:text-base bg-gradient-to-r from-green-500 to-blue-500 text-white px-4 py-2 rounded-lg">
                 <User className="h-4 w-4" />
-                <span>Pagpaparehistro ng Mag-aaral</span>
+                <span>Student Registration</span>
               </div>
             </div>
             <CardTitle className="text-xl md:text-2xl text-center">
-              Pag-sign Up ng Mag-aaral
+              Student Sign Up
             </CardTitle>
             <CardDescription className="text-center text-sm md:text-base">
-              Gumawa ng account para magsimula ng inyong Filipino learning adventure!
+              Create an account to start your Filipino learning adventure!
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-sm md:text-base">Pangalan ng Gumagamit</Label>
+                <Label htmlFor="username" className="text-sm md:text-base">Username</Label>
                 <Input
                   id="username"
                   type="text"
-                  placeholder="Ilagay ang pangalan ng gumagamit"
+                  placeholder="Enter your username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -103,7 +103,7 @@ const Signup = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Ilagay ang email"
+                  placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -111,12 +111,12 @@ const Signup = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm md:text-base">Lihim na Salita</Label>
+                <Label htmlFor="password" className="text-sm md:text-base">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Ilagay ang lihim na salita"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -137,12 +137,12 @@ const Signup = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm md:text-base">Kumpirmahin ang Lihim na Salita</Label>
+                <Label htmlFor="confirmPassword" className="text-sm md:text-base">Confirm Password</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Ilagay muli ang lihim na salita"
+                    placeholder="Re-enter your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
@@ -167,18 +167,18 @@ const Signup = () => {
                 className="w-full h-10 md:h-11 text-base md:text-lg bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
                 disabled={isLoading}
               >
-                {isLoading ? 'Ginagawa ang account...' : 'Mag-sign up'}
+                {isLoading ? 'Creating account...' : 'Sign Up'}
               </Button>
             </form>
             
             <div className="mt-4 text-center space-y-2">
               <p className="text-sm text-gray-600">
-                Mayroon ka na bang account?{' '}
+                Already have an account?{' '}
                 <Link 
                   to="/login?type=student"
                   className="text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  Mag-login dito
+                  Log in here
                 </Link>
               </p>
             </div>

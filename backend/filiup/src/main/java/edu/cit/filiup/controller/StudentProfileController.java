@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/student-profiles")
@@ -111,5 +112,37 @@ public class StudentProfileController {
             @RequestParam Double quizScore) {
         studentProfileService.incrementQuizzesTaken(userId, quizScore);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/increment-classes-managed/{userId}")
+    @PreAuthorize("hasAuthority('TEACHER')")
+    public ResponseEntity<Void> incrementClassesManaged(@PathVariable UUID userId) {
+        studentProfileService.incrementClassesManaged(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    // Get comprehensive dashboard statistics for a student
+    @GetMapping("/dashboard-stats")
+    @PreAuthorize("hasAuthority('STUDENT')")
+    public ResponseEntity<Map<String, Object>> getStudentDashboardStats(JwtAuthenticationToken jwtAuthToken) {
+        try {
+            // Extract user email/username from token
+            String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
+            
+            // Find user in database - try email first, then username
+            UserEntity user = userRepository.findByUserEmail(userIdentifier);
+            if (user == null) {
+                user = userRepository.findByUserName(userIdentifier);
+            }
+            
+            if (user == null) {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+            
+            Map<String, Object> stats = studentProfileService.getStudentDashboardStats(user.getUserId());
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 } 

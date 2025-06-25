@@ -8,62 +8,46 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
-import { Plus, BookOpen, Upload, X, Loader2, Trash2 } from 'lucide-react';
+import { Plus, Globe, Upload, X, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { STORY_GENRES } from '@/constants/storyGenres';
-import { classService } from '@/lib/services/classService';
-import { storyService } from '@/lib/services/storyService';
-import type { Class } from '@/lib/services/types';
+import { commonStoryService, type CreateCommonStoryRequest } from '@/lib/services/commonStoryService';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 
-interface CreateStoryFormData {
+interface CreateCommonStoryFormData {
   title: string;
   content: string;
   genre: string;
   fictionType: string;
-  classId: string;
 }
 
-interface CreateStoryRequestData {
-  title: string;
-  content: string;
-  genre: string;
-  fictionType: string;
-  coverPictureUrl: string;
-  coverPictureType: string;
-  classId: string;
+interface CreateCommonStoryProps {
+  onSuccess?: () => void;
 }
 
-interface CreateStoryFormProps {
-  selectedClass?: string;
-}
-
-interface SavedFormData extends CreateStoryFormData {
+interface SavedFormData extends CreateCommonStoryFormData {
   coverImagePreview?: string;
 }
 
-const STORAGE_KEY = 'filiup_create_story_draft';
+const STORAGE_KEY = 'filiup_create_common_story_draft';
 
-const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
+const CreateCommonStoryForm = ({ onSuccess }: CreateCommonStoryProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [loadingClasses, setLoadingClasses] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const { safeExecute } = useErrorHandler();
   
-  const form = useForm<CreateStoryFormData>({
+  const form = useForm<CreateCommonStoryFormData>({
     defaultValues: {
       title: '',
       content: '',
       genre: '',
-      fictionType: 'Alamat',
-      classId: selectedClass || ''
+      fictionType: 'Alamat'
     }
   });
 
@@ -127,9 +111,6 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
           form.setValue('content', savedData.content);
           form.setValue('genre', savedData.genre);
           form.setValue('fictionType', savedData.fictionType);
-          if (savedData.classId) {
-            form.setValue('classId', savedData.classId);
-          }
           
           // Restore cover image preview
           if (savedData.coverImagePreview) {
@@ -138,7 +119,7 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
 
           toast({
             title: "Naibalik ang Draft",
-            description: "Naibalik ang iyong dating gawa.",
+            description: "Naibalik ang inyong dating gawa.",
           });
         }
       };
@@ -157,7 +138,6 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
         content: value.content || '',
         genre: value.genre || '',
         fictionType: value.fictionType || 'Alamat',
-        classId: value.classId || '',
         coverImagePreview: coverImagePreview
       };
       
@@ -170,36 +150,6 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
 
     return () => subscription.unsubscribe();
   }, [form, isOpen, coverImagePreview]);
-
-  // Fetch teacher's classes when component mounts or dialog opens
-  useEffect(() => {
-    const fetchClasses = async () => {
-      if (!isOpen) return;
-      
-      setLoadingClasses(true);
-      const { data: response, error } = await safeExecute(
-        () => classService.getClassesByTeacher(),
-        {
-          customMessage: "Failed to load classes. Please try again.",
-        }
-      );
-
-      if (response?.data) {
-        setClasses(response.data);
-        // Set default class if none selected and no saved data
-        const savedData = await loadFormData();
-        if (!selectedClass && !savedData?.classId && response.data.length > 0) {
-          form.setValue('classId', response.data[0].classId);
-        } else if (selectedClass && !savedData?.classId) {
-          form.setValue('classId', selectedClass);
-        }
-      }
-      
-      setLoadingClasses(false);
-    };
-
-    fetchClasses();
-  }, [isOpen, selectedClass, form]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -262,7 +212,7 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
     await clearFormData();
   };
 
-  const onSubmit = async (data: CreateStoryFormData) => {
+  const onSubmit = async (data: CreateCommonStoryFormData) => {
     setIsCreating(true);
     let coverPictureUrl = '';
     let coverPictureType = '';
@@ -289,10 +239,10 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
         return;
       }
 
-      if (!data.classId) {
+      if (!data.genre) {
         toast({
           title: "Validation Error",
-          description: "Piliin ang klase para sa kuwento.",
+          description: "Piliin ang kategorya ng kuwento.",
           variant: "destructive"
         });
         setIsCreating(false);
@@ -305,7 +255,7 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
         console.log('Uploading cover image...');
         
         const { data: uploadResult, error: uploadError } = await safeExecute(
-          () => storyService.uploadCoverImage(coverImage),
+          () => commonStoryService.uploadCoverImage(coverImage),
           {
             customMessage: "Hindi nai-upload ang larawan sa pabalat. Subukang muli.",
           }
@@ -330,28 +280,26 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
         setIsUploading(false);
       }
 
-      // Step 3: Create the story
-      const storyData: CreateStoryRequestData = {
+      // Step 3: Create the common story
+      const storyData: CreateCommonStoryRequest = {
         title: data.title.trim(),
         content: data.content.trim(),
         genre: data.genre,
         fictionType: data.fictionType,
-        coverPictureUrl,
-        coverPictureType,
-        classId: data.classId
+        coverPictureUrl
       };
       
-      console.log('Creating story with data:', {
+      console.log('Creating common story with data:', {
         ...storyData,
         content: `${storyData.content.substring(0, 100)}...` // Log only first 100 chars
       });
 
       const { data: createResult, error: createError } = await safeExecute(
-        () => storyService.createStoryWithDetails(storyData),
+        () => commonStoryService.createCommonStory(storyData),
         {
           customMessage: "Hindi nagawa ang kuwento. Subukang muli.",
           onError: (error) => {
-            console.error('Story creation failed:', error);
+            console.error('Common story creation failed:', error);
             
             // Parse server error response for better user feedback
             if (error?.response?.data) {
@@ -366,19 +314,13 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
               } else if (errorData.status === 403) {
                 toast({
                   title: "Access Denied",
-                  description: errorData.message || "Walang pahintulot na gumawa ng kuwento.",
+                  description: errorData.message || "Walang pahintulot na gumawa ng common story.",
                   variant: "destructive"
                 });
               } else if (errorData.status === 400) {
                 toast({
                   title: "Validation Error",
                   description: errorData.message || "May mali sa mga datos na ipinasok.",
-                  variant: "destructive"
-                });
-              } else if (errorData.status === 404) {
-                toast({
-                  title: "Resource Not Found",
-                  description: errorData.message || "Hindi makita ang klase na napili.",
                   variant: "destructive"
                 });
               } else if (errorData.status === 409) {
@@ -405,22 +347,24 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
       }
 
       if (createResult) {
-        console.log('Story created successfully:', createResult);
+        console.log('Common story created successfully:', createResult);
         toast({
-          title: "Matagumpay na Nagawa ang Kuwento!",
-          description: `Nagawa na ang "${data.title}" at handa na para sa mga estudyante.`,
+          title: "Matagumpay na Nagawa ang Common Story!",
+          description: `Nagawa na ang "${data.title}" at makikita na ng lahat ng users.`,
         });
 
         // Clear form and localStorage after successful creation
         await resetForm();
         setIsOpen(false);
         
-        // Optionally refresh the page or navigate to story list
-        // window.location.reload();
+        // Call success callback if provided
+        if (onSuccess) {
+          onSuccess();
+        }
       }
 
     } catch (error) {
-      console.error('Unexpected error during story creation:', error);
+      console.error('Unexpected error during common story creation:', error);
       toast({
         title: "Unexpected Error",
         description: "May hindi inaasahang error na naganap. Subukang muli.",
@@ -448,7 +392,7 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
       // Keep the draft for later
       toast({
         title: "Nai-save ang Draft",
-        description: "Nai-save ang iyong gawa bilang draft.",
+        description: "Nai-save ang inyong gawa bilang draft.",
       });
     }
     
@@ -462,9 +406,9 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
       <DialogTrigger asChild>
         <Card className="border-2 border-dashed border-teal-200 hover:border-teal-400 transition-colors cursor-pointer">
           <CardContent className="p-6 text-center">
-            <BookOpen className="h-12 w-12 text-teal-500 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-900 mb-2">Gumawa ng Bagong Kuwento</h3>
-            <p className="text-sm text-gray-500">Sumulat ng interaktibong kuwentong Filipino para sa inyong mga estudyante</p>
+            <Globe className="h-12 w-12 text-teal-500 mx-auto mb-4" />
+            <h3 className="font-semibold text-gray-900 mb-2">Gumawa ng Bagong Common Story</h3>
+            <p className="text-sm text-gray-500">Sumulat ng public na kuwentong Filipino na makikita ng lahat ng users</p>
           </CardContent>
         </Card>
       </DialogTrigger>
@@ -472,11 +416,11 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
       <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <BookOpen className="h-5 w-5 text-teal-600" />
-            <span>Gumawa ng Bagong Kuwento</span>
+            <Globe className="h-5 w-5 text-teal-600" />
+            <span>Gumawa ng Bagong Common Story</span>
           </DialogTitle>
           <DialogDescription>
-            Gumawa ng makabuluhang kuwentong Filipino para sa inyong mga estudyante. Magdagdag ng nilalaman, larawan sa pabalat, at itakda ito sa isang klase.
+            Gumawa ng public na kuwentong Filipino na makikita at mababasa ng lahat ng users sa platform.
           </DialogDescription>
         </DialogHeader>
         
@@ -597,50 +541,10 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
                       </div>
                     </div>
                   )}
+                  <p className="text-xs text-gray-500">
+                    Suportadong format: JPG, PNG, GIF. Maximum na laki: 5MB
+                  </p>
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="classId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Itakda sa Klase</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || loadingClasses}>
-                        <FormControl>
-                          <SelectTrigger className="focus:ring-teal-500 focus:border-teal-500">
-                            <SelectValue placeholder={loadingClasses ? "Naglo-load ng mga klase..." : "Piliin ang klase"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {loadingClasses ? (
-                            <div className="flex items-center justify-center py-4">
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              <span className="text-sm text-gray-500">Naglo-load ng mga klase...</span>
-                            </div>
-                          ) : classes.length > 0 ? (
-                            classes.map((classItem) => (
-                              <SelectItem key={classItem.classId} value={classItem.classId}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span className="font-medium">{classItem.className}</span>
-                                  {classItem.students && (
-                                    <span className="text-sm text-gray-500 ml-4">
-                                      {classItem.students.length} mga estudyante
-                                    </span>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="py-4 text-center text-sm text-gray-500">
-                              Walang nakitang klase. Mangyaring gumawa muna ng klase.
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               {/* Right Column - Story Content */}
@@ -654,13 +558,13 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
                       <FormControl>
                         <Textarea 
                           placeholder="Isulat ang inyong kuwento dito..."
-                          className="min-h-[400px] focus:ring-teal-500 focus:border-teal-500"
+                          className="min-h-[500px] focus:ring-teal-500 focus:border-teal-500"
                           {...field}
                           disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormDescription>
-                        Isulat ang kumpletong nilalaman ng kuwento na babasahin ng mga estudyante.
+                        Isulat ang kumpletong nilalaman ng public story na babasahin ng lahat ng users.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -681,10 +585,10 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
               <Button 
                 type="submit" 
                 className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
-                disabled={isSubmitting || loadingClasses || classes.length === 0}
+                disabled={isSubmitting}
               >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isUploading ? 'Ina-upload ang Larawan...' : isCreating ? 'Ginagawa ang Kuwento...' : 'Gumawa ng Kuwento'}
+                {isUploading ? 'Ina-upload ang Larawan...' : isCreating ? 'Ginagawa ang Common Story...' : 'Gumawa ng Common Story'}
               </Button>
             </DialogFooter>
           </form>
@@ -694,4 +598,4 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
   );
 };
 
-export default CreateStoryForm;
+export default CreateCommonStoryForm; 

@@ -10,6 +10,7 @@ import { TeacherSidebar } from '../components/TeacherSidebar';
 import { STORY_GENRES, getGenreByValue } from '../constants/storyGenres';
 import CreateStoryForm from '../components/CreateStoryForm';
 import CreateQuizForm from '../components/CreateQuizForm';
+import QuizSelectionDialog from '../components/QuizSelectionDialog';
 import { storyService } from '@/lib/services/storyService';
 import { quizService, type QuizData } from '@/lib/services/quizService';
 import { toast } from '@/hooks/use-toast';
@@ -75,6 +76,12 @@ const TeacherStories = () => {
   const [editingQuiz, setEditingQuiz] = useState<QuizData | null>(null);
   const [quizAttempts, setQuizAttempts] = useState<Record<string, number>>({});
   const [loadingOperation, setLoadingOperation] = useState<string | null>(null);
+  
+  // State for quiz selection dialog
+  const [showQuizSelection, setShowQuizSelection] = useState(false);
+  const [availableQuizzes, setAvailableQuizzes] = useState<QuizData[]>([]);
+  const [selectedStoryForQuiz, setSelectedStoryForQuiz] = useState<TeacherStory | null>(null);
+  const [quizSelectionAction, setQuizSelectionAction] = useState<'view' | 'edit'>('view');
 
   // Fetch stories from API
   useEffect(() => {
@@ -285,9 +292,17 @@ const TeacherStories = () => {
         return;
       }
       
-      // For now, take the first quiz
-      const quiz = quizzes[0];
-      setViewingQuiz(quiz);
+      // If only one quiz, directly view it
+      if (quizzes.length === 1) {
+        setViewingQuiz(quizzes[0]);
+      } else {
+        // Multiple quizzes, show selection dialog
+        const story = allStories.find(s => s.storyId === storyId);
+        setSelectedStoryForQuiz(story || null);
+        setAvailableQuizzes(quizzes);
+        setQuizSelectionAction('view');
+        setShowQuizSelection(true);
+      }
     } catch (error) {
       console.error('Error fetching quiz:', error);
       toast({
@@ -315,21 +330,31 @@ const TeacherStories = () => {
         return;
       }
       
-      const quiz = quizzes[0];
-      const attempts = await quizService.getQuizAttemptsByQuiz(quiz.quizId);
-      
-      if (attempts.length > 0) {
-        toast({
-          title: "Cannot Edit Quiz",
-          description: "Hindi mo ma-edit ang quiz na may mga sagot na ng mga estudyante.",
-          variant: "destructive",
-        });
-        return;
+      // If only one quiz, directly check and edit it
+      if (quizzes.length === 1) {
+        const quiz = quizzes[0];
+        const attempts = await quizService.getQuizAttemptsByQuiz(quiz.quizId);
+        
+        if (attempts.length > 0) {
+          toast({
+            title: "Cannot Edit Quiz",
+            description: "Hindi mo ma-edit ang quiz na may mga sagot na ng mga estudyante.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Fetch the complete quiz details with correct answers for editing
+        const quizWithCorrectAnswers = await quizService.getQuizDetailsWithCorrectAnswers(quiz.quizId);
+        setEditingQuiz(quizWithCorrectAnswers);
+      } else {
+        // Multiple quizzes, show selection dialog
+        const story = allStories.find(s => s.storyId === storyId);
+        setSelectedStoryForQuiz(story || null);
+        setAvailableQuizzes(quizzes);
+        setQuizSelectionAction('edit');
+        setShowQuizSelection(true);
       }
-      
-      // Fetch the complete quiz details with correct answers for editing
-      const quizWithCorrectAnswers = await quizService.getQuizDetailsWithCorrectAnswers(quiz.quizId);
-      setEditingQuiz(quizWithCorrectAnswers);
     } catch (error) {
       console.error('Error checking quiz attempts:', error);
       toast({
@@ -349,6 +374,42 @@ const TeacherStories = () => {
     const story = stories.find(s => s.storyId === editingQuiz?.storyId);
     if (story) {
       // Update quiz attempts count if needed
+    }
+  };
+
+  // Handle quiz selection from dialog
+  const handleQuizSelect = async (quiz: QuizData, action: 'view' | 'edit') => {
+    setShowQuizSelection(false);
+    
+    if (action === 'view') {
+      setViewingQuiz(quiz);
+    } else if (action === 'edit') {
+      try {
+        setLoadingOperation('checking-attempts');
+        const attempts = await quizService.getQuizAttemptsByQuiz(quiz.quizId);
+        
+        if (attempts.length > 0) {
+          toast({
+            title: "Cannot Edit Quiz",
+            description: "Hindi mo ma-edit ang quiz na may mga sagot na ng mga estudyante.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Fetch the complete quiz details with correct answers for editing
+        const quizWithCorrectAnswers = await quizService.getQuizDetailsWithCorrectAnswers(quiz.quizId);
+        setEditingQuiz(quizWithCorrectAnswers);
+      } catch (error) {
+        console.error('Error checking quiz attempts:', error);
+        toast({
+          title: "Error",
+          description: "Hindi ma-check ang quiz attempts. Subukang muli.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingOperation(null);
+      }
     }
   };
 
@@ -1025,6 +1086,16 @@ const TeacherStories = () => {
         isOpen={!!editingQuiz}
         onOpenChange={(open) => !open && setEditingQuiz(null)}
         onSuccess={handleQuizEditSuccess}
+      />
+
+      {/* Quiz Selection Dialog */}
+      <QuizSelectionDialog
+        quizzes={availableQuizzes}
+        isOpen={showQuizSelection}
+        onOpenChange={setShowQuizSelection}
+        onQuizSelect={handleQuizSelect}
+        storyTitle={selectedStoryForQuiz?.title || ''}
+        showEditOption={quizSelectionAction === 'edit'}
       />
     </SidebarProvider>
   );

@@ -15,6 +15,7 @@ import { progressService } from '@/lib/services/progressService';
 import { leaderboardService } from '@/lib/services/leaderboardService';
 import { quizService } from '@/lib/services/quizService';
 import { badgeService, type StudentBadgeDTO } from '@/lib/services/badgeService';
+import { studentProfileService } from '@/lib/services/studentProfileService';
 import { toast } from '@/hooks/use-toast';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import type { Class, CommonStoryDTO, BadgeDTO } from '@/lib/services/types';
@@ -186,33 +187,21 @@ const StudentDashboard = () => {
     return filtered;
   };
 
-  // Function to fetch user statistics (extracted for reuse)
+  // Function to fetch user statistics using real database data
   const fetchUserStats = async () => {
     if (!user?.id) return;
     
     setStatsLoading(true);
     
     try {
-      // Get user's leaderboard entry for points
-      const { data: leaderboardResponse, error: leaderboardError } = await safeExecute(
-        () => leaderboardService.getStudentRank(user.id),
+      // Get comprehensive dashboard statistics from backend
+      const { data: dashboardStatsResponse, error: dashboardError } = await safeExecute(
+        () => studentProfileService.getDashboardStats(),
         {
           showToast: false,
           preventAutoRedirect: true,
           onError: (appError) => {
-            console.error('Error fetching user leaderboard data:', appError);
-          }
-        }
-      );
-      
-      // Get user's progress data
-      const { data: progressResponse, error: progressError } = await safeExecute(
-        () => progressService.getStudentProgress(user.id),
-        {
-          showToast: false,
-          preventAutoRedirect: true,
-          onError: (appError) => {
-            console.error('Error fetching user progress data:', appError);
+            console.error('Error fetching dashboard statistics:', appError);
           }
         }
       );
@@ -237,64 +226,46 @@ const StudentDashboard = () => {
           preventAutoRedirect: true,
           onError: (appError) => {
             console.error('Error fetching all badges:', appError);
-            // Badge initialization is now handled automatically in the service
           }
         }
       );
       
-      // If critical API calls failed, use default values
-      if ((!leaderboardResponse || leaderboardError) && (!progressResponse || progressError)) {
-        console.warn('Using default values for user stats due to API errors');
+      // If dashboard stats are available, use them
+      if (dashboardStatsResponse?.data && !dashboardError) {
+        const stats = dashboardStatsResponse.data;
         setUserStats({
-          ...userStats,
+          totalPoints: stats.totalPoints,
+          completedStories: stats.completedStories,
+          totalStories: stats.totalStories,
+          completedQuizzes: stats.completedQuizzes,
+          totalQuizzes: stats.totalQuizzes,
+          level: stats.level,
+          earnedBadges: earnedBadgesResponse || [],
+          allBadges: allBadgesResponse || []
+        });
+      } else {
+        console.warn('Using fallback for user stats due to dashboard API error');
+        // Fallback to default values if dashboard API fails
+        setUserStats({
           totalPoints: 0,
           completedStories: 0,
+          totalStories: stories.length + commonStories.length,
           completedQuizzes: 0,
+          totalQuizzes: 0,
           level: 1,
           earnedBadges: earnedBadgesResponse || [],
           allBadges: allBadgesResponse || []
         });
-        setStatsLoading(false);
-        return;
       }
-      
-      // Extract actual data from API responses
-      const leaderboardData = leaderboardResponse?.data;
-      const progressData = progressResponse?.data;
-      
-      // Calculate stats from the fetched data
-      const points = leaderboardData?.score || 0;
-      
-      // Count completed stories and quizzes from progress data
-      const completedStories = progressData ? progressData.filter(
-        (progress) => progress.storyId && progress.completedAt
-      ).length : 0;
-      
-      const completedQuizzes = progressData ? progressData.filter(
-        (progress) => progress.quizId && progress.completedAt
-      ).length : 0;
-      
-      // Calculate level based on points (example formula)
-      const level = Math.max(1, Math.floor(points / 100) + 1);
-      
-      setUserStats({
-        totalPoints: points,
-        completedStories: completedStories,
-        totalStories: stories.length || 0,
-        completedQuizzes: completedQuizzes,
-        totalQuizzes: completedQuizzes + 5, // Assuming there are more quizzes to complete
-        level: level,
-        earnedBadges: earnedBadgesResponse || [],
-        allBadges: allBadgesResponse || []
-      });
     } catch (err) {
       console.error('Error calculating user stats:', err);
       // Use fallback values if there's an error
       setUserStats({
-        ...userStats,
         totalPoints: 0,
         completedStories: 0,
+        totalStories: stories.length + commonStories.length,
         completedQuizzes: 0,
+        totalQuizzes: 0,
         level: 1,
         earnedBadges: [],
         allBadges: []
