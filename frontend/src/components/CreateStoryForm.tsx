@@ -267,69 +267,169 @@ const CreateStoryForm = ({ selectedClass }: CreateStoryFormProps) => {
     let coverPictureUrl = '';
     let coverPictureType = '';
 
-    // Step 1: Upload cover image if provided
-    if (coverImage) {
-      setIsUploading(true);
-      const { data: uploadResult, error: uploadError } = await safeExecute(
-        () => storyService.uploadCoverImage(coverImage),
-        {
-          customMessage: "Failed to upload cover image. Please try again.",
-        }
-      );
-
-      if (uploadError) {
-        setIsUploading(false);
+    try {
+      // Step 1: Validate form data before proceeding
+      if (!data.title?.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Kailangan ng pamagat ng kuwento.",
+          variant: "destructive"
+        });
         setIsCreating(false);
         return;
       }
 
-      if (uploadResult) {
-        coverPictureUrl = uploadResult.url;
-        coverPictureType = coverImage.type;
+      if (!data.content?.trim()) {
         toast({
-          title: "Cover Image Uploaded",
-          description: "Cover image uploaded successfully.",
+          title: "Validation Error", 
+          description: "Kailangan ng nilalaman ng kuwento.",
+          variant: "destructive"
         });
+        setIsCreating(false);
+        return;
       }
-      setIsUploading(false);
-    }
 
-    // Step 2: Create the story
-    const storyData: CreateStoryRequestData = {
-      title: data.title,
-      content: data.content,
-      genre: data.genre,
-      fictionType: data.fictionType,
-      coverPictureUrl,
-      coverPictureType,
-      classId: data.classId
-    };
-    
-    console.log('Creating story:', storyData);
-    const { data: createResult, error: createError } = await safeExecute(
-      () => storyService.createStoryWithDetails(storyData),
-      {
-        customMessage: "Failed to create story. Please try again.",
+      if (!data.classId) {
+        toast({
+          title: "Validation Error",
+          description: "Piliin ang klase para sa kuwento.",
+          variant: "destructive"
+        });
+        setIsCreating(false);
+        return;
       }
-    );
 
-    if (createError) {
-      setIsCreating(false);
-      return;
-    }
+      // Step 2: Upload cover image if provided
+      if (coverImage) {
+        setIsUploading(true);
+        console.log('Uploading cover image...');
+        
+        const { data: uploadResult, error: uploadError } = await safeExecute(
+          () => storyService.uploadCoverImage(coverImage),
+          {
+            customMessage: "Hindi nai-upload ang larawan sa pabalat. Subukang muli.",
+          }
+        );
 
-    if (createResult) {
-      toast({
-        title: "Story Created Successfully!",
-        description: `"${data.title}" has been created and is ready for students.`,
+        if (uploadError) {
+          console.error('Cover image upload failed:', uploadError);
+          setIsUploading(false);
+          setIsCreating(false);
+          return;
+        }
+
+        if (uploadResult) {
+          coverPictureUrl = uploadResult.url;
+          coverPictureType = coverImage.type;
+          console.log('Cover image uploaded successfully:', coverPictureUrl);
+          toast({
+            title: "Na-upload ang Larawan",
+            description: "Matagumpay na na-upload ang larawan sa pabalat.",
+          });
+        }
+        setIsUploading(false);
+      }
+
+      // Step 3: Create the story
+      const storyData: CreateStoryRequestData = {
+        title: data.title.trim(),
+        content: data.content.trim(),
+        genre: data.genre,
+        fictionType: data.fictionType,
+        coverPictureUrl,
+        coverPictureType,
+        classId: data.classId
+      };
+      
+      console.log('Creating story with data:', {
+        ...storyData,
+        content: `${storyData.content.substring(0, 100)}...` // Log only first 100 chars
       });
 
-      // Clear form and localStorage after successful creation
-      await resetForm();
-      setIsOpen(false);
-    }
+      const { data: createResult, error: createError } = await safeExecute(
+        () => storyService.createStoryWithDetails(storyData),
+        {
+          customMessage: "Hindi nagawa ang kuwento. Subukang muli.",
+          onError: (error) => {
+            console.error('Story creation failed:', error);
+            
+            // Parse server error response for better user feedback
+            if (error?.response?.data) {
+              const errorData = error.response.data;
+              
+              if (errorData.status === 401) {
+                toast({
+                  title: "Authentication Required",
+                  description: "Kailangan mo munang mag-login ulit.",
+                  variant: "destructive"
+                });
+              } else if (errorData.status === 403) {
+                toast({
+                  title: "Access Denied",
+                  description: errorData.message || "Walang pahintulot na gumawa ng kuwento.",
+                  variant: "destructive"
+                });
+              } else if (errorData.status === 400) {
+                toast({
+                  title: "Validation Error",
+                  description: errorData.message || "May mali sa mga datos na ipinasok.",
+                  variant: "destructive"
+                });
+              } else if (errorData.status === 404) {
+                toast({
+                  title: "Resource Not Found",
+                  description: errorData.message || "Hindi makita ang klase na napili.",
+                  variant: "destructive"
+                });
+              } else if (errorData.status === 409) {
+                toast({
+                  title: "Conflict",
+                  description: errorData.message || "May kuwentong may katulad na pamagat na.",
+                  variant: "destructive"
+                });
+              } else if (errorData.status >= 500) {
+                toast({
+                  title: "Server Error",
+                  description: "May problema sa server. Subukang muli mamaya.",
+                  variant: "destructive"
+                });
+              }
+            }
+          }
+        }
+      );
 
-    setIsCreating(false);
+      if (createError) {
+        setIsCreating(false);
+        return;
+      }
+
+      if (createResult) {
+        console.log('Story created successfully:', createResult);
+        toast({
+          title: "Matagumpay na Nagawa ang Kuwento!",
+          description: `Nagawa na ang "${data.title}" at handa na para sa mga estudyante.`,
+        });
+
+        // Clear form and localStorage after successful creation
+        await resetForm();
+        setIsOpen(false);
+        
+        // Optionally refresh the page or navigate to story list
+        // window.location.reload();
+      }
+
+    } catch (error) {
+      console.error('Unexpected error during story creation:', error);
+      toast({
+        title: "Unexpected Error",
+        description: "May hindi inaasahang error na naganap. Subukang muli.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreating(false);
+      setIsUploading(false);
+    }
   };
 
   const handleDialogClose = (open: boolean) => {

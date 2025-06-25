@@ -23,14 +23,15 @@ import { storyService } from '@/lib/services/storyService';
 import { quizService, type QuizData, type CreateCommonStoryQuizData } from '@/lib/services/quizService';
 import type { Class } from '@/lib/services/types';
 import { commonStoryService } from '@/lib/services/commonStoryService';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 
 interface QuizFormData {
   title: string;
   description: string;
   category: string;
   timeLimitMinutes: number;
-  opensAt: string;
-  closesAt: string;
+  opensAt: Date | undefined;
+  closesAt: Date | undefined;
   storyId: string;
 }
 
@@ -110,8 +111,8 @@ const CreateQuizForm = ({
     description: '',
     category: '',
     timeLimitMinutes: 30,
-    opensAt: '',
-    closesAt: '',
+    opensAt: undefined,
+    closesAt: undefined,
     storyId: commonStoryId || '',
   });
 
@@ -142,8 +143,8 @@ const CreateQuizForm = ({
         description: existingQuiz.description,
         category: existingQuiz.category,
         timeLimitMinutes: existingQuiz.timeLimitMinutes,
-        opensAt: existingQuiz.opensAt,
-        closesAt: existingQuiz.closesAt,
+        opensAt: new Date(existingQuiz.opensAt),
+        closesAt: new Date(existingQuiz.closesAt),
         storyId: existingQuiz.storyId,
       });
 
@@ -327,7 +328,7 @@ const CreateQuizForm = ({
     fetchStoryDetails();
   }, [formData.storyId, dialogOpen, stories, isCommonStory]);
 
-  const handleInputChange = (field: keyof QuizFormData, value: string | number) => {
+  const handleInputChange = (field: keyof QuizFormData, value: string | number | Date | undefined) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -426,8 +427,8 @@ const CreateQuizForm = ({
           description: formData.description,
           category: formData.category,
           timeLimitMinutes: formData.timeLimitMinutes,
-          opensAt: formData.opensAt,
-          closesAt: formData.closesAt,
+          opensAt: formData.opensAt!.toISOString(),
+          closesAt: formData.closesAt!.toISOString(),
           storyId: existingQuiz.storyId,
           storyTitle: existingQuiz.storyTitle,
           createdById: existingQuiz.createdById,
@@ -458,8 +459,8 @@ const CreateQuizForm = ({
             description: formData.description,
             category: formData.category,
             timeLimitMinutes: Number(formData.timeLimitMinutes),
-            opensAt: new Date(formData.opensAt).toISOString(),
-            closesAt: new Date(formData.closesAt).toISOString(),
+            opensAt: formData.opensAt!.toISOString(),
+            closesAt: formData.closesAt!.toISOString(),
             isActive: true,
             questions: questions.map(q => ({
               questionText: q.questionText,
@@ -476,8 +477,8 @@ const CreateQuizForm = ({
             description: formData.description,
             category: formData.category,
             timeLimitMinutes: Number(formData.timeLimitMinutes),
-            opensAt: new Date(formData.opensAt).toISOString(),
-            closesAt: new Date(formData.closesAt).toISOString(),
+            opensAt: formData.opensAt!.toISOString(),
+            closesAt: formData.closesAt!.toISOString(),
             isActive: true,
             storyId: formData.storyId,
             storyTitle: selectedStory?.title || '',
@@ -532,7 +533,7 @@ const CreateQuizForm = ({
           </Card>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-8xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             {mode === 'edit' ? <Edit className="h-5 w-5" /> : <HelpCircle className="h-5 w-5" />}
@@ -634,26 +635,22 @@ const CreateQuizForm = ({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="opensAt" className="flex items-center space-x-1">
+              <Label className="flex items-center space-x-1">
                 <Calendar className="h-4 w-4" />
                 <span>Bubukas Sa *</span>
               </Label>
-              <Input
-                id="opensAt"
-                type="datetime-local"
-                value={formData.opensAt}
-                onChange={(e) => handleInputChange('opensAt', e.target.value)}
-                required
+              <DateTimePicker
+                date={formData.opensAt}
+                onDateChange={(date) => handleInputChange('opensAt', date)}
+                placeholder="Pumili ng petsa at oras"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="closesAt">Sasara Sa *</Label>
-              <Input
-                id="closesAt"
-                type="datetime-local"
-                value={formData.closesAt}
-                onChange={(e) => handleInputChange('closesAt', e.target.value)}
-                required
+              <Label>Sasara Sa *</Label>
+              <DateTimePicker
+                date={formData.closesAt}
+                onDateChange={(date) => handleInputChange('closesAt', date)}
+                placeholder="Pumili ng petsa at oras"
               />
             </div>
           </div>

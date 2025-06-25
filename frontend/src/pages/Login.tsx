@@ -28,7 +28,7 @@ const Login = () => {
     const { data: response, error } = await safeExecute(
       () => userService.login({ userName: username, userPassword: password }),
       {
-        customMessage: "Hindi tama ang login credentials. Pakicheck ang username at password.",
+        customMessage: "Invalid login credentials. Please check your username and password.",
         onError: (appError) => {
           // Custom handling for specific error types
           if (appError.type === ErrorType.VALIDATION_ERROR) {
@@ -86,7 +86,7 @@ const Login = () => {
         }
 
         toast({
-          title: "Maligayang pagdating!",
+          title: "Welcome!",
           description: `Successfully logged in as ${userRole.toLowerCase()}`,
         });
 
@@ -98,8 +98,8 @@ const Login = () => {
         );
       } catch (parseError) {
         toast({
-          title: "Error sa token parsing",
-          description: "May problema sa pag-process ng login data. Subukan ulit.",
+          title: "Token parsing error",
+          description: "There was a problem processing login data. Please try again.",
           variant: "destructive",
         });
       }
@@ -126,20 +126,20 @@ const Login = () => {
         <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
           <CardHeader className="space-y-4 p-4 md:p-6">
             <CardTitle className="text-xl md:text-2xl text-center">
-              Maligayang Pagdating sa FiliUp
+              Welcome to FiliUp
             </CardTitle>
             <CardDescription className="text-center text-sm md:text-base">
-              Mag-login para magsimula ng inyong Filipino learning adventure!
+              Log in to start your Filipino learning adventure!
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-sm md:text-base">Pangalan ng Gumagamit</Label>
+                <Label htmlFor="username" className="text-sm md:text-base">Username</Label>
                 <Input
                   id="username"
                   type="text"
-                  placeholder="Ilagay ang pangalan ng gumagamit"
+                  placeholder="Enter your username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -147,12 +147,12 @@ const Login = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm md:text-base">Lihim na Salita</Label>
+                <Label htmlFor="password" className="text-sm md:text-base">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Ilagay ang lihim na salita"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -177,18 +177,18 @@ const Login = () => {
                 className="w-full h-10 md:h-11 text-base md:text-lg bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                 disabled={isLoading}
               >
-                {isLoading ? 'Nagla-log in...' : 'Mag-login'}
+                {isLoading ? 'Logging in...' : 'Log In'}
               </Button>
             </form>
             
             <div className="mt-4 text-center space-y-2">
               <p className="text-sm text-gray-600">
-                Wala ka pang account?{' '}
+                Don't have an account?{' '}
                 <Link 
                   to="/signup"
                   className="text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  Magrehistro dito
+                  Sign up here
                 </Link>
               </p>
             </div>

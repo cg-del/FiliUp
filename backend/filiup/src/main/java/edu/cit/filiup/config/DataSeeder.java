@@ -64,7 +64,7 @@ public class DataSeeder {
 
             // Create teachers
             UserEntity teacher1 = new UserEntity();
-            teacher1.setUserName("guro_maria");
+            teacher1.setUserName("teacher1");
             teacher1.setUserEmail("guro.maria@halimbawa.com");
             teacher1.setUserPassword(passwordEncoder.encode("password"));
             teacher1.setUserRole("TEACHER");
@@ -72,7 +72,7 @@ public class DataSeeder {
             teacher1.setIsActive(true);
 
             UserEntity teacher2 = new UserEntity();
-            teacher2.setUserName("guro_jose");
+            teacher2.setUserName("teacher2");
             teacher2.setUserEmail("guro.jose@halimbawa.com");
             teacher2.setUserPassword(passwordEncoder.encode("password"));
             teacher2.setUserRole("TEACHER");
