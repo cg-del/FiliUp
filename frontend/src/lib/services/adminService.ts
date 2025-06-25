@@ -56,18 +56,6 @@ export interface UserGrowthData {
   averagePerDay: number;
 }
 
-export interface SystemStatus {
-  database: string;
-  memory: {
-    total: number;
-    free: number;
-    used: number;
-    max: number;
-  };
-  timestamp: string;
-  uptime: number;
-}
-
 export interface UserActivity {
   userId: string;
   userName: string;
@@ -75,17 +63,6 @@ export interface UserActivity {
   lastLogin: string;
   action: string;
   isActive: boolean;
-}
-
-export interface AdminReport {
-  reportId: string;
-  reportType: string;
-  reportedBy: AdminUser;
-  reportedUser?: AdminUser;
-  reportedContent?: string;
-  reason: string;
-  status: string;
-  createdAt: string;
 }
 
 export interface ActivitySummaryData {
@@ -98,13 +75,7 @@ export interface BulkActionRequest {
   action: 'activate' | 'deactivate' | 'delete';
 }
 
-export interface SystemSettings {
-  maxUsersPerClass: number;
-  defaultUserRole: string;
-  sessionTimeoutMinutes: number;
-  enableRegistration: boolean;
-  enableGuestAccess: boolean;
-}
+
 
 class AdminService {
   // User Management
@@ -192,24 +163,7 @@ class AdminService {
     return response.data.data; // Extract data from wrapped response
   }
 
-  // Content Moderation
-  async getReports(params?: {
-    page?: number;
-    size?: number;
-  }) {
-    const queryParams = new URLSearchParams();
-    if (params?.page !== undefined) queryParams.append('page', params.page.toString());
-    if (params?.size !== undefined) queryParams.append('size', params.size.toString());
 
-    const response = await api.get(`/admin/reports?${queryParams.toString()}`);
-    return response.data.data; // Extract data from wrapped response
-  }
-
-  // System Monitoring
-  async getSystemStatus(): Promise<SystemStatus> {
-    const response = await api.get('/admin/system/status');
-    return response.data.data; // Extract data from wrapped response
-  }
 
   async getUserActivityLogs(params?: {
     page?: number;
@@ -225,16 +179,7 @@ class AdminService {
     return response.data;
   }
 
-  // Configuration
-  async getSystemSettings(): Promise<SystemSettings> {
-    const response = await api.get('/admin/settings');
-    return response.data;
-  }
 
-  async updateSystemSettings(settings: Partial<SystemSettings>) {
-    const response = await api.put('/admin/settings', settings);
-    return response.data;
-  }
 }
 
 export const adminService = new AdminService(); 

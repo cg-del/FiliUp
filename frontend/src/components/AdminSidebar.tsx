@@ -4,7 +4,6 @@ import {
   BarChart3, 
   BookOpen, 
   Users, 
-  Settings,
   Activity,
   FileText,
   Shield,
@@ -60,11 +59,6 @@ const menuItems = [
       }
     ]
   },
-  {
-    title: "Reports",
-    url: "/admin/reports",
-    icon: FileText,
-  },
   // {
   //   title: "Analytics",
   //   url: "/admin/analytics",
@@ -82,23 +76,6 @@ const menuItems = [
   //     }
   //   ]
   // },
-  {
-    title: "System",
-    url: "/admin/system",
-    icon: Database,
-    submenu: [
-      {
-        title: "System Status",
-        url: "/admin/system/status",
-        icon: Activity,
-      },
-      {
-        title: "Settings",
-        url: "/admin/settings",
-        icon: Settings,
-      }
-    ]
-  },
 ];
 
 export function AdminSidebar() {
@@ -195,15 +172,6 @@ export function AdminSidebar() {
           >
             <User className="h-4 w-4 mr-2" />
             Profile
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full justify-start text-gray-600 hover:bg-teal-50 hover:text-teal-700"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
           </Button>
           
           <Button 

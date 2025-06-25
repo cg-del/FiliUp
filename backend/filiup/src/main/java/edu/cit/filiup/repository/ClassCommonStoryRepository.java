@@ -13,6 +13,8 @@ public interface ClassCommonStoryRepository extends JpaRepository<ClassCommonSto
     
     List<ClassCommonStoryEntity> findByClassEntityClassId(UUID classId);
     
+    List<ClassCommonStoryEntity> findByStoryStoryId(UUID storyId);
+    
     Optional<ClassCommonStoryEntity> findByClassEntityClassIdAndStoryStoryId(UUID classId, UUID storyId);
     
     boolean existsByClassEntityClassIdAndStoryStoryId(UUID classId, UUID storyId);

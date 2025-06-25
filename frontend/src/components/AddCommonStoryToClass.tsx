@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { BookOpen, Search, Filter, Globe, Check, Loader2, Plus } from 'lucide-react';
+import { BookOpen, Search, Filter, Globe, Check, Loader2, Plus, Eye, ArrowLeft } from 'lucide-react';
 import { commonStoryService, type CommonStory } from '@/lib/services/commonStoryService';
 import { classService } from '@/lib/services/classService';
 import type { Class } from '@/lib/services/types';
@@ -28,6 +28,10 @@ export default function AddCommonStoryToClass({ selectedClass, onSuccess }: AddC
   const [search, setSearch] = useState('');
   const [genreFilter, setGenreFilter] = useState('all');
   const [availableGenres, setAvailableGenres] = useState<string[]>([]);
+  
+  // Story details view state
+  const [viewingStory, setViewingStory] = useState<CommonStory | null>(null);
+  const [showStoryDetails, setShowStoryDetails] = useState(false);
   
   const { toast } = useToast();
 
@@ -174,8 +178,39 @@ export default function AddCommonStoryToClass({ selectedClass, onSuccess }: AddC
     return content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
   };
 
+  // Handle viewing story details
+  const handleViewStoryDetails = async (story: CommonStory) => {
+    try {
+      // Fetch full story details if needed
+      const fullStory = await commonStoryService.getStoryById(story.storyId);
+      setViewingStory(fullStory);
+      setShowStoryDetails(true);
+    } catch (error) {
+      console.error('Error fetching story details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load story details. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle back from story details view
+  const handleBackFromDetails = () => {
+    setShowStoryDetails(false);
+    setViewingStory(null);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      setIsOpen(open);
+      if (!open) {
+        // Reset state when dialog closes
+        setShowStoryDetails(false);
+        setViewingStory(null);
+        setSelectedStory('');
+      }
+    }}>
       <DialogTrigger asChild>
         <Button variant="default" className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600">
           <Plus className="h-4 w-4 mr-2" />
@@ -186,16 +221,126 @@ export default function AddCommonStoryToClass({ selectedClass, onSuccess }: AddC
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center text-2xl">
-            <Globe className="h-5 w-5 mr-2 text-teal-600" />
-            Add Common Story to Class
+            {showStoryDetails ? (
+              <>
+                <ArrowLeft 
+                  className="h-5 w-5 mr-2 text-teal-600 cursor-pointer hover:text-teal-700" 
+                  onClick={handleBackFromDetails}
+                />
+                Story Details
+              </>
+            ) : (
+              <>
+                <Globe className="h-5 w-5 mr-2 text-teal-600" />
+                Add Common Story to Class
+              </>
+            )}
           </DialogTitle>
           <DialogDescription>
-            Browse and select from our collection of common stories to add to your class.
+            {showStoryDetails 
+              ? "Read the full story content and details before adding to your class."
+              : "Browse and select from our collection of common stories to add to your class."
+            }
           </DialogDescription>
         </DialogHeader>
         
-        {/* Filters and Search */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {/* Story Details View */}
+        {showStoryDetails && viewingStory && (
+          <div className="space-y-6">
+            {/* Story Header */}
+            <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-6 rounded-lg border border-teal-200">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">{viewingStory.title}</h3>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
+                  {viewingStory.genre}
+                </Badge>
+                {viewingStory.fictionType && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    {viewingStory.fictionType}
+                  </Badge>
+                )}
+              </div>
+              <div className="text-sm text-gray-600 flex items-center gap-4">
+                <span>By {viewingStory.createdBy?.userName || 'Unknown'}</span>
+                <span>Created: {formatDate(viewingStory.createdAt)}</span>
+              </div>
+            </div>
+
+            {/* Cover Image */}
+            {viewingStory.coverPictureUrl && (
+              <div className="flex justify-center">
+                <img 
+                  src={viewingStory.coverPictureUrl} 
+                  alt={viewingStory.title}
+                  className="max-w-md max-h-64 object-cover rounded-lg shadow-md"
+                />
+              </div>
+            )}
+
+            {/* Story Content */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <h4 className="text-lg font-semibold mb-4 text-gray-800">Story Content</h4>
+              <div className="prose prose-gray max-w-none">
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {viewingStory.content}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons for Story Details */}
+            <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg">
+              <Button
+                variant="outline"
+                onClick={handleBackFromDetails}
+                className="border-gray-300 text-gray-600 hover:bg-gray-100"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to List
+              </Button>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedStory(viewingStory.storyId);
+                    handleBackFromDetails();
+                  }}
+                  className="border-teal-200 text-teal-600 hover:bg-teal-50"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Select This Story
+                </Button>
+                
+                <Button
+                  onClick={() => {
+                    setSelectedStory(viewingStory.storyId);
+                    handleAddStoryToClass();
+                  }}
+                  disabled={!selectedClassId || submitting}
+                  className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add to Class
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Story List View */}
+        {!showStoryDetails && (
+          <>
+            {/* Filters and Search */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <Label htmlFor="story-search">Search Stories</Label>
             <div className="relative">
@@ -261,12 +406,14 @@ export default function AddCommonStoryToClass({ selectedClass, onSuccess }: AddC
             {stories.map((story) => (
               <Card 
                 key={story.storyId} 
-                className={`cursor-pointer transition-all ${selectedStory === story.storyId ? 'ring-2 ring-teal-500 bg-teal-50' : 'hover:bg-gray-50'}`}
-                onClick={() => setSelectedStory(story.storyId)}
+                className={`transition-all ${selectedStory === story.storyId ? 'ring-2 ring-teal-500 bg-teal-50' : 'hover:bg-gray-50'}`}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div 
+                      className="flex-1 cursor-pointer"
+                      onClick={() => setSelectedStory(story.storyId)}
+                    >
                       <div className="flex items-center mb-1">
                         <h3 className="text-lg font-semibold">{story.title}</h3>
                         {selectedStory === story.storyId && (
@@ -295,35 +442,55 @@ export default function AddCommonStoryToClass({ selectedClass, onSuccess }: AddC
                         <span>{formatDate(story.createdAt)}</span>
                       </div>
                     </div>
+                    
+                    <div className="ml-4 flex flex-col gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewStoryDetails(story);
+                        }}
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View Details
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
+            </>
+          )}
         
-        <DialogFooter className="flex items-center justify-between mt-4">
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleAddStoryToClass}
-            disabled={!selectedStory || !selectedClassId || submitting}
-            className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                Add to Class
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+        {/* Footer - Only show for story list view */}
+        {!showStoryDetails && (
+          <DialogFooter className="flex items-center justify-between mt-4">
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddStoryToClass}
+              disabled={!selectedStory || !selectedClassId || submitting}
+              className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add to Class
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

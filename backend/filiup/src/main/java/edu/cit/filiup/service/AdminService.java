@@ -25,8 +25,7 @@ public class AdminService {
     @Autowired
     private QuizRepository quizRepository;
 
-    @Autowired
-    private ReportRepository reportRepository;
+
 
     @Autowired
     private ProgressRepository progressRepository;
@@ -52,7 +51,7 @@ public class AdminService {
         long totalStories = storyRepository.count();
         long totalClasses = classRepository.count();
         long totalQuizzes = quizRepository.count();
-        long totalReports = reportRepository.count();
+        long totalReports = 0; // Reports functionality removed
 
         AdminDashboardDTO.ContentStatsDTO contentStats = new AdminDashboardDTO.ContentStatsDTO(
             totalStories, totalClasses, totalQuizzes, totalReports
@@ -124,7 +123,7 @@ public class AdminService {
         contentMetrics.put("stories", storyRepository.count());
         contentMetrics.put("classes", classRepository.count());
         contentMetrics.put("quizzes", quizRepository.count());
-        contentMetrics.put("reports", reportRepository.count());
+        contentMetrics.put("reports", 0); // Reports functionality removed
 
         // Activity metrics
         LocalDateTime today = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
@@ -204,32 +203,7 @@ public class AdminService {
         return stats;
     }
 
-    public Map<String, Object> getSystemStatus() {
-        Map<String, Object> status = new HashMap<>();
-        
-        // Database connectivity
-        try {
-            userRepository.count();
-            status.put("database", "connected");
-        } catch (Exception e) {
-            status.put("database", "disconnected");
-            status.put("databaseError", e.getMessage());
-        }
 
-        // Memory usage
-        Runtime runtime = Runtime.getRuntime();
-        Map<String, Object> memory = new HashMap<>();
-        memory.put("total", runtime.totalMemory());
-        memory.put("free", runtime.freeMemory());
-        memory.put("used", runtime.totalMemory() - runtime.freeMemory());
-        memory.put("max", runtime.maxMemory());
-        
-        status.put("memory", memory);
-        status.put("timestamp", LocalDateTime.now());
-        status.put("uptime", System.currentTimeMillis());
-
-        return status;
-    }
 
     public boolean bulkUpdateUsers(List<UUID> userIds, String action) {
         try {

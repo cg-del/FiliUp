@@ -3,10 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, Calendar, Clock, CheckCircle, XCircle, Eye, Edit } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { commonStoryService } from '@/lib/services/commonStoryService';
-import { QuizData } from '@/lib/services/quizService';
+import { QuizData, quizService } from '@/lib/services/quizService';
 import CommonStoryQuizForm from './CommonStoryQuizForm';
 
 interface CommonStoryQuizListProps {
@@ -19,6 +19,8 @@ const CommonStoryQuizList = ({ storyId, storyTitle }: CommonStoryQuizListProps) 
   const [quizzes, setQuizzes] = useState<QuizData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingQuiz, setEditingQuiz] = useState<QuizData | null>(null);
+  const [loadingOperation, setLoadingOperation] = useState<string | null>(null);
 
   const fetchQuizzes = async () => {
     try {
@@ -76,6 +78,40 @@ const CommonStoryQuizList = ({ storyId, storyTitle }: CommonStoryQuizListProps) 
       title: "Tagumpay!",
       description: "Matagumpay na nalikha ang quiz.",
     });
+  };
+
+  const handleEditQuiz = async (quiz: QuizData) => {
+    try {
+      setLoadingOperation('checking-attempts');
+      const attempts = await quizService.getQuizAttemptsByQuiz(quiz.quizId);
+      
+      if (attempts.length > 0) {
+        toast({
+          title: "Cannot Edit Quiz",
+          description: "Hindi mo ma-edit ang quiz na may mga sagot na ng mga estudyante.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Fetch the complete quiz details with correct answers for editing
+      const quizWithCorrectAnswers = await quizService.getQuizDetailsWithCorrectAnswers(quiz.quizId);
+      setEditingQuiz(quizWithCorrectAnswers);
+    } catch (error) {
+      console.error('Error checking quiz attempts:', error);
+      toast({
+        title: "Error",
+        description: "Hindi ma-check ang quiz attempts. Subukang muli.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingOperation(null);
+    }
+  };
+
+  const handleQuizEditSuccess = () => {
+    setEditingQuiz(null);
+    fetchQuizzes(); // Refresh the quiz list
   };
 
   return (
@@ -146,16 +182,45 @@ const CommonStoryQuizList = ({ storyId, storyTitle }: CommonStoryQuizListProps) 
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <div className="w-full flex justify-between items-center">
-                    <span className="text-sm text-gray-500">
-                      {quiz.questions?.length || 0} {quiz.questions?.length === 1 ? 'tanong' : 'mga tanong'}
-                    </span>
-                    <Button 
-                      variant={now >= new Date(quiz.opensAt) && now <= new Date(quiz.closesAt) ? "default" : "outline"}
-                      disabled={now < new Date(quiz.opensAt) || now > new Date(quiz.closesAt) || !quiz.isActive}
-                    >
-                      {isTeacher ? 'Tingnan' : 'Kumuha ng Quiz'}
-                    </Button>
+                  <div className="w-full space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-500">
+                        {quiz.questions?.length || 0} {quiz.questions?.length === 1 ? 'tanong' : 'mga tanong'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 flex items-center gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        {isTeacher ? 'Tingnan' : 'Kumuha ng Quiz'}
+                      </Button>
+                      
+                      {isTeacher && (
+                        <Button 
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleEditQuiz(quiz)}
+                          disabled={loadingOperation === 'checking-attempts'}
+                          className="flex-1 flex items-center gap-2"
+                        >
+                          {loadingOperation === 'checking-attempts' ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Checking...
+                            </>
+                          ) : (
+                            <>
+                              <Edit className="h-4 w-4" />
+                              I-edit
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardFooter>
               </Card>
@@ -163,6 +228,17 @@ const CommonStoryQuizList = ({ storyId, storyTitle }: CommonStoryQuizListProps) 
           })}
         </div>
       )}
+
+      {/* Edit Quiz Form */}
+      <CommonStoryQuizForm
+        storyId={storyId}
+        storyTitle={storyTitle}
+        mode="edit"
+        existingQuiz={editingQuiz || undefined}
+        isOpen={!!editingQuiz}
+        onOpenChange={(open) => !open && setEditingQuiz(null)}
+        onSuccess={handleQuizEditSuccess}
+      />
     </div>
   );
 };

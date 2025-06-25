@@ -1,4 +1,5 @@
 import { api } from '../api';
+import { ApiResponse } from './types';
 
 export interface StudentProfile {
   profileId: string;
@@ -58,5 +59,31 @@ export const studentProfileService = {
 
   async incrementQuizzesTaken(userId: string, quizScore: number): Promise<void> {
     await api.post(`/v1/student-profiles/increment-quizzes-taken/${userId}?quizScore=${quizScore}`);
+  },
+
+  getDashboardStats: async (): Promise<ApiResponse<{
+    userId: string;
+    userName: string;
+    totalPoints: number;
+    completedStories: number;
+    totalStories: number;
+    completedQuizzes: number;
+    totalQuizzes: number;
+    level: number;
+    averageQuizScore: number;
+    profileAverageScore: number;
+    profileQuizTakes: number;
+    enrolledClassesCount: number;
+    lastUpdated: string;
+    recentQuizzes: Array<{
+      quizTitle: string;
+      score: number;
+      maxScore: number;
+      percentage: number;
+      completedAt: string;
+    }>;
+  }>> => {
+         const response = await api.get('/v1/student-profiles/dashboard-stats');
+     return response.data;
   }
 }; 

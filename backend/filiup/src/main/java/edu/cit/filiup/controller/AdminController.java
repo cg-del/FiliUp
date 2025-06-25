@@ -62,8 +62,7 @@ public class AdminController {
     @Autowired
     private QuizRepository quizRepository;
 
-    @Autowired
-    private ReportRepository reportRepository;
+
 
     @Autowired
     private CommonStoryService commonStoryService;
@@ -514,61 +513,7 @@ public class AdminController {
         }
     }
 
-    // ================================
-    // CONTENT MODERATION
-    // ================================
 
-    @GetMapping("/reports")
-    public ResponseEntity<?> getAllReports(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        try {
-            List<ReportEntity> reports = reportRepository.findAll();
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("reports", reports);
-            response.put("totalReports", reports.size());
-            response.put("currentPage", page);
-
-            return ResponseUtil.success("Reports retrieved successfully", response);
-        } catch (Exception e) {
-            return ResponseUtil.serverError("Failed to retrieve reports: " + e.getMessage());
-        }
-    }
-
-    // ================================
-    // SYSTEM MONITORING
-    // ================================
-
-    @GetMapping("/system/status")
-    public ResponseEntity<?> getSystemStatus() {
-        try {
-            Map<String, Object> status = new HashMap<>();
-            
-            // Database connectivity check
-            try {
-                userRepository.count();
-                status.put("database", "connected");
-            } catch (Exception e) {
-                status.put("database", "disconnected");
-            }
-
-            // System statistics
-            Runtime runtime = Runtime.getRuntime();
-            status.put("memory", Map.of(
-                "total", runtime.totalMemory(),
-                "free", runtime.freeMemory(),
-                "used", runtime.totalMemory() - runtime.freeMemory()
-            ));
-
-            status.put("timestamp", LocalDateTime.now());
-            status.put("uptime", System.currentTimeMillis());
-
-            return ResponseUtil.success("System status retrieved successfully", status);
-        } catch (Exception e) {
-            return ResponseUtil.serverError("Failed to retrieve system status: " + e.getMessage());
-        }
-    }
 
     @GetMapping("/logs/user-activities")
     public ResponseEntity<?> getUserActivityLogs(
@@ -610,37 +555,4 @@ public class AdminController {
         }
     }
 
-    // ================================
-    // CONFIGURATION AND SETTINGS
-    // ================================
-
-    @GetMapping("/settings")
-    public ResponseEntity<?> getSystemSettings() {
-        try {
-            Map<String, Object> settings = new HashMap<>();
-            
-            // This would typically come from a configuration table
-            settings.put("maxUsersPerClass", 50);
-            settings.put("defaultUserRole", "STUDENT");
-            settings.put("sessionTimeoutMinutes", 60);
-            settings.put("enableRegistration", true);
-            settings.put("enableGuestAccess", false);
-
-            return ResponseUtil.success("System settings retrieved successfully", settings);
-        } catch (Exception e) {
-            return ResponseUtil.serverError("Failed to retrieve system settings: " + e.getMessage());
-        }
-    }
-
-    @PutMapping("/settings")
-    public ResponseEntity<?> updateSystemSettings(@RequestBody Map<String, Object> settings) {
-        try {
-            // This would typically update a configuration table
-            // For now, we'll just return the settings as if they were saved
-            
-            return ResponseUtil.success("System settings updated successfully", settings);
-        } catch (Exception e) {
-            return ResponseUtil.badRequest("Failed to update system settings: " + e.getMessage());
-        }
-    }
 }

@@ -473,7 +473,9 @@ public class QuizController {
     
     @GetMapping("/class-record-matrix")
     @PreAuthorize("hasAnyAuthority('TEACHER', 'ADMIN')")
-    public ResponseEntity<edu.cit.filiup.dto.ClassRecordDTO> getClassRecordMatrix(JwtAuthenticationToken jwtAuthToken) {
+    public ResponseEntity<edu.cit.filiup.dto.ClassRecordDTO> getClassRecordMatrix(
+            @RequestParam(required = false) String quizType,
+            JwtAuthenticationToken jwtAuthToken) {
         // Extract user email/username from token
         String userIdentifier = jwtAuthToken.getToken().getClaim("sub");
         
@@ -487,7 +489,7 @@ public class QuizController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
         
-        edu.cit.filiup.dto.ClassRecordDTO classRecord = quizService.getClassRecordMatrix(user.getUserId());
+        edu.cit.filiup.dto.ClassRecordDTO classRecord = quizService.getClassRecordMatrix(user.getUserId(), quizType);
         return ResponseEntity.ok(classRecord);
     }
     

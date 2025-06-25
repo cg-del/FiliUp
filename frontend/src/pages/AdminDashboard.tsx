@@ -18,7 +18,8 @@ import {
   AlertTriangle,
   Database,
   Clock,
-  RefreshCw
+  RefreshCw,
+  Settings
 } from 'lucide-react';
 
 interface StatCardProps {
@@ -392,18 +393,10 @@ export default function AdminDashboard() {
                         <Button 
                           variant="outline" 
                           className="border-teal-200 text-teal-600 hover:bg-teal-50"
-                          onClick={() => navigate('/admin/reports')}
-                        >
-                          <AlertTriangle className="mr-2 h-4 w-4" />
-                          View Reports
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="border-teal-200 text-teal-600 hover:bg-teal-50"
                           onClick={() => navigate('/admin/settings')}
                         >
-                          <Database className="mr-2 h-4 w-4" />
-                          System Settings
+                          <Settings className="mr-2 h-4 w-4" />
+                          Settings
                         </Button>
                       </div>
                     </CardContent>

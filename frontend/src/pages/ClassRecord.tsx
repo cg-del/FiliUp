@@ -17,11 +17,8 @@ const ClassRecord: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [gradeFilter, setGradeFilter] = useState<string>('all');
-  const { classRecordData, loading, error, refreshData } = useClassRecord();
-
-  if (!user) {
-    return <div>Loading...</div>;
-  }
+  const [quizTypeFilter, setQuizTypeFilter] = useState<string>('all');
+  const { classRecordData, loading, error, refreshData } = useClassRecord(quizTypeFilter);
 
   // Filter students based on search term, class, and grade
   const filteredStudents = classRecordData?.students.filter(student => {
@@ -108,7 +105,7 @@ const ClassRecord: React.FC = () => {
   const summaryStats = React.useMemo(() => {
     if (!filteredStudents.length || !classRecordData) return null;
     
-    let totalStudents = filteredStudents.length;
+    const totalStudents = filteredStudents.length;
     let excellentCount = 0;
     let goodCount = 0;
     let needsHelpCount = 0;
@@ -138,9 +135,13 @@ const ClassRecord: React.FC = () => {
     };
   }, [filteredStudents, classRecordData, filteredQuizTitles]);
 
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <SidebarProvider>
-      <TeacherSidebar onLogout={logout} />
+      <TeacherSidebar />
       <SidebarInset>
         <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
           {/* Header */}
@@ -360,6 +361,18 @@ const ClassRecord: React.FC = () => {
                         <SelectItem value="excellent">Excellent (90%+)</SelectItem>
                         <SelectItem value="good">Good (75-89%)</SelectItem>
                         <SelectItem value="needs-help">Needs Help (&lt;75%)</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Quiz Type Filter */}
+                    <Select value={quizTypeFilter} onValueChange={setQuizTypeFilter}>
+                      <SelectTrigger className="w-48 border-teal-200 focus:border-teal-400 focus:ring-teal-400">
+                        <SelectValue placeholder="Filter by quiz type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Quiz Types</SelectItem>
+                        <SelectItem value="STORY">Regular Stories</SelectItem>
+                        <SelectItem value="COMMON_STORY">Common Stories</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
