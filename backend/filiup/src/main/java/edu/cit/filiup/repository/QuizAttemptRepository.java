@@ -30,7 +30,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttemptEntity, 
            "JOIN qa.quiz q " +
            "LEFT JOIN q.story s " +
            "LEFT JOIN q.commonStory cs " +
-           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story.storyId = cs.storyId " +
+           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story = cs " +
            "WHERE ((s.classEntity.classId = :classId) OR (ccs.classEntity.classId = :classId)) " +
            "AND qa.isCompleted = true " +
            "AND (:startDate IS NULL OR qa.completedAt >= :startDate)")
@@ -60,7 +60,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttemptEntity, 
            "JOIN qa.quiz q " +
            "LEFT JOIN q.story s " +
            "LEFT JOIN q.commonStory cs " +
-           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story.storyId = cs.storyId " +
+           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story = cs " +
            "WHERE qa.student.userId = :studentId " +
            "AND ((s.classEntity.classId = :classId) OR (ccs.classEntity.classId = :classId)) " +
            "AND qa.isCompleted = true " +
@@ -91,7 +91,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttemptEntity, 
            "JOIN qa.quiz q " +
            "LEFT JOIN q.story s " +
            "LEFT JOIN q.commonStory cs " +
-           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story.storyId = cs.storyId " +
+           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story = cs " +
            "WHERE ((s.classEntity.classId = :classId) OR (ccs.classEntity.classId = :classId)) " +
            "AND qa.isCompleted = true " +
            "AND (:startDate IS NULL OR qa.completedAt >= :startDate) " +
@@ -134,7 +134,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttemptEntity, 
            "JOIN qa.quiz q " +
            "LEFT JOIN q.story s " +
            "LEFT JOIN q.commonStory cs " +
-           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story.storyId = cs.storyId " +
+           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story = cs " +
            "WHERE (q.createdBy.userId = :teacherId OR ccs.addedBy.userId = :teacherId) " +
            "ORDER BY qa.startedAt DESC")
     List<QuizAttemptEntity> findQuizAttemptsByTeacher(@Param("teacherId") UUID teacherId);
@@ -144,7 +144,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttemptEntity, 
            "JOIN qa.quiz q " +
            "LEFT JOIN q.story s " +
            "LEFT JOIN q.commonStory cs " +
-           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story.storyId = cs.storyId " +
+           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story = cs " +
            "WHERE ((s.classEntity.classId = :classId) OR (ccs.classEntity.classId = :classId)) " +
            "ORDER BY qa.startedAt DESC")
     List<QuizAttemptEntity> findQuizAttemptsByClass(@Param("classId") UUID classId);
@@ -154,7 +154,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttemptEntity, 
            "JOIN qa.quiz q " +
            "LEFT JOIN q.story s " +
            "LEFT JOIN q.commonStory cs " +
-           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story.storyId = cs.storyId " +
+           "LEFT JOIN ClassCommonStoryEntity ccs ON ccs.story = cs " +
            "WHERE (q.createdBy.userId = :teacherId OR ccs.addedBy.userId = :teacherId) " +
            "AND qa.isCompleted = true " +
            "ORDER BY qa.student.userName, q.title")
@@ -164,7 +164,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttemptEntity, 
     @Query("SELECT qa FROM QuizAttemptEntity qa " +
            "JOIN qa.quiz q " +
            "JOIN q.commonStory cs " +
-           "JOIN ClassCommonStoryEntity ccs ON ccs.story.storyId = cs.storyId " +
+           "JOIN ClassCommonStoryEntity ccs ON ccs.story = cs " +
            "WHERE ccs.classEntity.classId = :classId " +
            "AND qa.isCompleted = true " +
            "AND (:startDate IS NULL OR qa.completedAt >= :startDate)")
@@ -181,7 +181,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttemptEntity, 
            "FROM QuizAttemptEntity qa " +
            "JOIN qa.quiz q " +
            "JOIN q.commonStory cs " +
-           "JOIN ClassCommonStoryEntity ccs ON ccs.story.storyId = cs.storyId " +
+           "JOIN ClassCommonStoryEntity ccs ON ccs.story = cs " +
            "WHERE ccs.classEntity.classId = :classId AND qa.isCompleted = true " +
            "AND (:startDate IS NULL OR qa.completedAt >= :startDate) " +
            "GROUP BY qa.student.userId")
