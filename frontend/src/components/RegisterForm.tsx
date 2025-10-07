@@ -38,11 +38,16 @@ export const RegisterForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center text-white">
-          <h1 className="text-3xl font-bold mb-2">FiliUp</h1>
-          <p className="text-white/80">Create your student account</p>
+        <div className="text-center">
+          <div className="flex items-center justify-center mb-4">
+            <div className="h-16 w-16 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg">
+              <span className="text-2xl font-bold text-white">F</span>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold mb-2 text-primary">FiliUp</h1>
+          <p className="text-muted-foreground">Create your student account</p>
         </div>
 
         <Card className="learning-card">
@@ -125,7 +130,7 @@ export const RegisterForm: React.FC = () => {
 
               <Button 
                 type="submit" 
-                variant="hero" 
+                variant="hero"
                 className="w-full btn-bounce" 
                 disabled={isLoading}
               >
@@ -142,7 +147,7 @@ export const RegisterForm: React.FC = () => {
 
             <div className="mt-6 text-sm text-muted-foreground text-center">
               Already have an account?{' '}
-              <Link to="/login" className="text-primary hover:underline">Log in</Link>
+              <Link to="/login" className="text-primary hover:text-primary/80 font-medium hover:underline">Log in</Link>
             </div>
           </CardContent>
         </Card>

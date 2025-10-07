@@ -40,11 +40,16 @@ export const LoginForm = () => {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-teal-cyan p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center text-white">
-          <h1 className="text-3xl font-bold mb-2">FiliUp</h1>
-          <p className="text-white/80">Mag-aral ng Filipino nang masaya!</p>
+        <div className="text-center">
+          <div className="flex items-center justify-center mb-4">
+            <div className="h-16 w-16 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg">
+              <span className="text-2xl font-bold text-white">F</span>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold mb-2 text-primary">FiliUp</h1>
+          <p className="text-muted-foreground">Mag-aral ng Filipino nang masaya!</p>
         </div>
 
         <Card className="learning-card">
@@ -98,7 +103,7 @@ export const LoginForm = () => {
               </div>
               <Button 
                 type="submit" 
-                variant="hero" 
+                variant="hero"
                 className="w-full btn-bounce" 
                 disabled={isLoading}
               >
@@ -113,7 +118,7 @@ export const LoginForm = () => {
               </Button>
               <div className="mt-2 text-sm text-muted-foreground text-center">
                 Wala ka pang account?{' '}
-                <Link to="/register" className="text-primary hover:underline">Mag-register</Link>
+                <Link to="/register" className="text-primary hover:text-primary/80 font-medium hover:underline">Mag-register</Link>
               </div>
             </form>
 
