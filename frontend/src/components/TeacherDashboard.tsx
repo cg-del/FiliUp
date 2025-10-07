@@ -52,8 +52,8 @@ export const TeacherDashboard = () => {
   }, [loadDashboard]);
 
   const statsConfig = [
-    { label: 'Kabuuang Estudyante', key: 'totalStudents', icon: Users, color: 'text-[#00B4A3]' },
-    { label: 'Active na Sections', key: 'activeSections', icon: BookOpen, color: 'text-success' },
+    { label: 'Total Students', key: 'totalStudents', icon: Users, color: 'text-[#00B4A3]' },
+    { label: 'Active Sections', key: 'activeSections', icon: BookOpen, color: 'text-success' },
     { label: 'Average Progress', key: 'averageProgress', icon: TrendingUp, color: 'text-warning', suffix: '%' },
    
   ];
@@ -117,7 +117,7 @@ export const TeacherDashboard = () => {
               Profile
             </Button>
             <Button variant="ghost" onClick={handleLogout}>
-              Mag-logout
+              Logout
             </Button>
           </div>
           {/* Mobile menu button */}
@@ -138,7 +138,7 @@ export const TeacherDashboard = () => {
                 Profile
               </Button>
               <Button variant="ghost" onClick={handleLogout} className="w-full text-left">
-                Mag-logout
+                Logout
               </Button>
             </div>
           </div>
@@ -173,7 +173,7 @@ export const TeacherDashboard = () => {
           {/* Sections */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Mga Section</h2>
+              <h2 className="text-3xl font-bold">Sections</h2>
               <Button variant="outline" size="sm" onClick={() => setShowCreateSection(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Section

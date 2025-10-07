@@ -365,7 +365,7 @@ export const StudentDashboard = ({
       <div className="min-h-screen bg-background">
         <div className="p-4">
           <Button variant="ghost" onClick={goToDashboard} className="mb-4">
-            ← Bumalik sa Dashboard
+            ← Back to Dashboard
           </Button>
         </div>
         <CenteredLoading message="Loading activity..." />
@@ -383,7 +383,7 @@ export const StudentDashboard = ({
         <div className="min-h-screen bg-background">
           <div className="p-4">
             <Button variant="ghost" onClick={goToDashboard} className="mb-4">
-              ← Bumalik sa Dashboard
+              ← Back to Dashboard
             </Button>
           </div>
           <MultipleChoiceActivity
@@ -423,7 +423,7 @@ export const StudentDashboard = ({
         <div className="min-h-screen bg-background">
           <div className="p-4">
             <Button variant="ghost" onClick={goToDashboard} className="mb-4">
-              ← Bumalik sa Dashboard
+              ← Back to Dashboard
             </Button>
           </div>
           <DragDropActivity
@@ -476,7 +476,7 @@ export const StudentDashboard = ({
         <div className="min-h-screen bg-background">
           <div className="p-4">
             <Button variant="ghost" onClick={goToDashboard} className="mb-4">
-              ← Bumalik sa Dashboard
+              ← Back to Dashboard
             </Button>
           </div>
           <MatchingPairsActivity
@@ -515,7 +515,7 @@ export const StudentDashboard = ({
         <div className="min-h-screen bg-background">
           <div className="p-4">
             <Button variant="ghost" onClick={goToDashboard} className="mb-4">
-              ← Bumalik sa Dashboard
+              ← Back to Dashboard
             </Button>
           </div>
           <StoryComprehensionActivity
@@ -561,7 +561,7 @@ export const StudentDashboard = ({
       <div className="min-h-screen bg-background">
         <div className="p-4">
           <Button variant="ghost" onClick={goToDashboard} className="mb-4">
-            ← Bumalik sa Dashboard
+            ← Back to Dashboard
           </Button>
         </div>
         <CenteredLoading message="Loading lesson..." />
@@ -575,7 +575,7 @@ export const StudentDashboard = ({
       <div className="min-h-screen bg-background">
         <div className="p-4">
           <Button variant="ghost" onClick={goToDashboard} className="mb-4">
-            ← Bumalik sa Dashboard
+            ← Back to Dashboard
           </Button>
         </div>
         
@@ -665,7 +665,7 @@ export const StudentDashboard = ({
               Profile
             </Button>
             <Button variant="ghost" onClick={handleLogout}>
-              Mag-logout
+              Logout
             </Button>
           </div>
           {/* Mobile menu button */}
@@ -703,7 +703,7 @@ export const StudentDashboard = ({
               </div>
               <div>
                 <div className="text-2xl font-bold">{dashboardData.stats.completedLessons}</div>
-                <div className="text-xs text-muted-foreground">Nakompletong Aralin</div>
+                <div className="text-xs text-muted-foreground">Stories Completed</div>
               </div>
             </CardContent>
           </Card>
@@ -715,7 +715,7 @@ export const StudentDashboard = ({
               </div>
               <div>
                 <div className="text-2xl font-bold">{dashboardData.stats.totalScore}</div>
-                <div className="text-xs text-muted-foreground">Kabuuang Puntos</div>
+                <div className="text-xs text-muted-foreground">Total Score</div>
               </div>
             </CardContent>
           </Card>
@@ -727,7 +727,7 @@ export const StudentDashboard = ({
               </div>
               <div>
                 <div className="text-2xl font-bold">{dashboardData.stats.currentLevel}</div>
-                <div className="text-xs text-muted-foreground">Kasalukuyang Level</div>
+                <div className="text-xs text-muted-foreground">Current Phase</div>
               </div>
             </CardContent>
           </Card>
@@ -739,7 +739,7 @@ export const StudentDashboard = ({
               </div>
               <div>
                 <div className="text-2xl font-bold">{dashboardData.stats.studyDays}</div>
-                <div className="text-xs text-muted-foreground">Araw na Nag-aral</div>
+                <div className="text-xs text-muted-foreground">Days Studied</div>
               </div>
             </CardContent>
           </Card>
@@ -747,12 +747,12 @@ export const StudentDashboard = ({
 
         {/* Learning Phases */}
         <div className="space-y-8">
-          <h2 className="text-2xl font-bold">Mga Aralin</h2>
+          <h2 className="text-3xl font-bold">Lessons</h2>
           
           {dashboardData.phases.map((phase) => (
             <div key={phase.id} className="space-y-4">
               <div className="flex items-center space-x-3">
-                <h3 className="text-xl font-semibold text-primary">{phase.title}</h3>
+                <h3 className="text-2xl font-semibold text-primary">{phase.title}</h3>
               </div>
               <p className="text-muted-foreground mb-4">{phase.description}</p>
               

@@ -250,7 +250,7 @@ export const LandingPage = () => {
               <div className="flex items-center justify-center mb-8">
                 <span className="inline-flex items-center rounded-full bg-muted px-4 py-2 text-sm font-medium text-primary">
                   <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse"></span>
-                  Bagong: Interactive Learning
+                  Interactive Learning
                 </span>
               </div>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground mb-8">
@@ -260,8 +260,8 @@ export const LandingPage = () => {
                 </span>
               </h1>
               <p className="mt-8 text-xl leading-8 text-muted-foreground max-w-3xl mx-auto">
-                Comprehensive platform para sa pag-aaral ng Bahagi ng Pananalita - 
-                Pangngalan, Pandiwa, at Pang-uri gamit ang apat na uri ng activities.
+                Ang komprehensibong plataporma para sa pag-aaral ng Bahagi ng Pananalita - 
+                Pangngalan, Pandiwa, at Pang-uri gamit ang apat na uri ng aktibidad.
               </p>
               <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
                 <Link to="/register">

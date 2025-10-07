@@ -136,7 +136,7 @@ const TeacherLeaderboard: React.FC = () => {
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </Button>
-              <Button variant="ghost" onClick={handleLogout}>Mag-logout</Button>
+              <Button variant="ghost" onClick={handleLogout}>Logout</Button>
             </div>
             {/* Mobile menu button */}
             <div className="md:hidden">
@@ -149,7 +149,7 @@ const TeacherLeaderboard: React.FC = () => {
               <div className="flex flex-col gap-2">
                 <Button variant="outline" onClick={() => navigate('/teacher/dashboard')} className="w-full text-left">Dashboard</Button>
                 <Button variant="outline" onClick={() => navigate('/teacher/profile')} className="w-full text-left">Profile</Button>
-                <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Mag-logout</Button>
+                <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Logout</Button>
               </div>
             </div>
           )}
@@ -191,7 +191,7 @@ const TeacherLeaderboard: React.FC = () => {
               <User className="h-4 w-4 mr-2" />
               Profile
             </Button>
-            <Button variant="ghost" onClick={handleLogout}>Mag-logout</Button>
+            <Button variant="ghost" onClick={handleLogout}>Logout</Button>
           </div>
           {/* Mobile menu button */}
           <div className="md:hidden">
@@ -204,7 +204,7 @@ const TeacherLeaderboard: React.FC = () => {
             <div className="flex flex-col gap-2">
               <Button variant="outline" onClick={() => navigate('/')} className="w-full text-left">Dashboard</Button>
               <Button variant="outline" onClick={() => navigate('/teacher/profile')} className="w-full text-left">Profile</Button>
-              <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Mag-logout</Button>
+              <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Logout</Button>
             </div>
           </div>
         )}

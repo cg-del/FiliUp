@@ -91,7 +91,7 @@ export const StudentLeaderboard = () => {
               Profile
             </Button>
             <Button variant="ghost" onClick={logout}>
-              Mag-logout
+              Logout
             </Button>
           </div>
         </div>
@@ -168,7 +168,7 @@ export const StudentLeaderboard = () => {
         {/* Full Rankings */}
         <Card className="learning-card">
           <CardHeader>
-            <CardTitle>Buong Rankings</CardTitle>
+            <CardTitle>Overall Ranking</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {students.map((student) => (

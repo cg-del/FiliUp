@@ -17,7 +17,7 @@ export const TeacherProfile: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Bumalik
+            Back to Dashboard
           </Button>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -31,7 +31,7 @@ export const TeacherProfile: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={() => setShowReset(true)}>Reset Password</Button>
-              <Button variant="outline" onClick={logout}>Mag-logout</Button>
+              <Button variant="outline" onClick={logout}>Logout</Button>
             </div>
           </div>
         </div>
