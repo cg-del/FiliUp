@@ -131,7 +131,6 @@ public class TeacherService {
         return sections.stream()
                 .flatMap(section -> section.getStudents().stream())
                 .flatMap(student -> activityAttemptRepository.findTop5ByStudentIdOrderByCreatedAtDesc(student.getId()).stream())
-                .limit(10)
                 .map(attempt -> RecentActivityResponse.builder()
                         .studentId(attempt.getStudent().getId())
                         .studentName(attempt.getStudent().getName())
@@ -140,6 +139,7 @@ public class TeacherService {
                         .timestamp(attempt.getCreatedAt())
                         .timeAgo(formatTimeAgo(attempt.getCreatedAt()))
                         .build())
+                .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp())) // Sort by timestamp descending
                 .collect(Collectors.toList());
     }
 
