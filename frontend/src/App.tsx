@@ -1,240 +1,55 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { Toaster } from '@/components/ui/toaster';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import ProtectedRoute from './components/ProtectedRoute';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import { SectionDetailsPage } from "./components/SectionDetailsPage";
+import TeacherLeaderboard from "./components/leaderboard/TeacherLeaderboard";
+import StudentLeaderboardWrapper from "./components/leaderboard/StudentLeaderboardWrapper";
+import { StudentProfile } from "./components/StudentProfile";
+import { TeacherProfile } from "./components/TeacherProfile";
+import { RegisterForm } from "./components/RegisterForm";
+import { LoginForm } from "./components/LoginForm";
+import { ViewAllUsersPage } from "./components/ViewAllUsersPage";
+import { TeacherDashboardWrapper } from "./components/TeacherDashboardWrapper";
 
-// Pages
-import Index from './pages/Index';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import TeacherDashboard from './pages/TeacherDashboard';
-import StudentDashboard from './pages/StudentDashboard';
-import Stories from './pages/Stories';
-import Students from './pages/Students';
-import Assessments from './pages/Assessments';
-import ClassRecord from './pages/ClassRecord';
-import Reports from './pages/Reports';
-import Leaderboards from './pages/Leaderboards';
-import Profile from './pages/Profile';
-import StudentProfileEdit from './pages/StudentProfileEdit';
-import StoryModule from './pages/StoryModule';
-import QuizModule from './pages/QuizModule';
-import NotFound from './pages/NotFound';
-import DashboardRedirect from './components/DashboardRedirect';
-import AuthTest from './pages/AuthTest';
-import ChangePassword from './pages/ChangePassword';
+const queryClient = new QueryClient();
 
-// Admin Pages
-import AdminDashboard from './pages/AdminDashboard';
-import AdminUsers from './pages/AdminUsers';
-import AdminStories from './pages/AdminStories';
-import AdminCommonStories from './pages/AdminCommonStories';
-import CommonStories from './pages/CommonStories';
-import AdminUserGrowth from './pages/AdminUserGrowth';
-import AdminActivity from './pages/AdminActivity';
-
-import './App.css';
-
-function App() {
-  return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <Router>
-          <div className="min-h-screen bg-gray-50">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              
-              {/* Teacher Routes */}
-              <Route 
-                path="/teacher-dashboard" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['teacher']}>
-                    <TeacherDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/stories" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['teacher']}>
-                    <Stories />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/students" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['teacher']}>
-                    <Students />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/assessments" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['teacher']}>
-                    <Assessments />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/class-record" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['teacher']}>
-                    <ClassRecord />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/reports" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['teacher']}>
-                    <Reports />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/leaderboards" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['teacher', 'student']}>
-                    <Leaderboards />
-                  </ProtectedRoute>
-                } 
-              />
-
-              {/* Student Routes */}
-              <Route 
-                path="/student-dashboard" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['student']}>
-                    <StudentDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/story/:id" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['student']}>
-                    <StoryModule />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/quiz/:id" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['student']}>
-                    <QuizModule />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/profile/edit" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['student']}>
-                    <StudentProfileEdit />
-                  </ProtectedRoute>
-                } 
-              />
-
-              {/* Admin Routes */}
-              <Route 
-                path="/admin-dashboard" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['admin']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/users" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['admin']}>
-                    <AdminUsers />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/stories" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['admin']}>
-                    <AdminStories />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/common-stories" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['admin']}>
-                    <AdminCommonStories />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/analytics/user-growth" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['admin']}>
-                    <AdminUserGrowth />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/analytics/activity" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['admin']}>
-                    <AdminActivity />
-                  </ProtectedRoute>
-                } 
-              />
-
-              {/* Shared Routes */}
-              <Route 
-                path="/common-stories" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['teacher', 'student', 'admin']}>
-                    <CommonStories />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/profile" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['teacher', 'student', 'admin']}>
-                    <Profile />
-                  </ProtectedRoute>
-                } 
-              />
-
-              {/* Redirect /dashboard based on user type */}
-              <Route 
-                path="/dashboard" 
-                element={<DashboardRedirect />} 
-              />
-
-              {/* AuthTest Route */}
-              <Route 
-                path="/auth-test" 
-                element={
-                  <ProtectedRoute allowedUserTypes={['teacher', 'student', 'admin']}>
-                    <AuthTest />
-                  </ProtectedRoute>
-                } 
-              />
-
-              {/* Change Password Route (not protected) */}
-              <Route path="/change-password" element={<ChangePassword />} />
-
-              {/* 404 Route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
-          <Toaster />
-        </Router>
-      </AuthProvider>
-    </ErrorBoundary>
-  );
-}
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            {/* Teacher routes wrapped with TeacherDashboardWrapper */}
+            <Route path="/teacher/section/:sectionId" element={<TeacherDashboardWrapper><SectionDetailsPage /></TeacherDashboardWrapper>} />
+            <Route path="/teacher/leaderboard/:sectionId" element={<TeacherDashboardWrapper><TeacherLeaderboard /></TeacherDashboardWrapper>} />
+            <Route path="/teacher/leaderboard" element={<TeacherDashboardWrapper><TeacherLeaderboard /></TeacherDashboardWrapper>} />
+            <Route path="/teacher/profile" element={<TeacherDashboardWrapper><TeacherProfile /></TeacherDashboardWrapper>} />
+            {/* Admin routes */}
+            <Route path="/admin/users" element={<ViewAllUsersPage />} />
+            {/* Student routes */}
+            <Route path="/student/leaderboard" element={<StudentLeaderboardWrapper />} />
+            <Route path="/student/profile" element={<StudentProfile />} />
+            <Route path="/student/dashboard" element={<Index />} />
+            <Route path="/student/lesson/:lessonId" element={<Index />} />
+            <Route path="/student/activity/:activityId/:activityType" element={<Index />} />
+            {/* Auth routes */}
+            <Route path="/register" element={<RegisterForm />} />
+            <Route path="/login" element={<LoginForm />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
 
 export default App;
