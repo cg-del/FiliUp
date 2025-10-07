@@ -1,146 +1,611 @@
-import axios, { AxiosError, AxiosRequestConfig } from 'axios';
-import { parseAxiosError, shouldRetryError, getRetryDelay } from './errors/errorUtils';
-import { ErrorType } from './errors/types';
+import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+// API Configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api';
 
-export const api = axios.create({
-  baseURL,
+// Create axios instance
+const api = axios.create({
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Enable sending cookies with cross-origin requests
-  timeout: 30000, // 30 seconds timeout
 });
 
-// Add request interceptor for authentication
+// Request interceptor to add JWT token
 api.interceptors.request.use(
   (config) => {
-    // Try multiple token keys for compatibility
-    const token = localStorage.getItem('accessToken') || 
-                  localStorage.getItem('authToken') || 
-                  localStorage.getItem('token');
-    
-    console.log('Request to:', config.url);
-    console.log('Token found for request:', token ? 'Yes (length: ' + token.length + ')' : 'No');
-    
-    // Decode and inspect token payload (for debugging)
+    const token = localStorage.getItem('token');
     if (token) {
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const payload = JSON.parse(window.atob(base64));
-        console.log('Token payload:', payload);
-      } catch (e) {
-        console.error('Error decoding token payload:', e);
-      }
-    }
-    
-    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('Authorization header set:', `Bearer ${token.substring(0, 10)}...`);
     }
-    
-    // Add request timestamp for debugging
-    config.metadata = { startTime: new Date() };
-    
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
-// Add response interceptor for comprehensive error handling
+// Response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => {
-    // Log successful requests for debugging
-    const duration = new Date().getTime() - response.config.metadata?.startTime?.getTime();
-    console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${duration}ms`);
-    
-    return response;
-  },
-  async (error: AxiosError) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean; _retryCount?: number };
-    
-    // Log error details
-    const duration = new Date().getTime() - originalRequest?.metadata?.startTime?.getTime();
-    console.error(`❌ ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url} - ${duration}ms`, {
-      status: error.response?.status,
-      message: error.message,
-      data: error.response?.data,
-    });
-
-    // Parse the error using our error utilities
-    const appError = parseAxiosError(error);
-    
-    // Handle authentication errors
-    if (appError.type === ErrorType.AUTHENTICATION_ERROR) {
-      // Be more selective about when to redirect to login
-      // Only redirect if this appears to be a token/session issue
-      const shouldRedirect = 
-        appError.details?.message?.toLowerCase().includes('token') ||
-        appError.details?.message?.toLowerCase().includes('session') ||
-        appError.details?.message?.toLowerCase().includes('expired') ||
-        appError.details?.message?.toLowerCase().includes('invalid') ||
-        appError.details?.message?.toLowerCase().includes('unauthorized') ||
-        // If there's no specific error message, assume it's a session issue
-        (!appError.details?.message && appError.statusCode === 401);
-      
-      if (shouldRedirect) {
-        // Clear all auth-related data
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
-        localStorage.removeItem('filiup_user');
-        
-        // Only redirect if we're not already on login page
-        if (!window.location.pathname.includes('/login')) {
-          console.log('Session expired, redirecting to login from API interceptor');
-          window.location.href = '/login';
-        }
-      } else {
-        // This is a resource-specific 401, log but don't redirect
-        console.warn('Resource access denied (401), but not redirecting to login:', appError);
-      }
-      
-      return Promise.reject(appError);
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/';
     }
-    
-    // Implement retry logic for retryable errors
-    if (shouldRetryError(appError) && originalRequest && !originalRequest._retry) {
-      const maxRetries = 3;
-      const retryCount = originalRequest._retryCount || 0;
-      
-      if (retryCount < maxRetries) {
-        originalRequest._retry = true;
-        originalRequest._retryCount = retryCount + 1;
-        
-        const delay = getRetryDelay(retryCount);
-        console.warn(`Retrying request in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
-        
-        await new Promise(resolve => setTimeout(resolve, delay));
-        
-        // Reset metadata for retry
-        originalRequest.metadata = { startTime: new Date() };
-        
-        return api(originalRequest);
-      }
-    }
-    
-    return Promise.reject(appError);
+    return Promise.reject(error);
   }
 );
 
-// Extend the AxiosRequestConfig interface to include our metadata
-declare module 'axios' {
-  interface AxiosRequestConfig {
-    metadata?: {
-      startTime: Date;
-    };
-  }
+// Types
+export interface LoginRequest {
+  email: string;
+  password: string;
 }
 
-export default api; 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  fullName: string;
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+}
+
+export interface PasswordResetRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface CreateUserRequest {
+  email: string;
+  fullName: string;
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+  password: string;
+  section?: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    fullName: string;
+    role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+    sectionId: string | null;
+    isActive: boolean;
+    firstLogin?: boolean;
+  };
+}
+
+export interface CreateSectionRequest {
+  name: string;
+  gradeLevel: string;
+  capacity: number;
+}
+
+export interface SectionResponse {
+  id: string;
+  name: string;
+  gradeLevel: string;
+  inviteCode: string;
+  studentCount: number;
+  activeStudents: number;
+  averageProgress: number;
+}
+
+export interface RegisterSectionRequest {
+  registrationCode: string;
+}
+
+export interface SubmitActivityRequest {
+  answers: (string | number | string[])[];
+  timeSpentSeconds: number;
+}
+
+export interface ActivitySubmissionResponse {
+  score: number;
+  percentage: number;
+  isCompleted: boolean;
+  correctAnswers: number;
+  totalQuestions: number;
+  nextActivity?: {
+    id: string;
+    type: string;
+  };
+}
+
+// Student Dashboard Response Types
+export interface StudentDashboardResponse {
+  student: {
+    id: string;
+    name: string;
+    email: string;
+    sectionName: string;
+  };
+  stats: {
+    completedLessons: number;
+    totalScore: number;
+    currentLevel: string;
+    studyDays: number;
+  };
+  phases: Phase[];
+}
+
+export interface Phase {
+  id: string;
+  title: string;
+  description: string;
+  orderIndex: number;
+  lessons: LessonSummary[];
+}
+
+export interface LessonSummary {
+  id: string;
+  title: string;
+  description: string;
+  orderIndex: number;
+  colorClass: string;
+  totalActivities: number;
+  isCompleted: boolean;
+  activitiesUnlocked: boolean;
+  progressPercentage: number;
+  completedActivitiesCount: number;
+  activities: ActivityProgress[];
+}
+
+export interface ActivityProgress {
+  id: string;
+  activityType: 'MULTIPLE_CHOICE' | 'DRAG_DROP' | 'MATCHING_PAIRS' | 'STORY_COMPREHENSION';
+  title: string;
+  orderIndex: number;
+  status: 'locked' | 'unlocked' | 'completed';
+  score: number | null;
+  percentage: number | null;
+  isUnlocked: boolean;
+  isCompleted: boolean;
+}
+
+// Lesson Content Response Types
+export interface LessonContentResponse {
+  id: string;
+  title: string;
+  description: string;
+  phase: string;
+  slides: LessonSlide[];
+}
+
+export interface LessonSlide {
+  id: string;
+  title: string;
+  content: string[];
+  orderIndex: number;
+}
+
+// Activity Content Response Types
+export interface ActivityContentResponse {
+  id: string;
+  activityType: 'MULTIPLE_CHOICE' | 'DRAG_DROP' | 'MATCHING_PAIRS' | 'STORY_COMPREHENSION';
+  title: string;
+  instructions: string;
+  storyText?: string | null;
+  orderIndex: number;
+  passingPercentage: number;
+  questions?: MultipleChoiceQuestion[];
+  dragDropItems?: DragDropItem[] | null;
+  dragDropCategories?: DragDropCategory[] | null;
+  matchingPairs?: MatchingPair[] | null;
+}
+
+export interface MultipleChoiceContent {
+  questions: MultipleChoiceQuestion[];
+}
+
+export interface MultipleChoiceQuestion {
+  id: string;
+  questionText: string;
+  options: string[];
+  correctAnswerIndex: number;
+  explanation: string;
+  orderIndex: number;
+}
+
+export interface DragDropContent {
+  items: DragDropItem[];
+  categories: DragDropCategory[];
+}
+
+export interface MatchingPair {
+  id: string;
+  leftText: string;
+  rightText: string;
+  orderIndex: number;
+}
+
+export interface DragDropItem {
+  id: string;
+  text: string;
+  category: string;
+}
+
+export interface DragDropCategory {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface MatchingPairsContent {
+  pairs: MatchingPair[];
+}
+
+export interface MatchingPair {
+  id: string;
+  left: string;
+  right: string;
+}
+
+export interface StoryComprehensionContent {
+  story: string;
+  questions: MultipleChoiceQuestion[];
+}
+
+// Leaderboard Types (matching existing backend DTOs)
+export interface StudentRankingResponse {
+  id: string;
+  name: string;
+  totalScore: number;
+  lessonsCompleted: number;
+  activitiesCompleted: number;
+  averageScore: number;
+  rank: number;
+}
+
+export interface StudentProfileResponse {
+  student: {
+    id: string;
+    name: string;
+    email: string;
+    sectionName: string;
+    joinDate: string;
+  };
+  stats: {
+    totalScore: number;
+    lessonsCompleted: number;
+    totalLessons: number;
+    currentPhase: string;
+  };
+  achievements: {
+    id: string;
+    name: string;
+    icon: string;
+    earned: boolean;
+  }[];
+  recentActivity: {
+    lesson: string;
+    score: number;
+    date: string;
+  }[];
+}
+
+export interface SectionLeaderboardResponse {
+  sectionId: string;
+  sectionName: string;
+  gradeLevel: string;
+  students: StudentRankingResponse[];
+}
+
+// Auth API
+export const authAPI = {
+  login: async (data: LoginRequest): Promise<AuthResponse> => {
+    const response = await api.post('/auth/login', data);
+    return response.data;
+  },
+
+  register: async (data: RegisterRequest): Promise<AuthResponse> => {
+    const response = await api.post('/auth/register', data);
+    return response.data;
+  },
+
+  resetPassword: async (data: PasswordResetRequest) => {
+    const response = await api.post('/auth/reset-password', data);
+    return response.data;
+  },
+  // Mark first-login flow as completed on server (teacher)
+  completeFirstLogin: async () => {
+    const response = await api.post('/auth/first-login-complete');
+    return response.data;
+  },
+};
+
+// Admin API
+export const adminAPI = {
+  getStats: async () => {
+    const response = await api.get('/admin/stats');
+    return response.data;
+  },
+
+  getUsers: async (page = 0, size = 10, role?: string) => {
+    const params = new URLSearchParams({ page: page.toString(), size: size.toString() });
+    if (role) params.append('role', role);
+    const response = await api.get(`/admin/users?${params}`);
+    return response.data;
+  },
+
+  createUser: async (data: CreateUserRequest) => {
+    const response = await api.post('/admin/users', data);
+    return response.data;
+  },
+
+  updateUser: async (id: string, data: Partial<CreateUserRequest>) => {
+    const response = await api.put(`/admin/users/${id}`, data);
+    return response.data;
+  },
+
+  deleteUser: async (id: string) => {
+    const response = await api.delete(`/admin/users/${id}`);
+    return response.data;
+  },
+
+  // Content Management APIs
+  // Phases
+  getPhases: async () => {
+    const response = await api.get('/admin/phases');
+    return response.data;
+  },
+
+  createPhase: async (data: { title: string; description: string; orderIndex: number }) => {
+    const response = await api.post('/admin/phases', data);
+    return response.data;
+  },
+
+  updatePhase: async (id: string, data: { title: string; description: string; orderIndex: number }) => {
+    const response = await api.put(`/admin/phases/${id}`, data);
+    return response.data;
+  },
+
+  deletePhase: async (id: string) => {
+    const response = await api.delete(`/admin/phases/${id}`);
+    return response.data;
+  },
+
+  // Lessons
+  getLessons: async () => {
+    const response = await api.get('/admin/lessons');
+    return response.data;
+  },
+
+  getLesson: async (id: string) => {
+    const response = await api.get(`/admin/lessons/${id}`);
+    return response.data;
+  },
+
+  getLessonsByPhase: async (phaseId: string) => {
+    const response = await api.get(`/admin/lessons/phase/${phaseId}`);
+    return response.data;
+  },
+
+  createLesson: async (data: {
+    phaseId: string;
+    title: string;
+    description: string;
+    orderIndex: number;
+    slides: { title: string; content: string[]; orderIndex: number }[];
+  }) => {
+    const response = await api.post('/admin/lessons', data);
+    return response.data;
+  },
+
+  updateLesson: async (id: string, data: {
+    phaseId: string;
+    title: string;
+    description: string;
+    orderIndex: number;
+    slides: { title: string; content: string[]; orderIndex: number }[];
+  }) => {
+    const response = await api.put(`/admin/lessons/${id}`, data);
+    return response.data;
+  },
+
+  deleteLesson: async (id: string) => {
+    const response = await api.delete(`/admin/lessons/${id}`);
+    return response.data;
+  },
+
+  // Activities
+  getActivities: async () => {
+    const response = await api.get('/admin/activities');
+    return response.data;
+  },
+
+  getActivity: async (id: string) => {
+    const response = await api.get(`/admin/activities/${id}`);
+    return response.data;
+  },
+
+  getActivitiesByLesson: async (lessonId: string) => {
+    const response = await api.get(`/admin/activities/lesson/${lessonId}`);
+    return response.data;
+  },
+
+  createActivity: async (data: {
+    lessonId: string;
+    activityType: 'MULTIPLE_CHOICE' | 'DRAG_DROP' | 'MATCHING_PAIRS' | 'STORY_COMPREHENSION';
+    title: string;
+    instructions: string;
+    storyText?: string;
+    orderIndex: number;
+    passingPercentage: number;
+    content: {
+      questions?: { questionText: string; options: string[]; correctAnswerIndex: number; explanation: string; orderIndex: number }[];
+      categories?: { categoryId: string; name: string; colorClass: string; orderIndex: number }[];
+      items?: { text: string; correctCategory: string; orderIndex: number }[];
+      pairs?: { leftText: string; rightText: string; orderIndex: number }[];
+    };
+  }) => {
+    const response = await api.post('/admin/activities', data);
+    return response.data;
+  },
+
+  updateActivity: async (id: string, data: {
+    lessonId: string;
+    activityType: 'MULTIPLE_CHOICE' | 'DRAG_DROP' | 'MATCHING_PAIRS' | 'STORY_COMPREHENSION';
+    title: string;
+    instructions: string;
+    storyText?: string;
+    orderIndex: number;
+    passingPercentage: number;
+    content: {
+      questions?: { questionText: string; options: string[]; correctAnswerIndex: number; explanation: string; orderIndex: number }[];
+      categories?: { categoryId: string; name: string; colorClass: string; orderIndex: number }[];
+      items?: { text: string; correctCategory: string; orderIndex: number }[];
+      pairs?: { leftText: string; rightText: string; orderIndex: number }[];
+    };
+  }) => {
+    const response = await api.put(`/admin/activities/${id}`, data);
+    return response.data;
+  },
+
+  deleteActivity: async (id: string) => {
+    const response = await api.delete(`/admin/activities/${id}`);
+    return response.data;
+  },
+};
+
+// Teacher API
+export const teacherAPI = {
+  getSections: async (): Promise<SectionResponse[]> => {
+    const response = await api.get('/teacher/sections');
+    return response.data;
+  },
+
+  createSection: async (data: CreateSectionRequest): Promise<SectionResponse> => {
+    const response = await api.post('/teacher/sections', data);
+    return response.data;
+  },
+
+  getSectionDetails: async (id: string): Promise<SectionResponse> => {
+    const response = await api.get(`/teacher/sections/${id}`);
+    return response.data;
+  },
+
+  // Leaderboard API
+  getSectionLeaderboard: async (sectionId: string): Promise<SectionLeaderboardResponse> => {
+    const response = await api.get(`/teacher/sections/${sectionId}/leaderboard`);
+    return response.data;
+  },
+
+  getAllSectionsLeaderboard: async (): Promise<SectionLeaderboardResponse[]> => {
+    const response = await api.get('/teacher/leaderboard/all-sections');
+    return response.data;
+  },
+
+  getLeaderboardAnalytics: async (sectionId?: string) => {
+    const url = sectionId ? `/teacher/leaderboard/analytics?sectionId=${sectionId}` : '/teacher/leaderboard/analytics';
+    const response = await api.get(url);
+    return response.data;
+  },
+};
+
+// Student API
+export const studentAPI = {
+  registerToSection: async (data: RegisterSectionRequest) => {
+    const response = await api.post('/student/register-section', data);
+    return response.data;
+  },
+
+  // Dashboard API
+  getDashboard: async (): Promise<StudentDashboardResponse> => {
+    const response = await api.get('/student/dashboard');
+    return response.data;
+  },
+
+  // Lessons API
+  getLessons: async () => {
+    const response = await api.get('/student/lessons');
+    return response.data;
+  },
+
+  getLessonContent: async (id: string) => {
+    const response = await api.get(`/student/lessons/${id}`);
+    return response.data;
+  },
+
+  getLessonContentStructured: async (id: string): Promise<LessonContentResponse> => {
+    const response = await api.get(`/student/lessons/${id}/content`);
+    return response.data;
+  },
+
+  completeLesson: async (id: string) => {
+    const response = await api.post(`/student/lessons/${id}/complete`);
+    return response.data;
+  },
+
+  // Activities API
+  getActivityContent: async (id: string) => {
+    const response = await api.get(`/student/activities/${id}`);
+    return response.data;
+  },
+
+  getActivityContentStructured: async (id: string): Promise<ActivityContentResponse> => {
+    const response = await api.get(`/student/activities/${id}/content`);
+    return response.data;
+  },
+
+  submitActivity: async (id: string, data: SubmitActivityRequest): Promise<ActivitySubmissionResponse> => {
+    const response = await api.post(`/student/activities/${id}/submit`, data);
+    return response.data;
+  },
+
+  // Leaderboard API
+  getLeaderboard: async (): Promise<SectionLeaderboardResponse> => {
+    const response = await api.get('/student/leaderboard');
+    return response.data;
+  },
+
+  getMyRank: async () => {
+    const response = await api.get('/student/leaderboard/my-rank');
+    return response.data;
+  },
+
+  // Profile API
+  getProfile: async (): Promise<StudentProfileResponse> => {
+    const response = await api.get('/student/profile');
+    return response.data;
+  },
+};
+
+export default api;
+
+// Helper function to map activity type from backend to frontend
+export const mapActivityType = (backendType: string): 'multiple-choice' | 'drag-drop' | 'matching-pairs' | 'story-comprehension' => {
+  switch (backendType) {
+    case 'MULTIPLE_CHOICE':
+      return 'multiple-choice';
+    case 'DRAG_DROP':
+      return 'drag-drop';
+    case 'MATCHING_PAIRS':
+      return 'matching-pairs';
+    case 'STORY_COMPREHENSION':
+      return 'story-comprehension';
+    default:
+      return 'multiple-choice';
+  }
+};
+
+// Helper function to map activity type from frontend to backend
+export const mapActivityTypeToBackend = (frontendType: 'multiple-choice' | 'drag-drop' | 'matching-pairs' | 'story-comprehension'): string => {
+  switch (frontendType) {
+    case 'multiple-choice':
+      return 'MULTIPLE_CHOICE';
+    case 'drag-drop':
+      return 'DRAG_DROP';
+    case 'matching-pairs':
+      return 'MATCHING_PAIRS';
+    case 'story-comprehension':
+      return 'STORY_COMPREHENSION';
+    default:
+      return 'MULTIPLE_CHOICE';
+  }
+};

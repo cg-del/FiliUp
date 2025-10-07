@@ -1,3 +1,9 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
 
 .logo {
   height: 6em;
@@ -6,10 +12,10 @@
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em #00B4A3aa);
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em #00C7E6aa);
 }
 
 @keyframes logo-spin {
@@ -32,5 +38,5 @@
 }
 
 .read-the-docs {
-  color: #888;
+  color: #00B4A3;
 }

@@ -1,0 +1,44 @@
+# Exclude build artifacts
+target/
+*.jar
+*.war
+
+# Exclude IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Exclude OS files
+.DS_Store
+Thumbs.db
+
+# Exclude Git
+.git/
+.gitignore
+
+# Exclude documentation
+*.md
+docs/
+
+# Exclude Maven wrapper (we use the base image's Maven)
+.mvn/
+mvnw
+mvnw.cmd
+
+# Exclude logs
+*.log
+logs/
+
+# Exclude temporary files
+*.tmp
+*.temp
+
+# Exclude test files (optional - remove if you want to run tests in Docker)
+src/test/
+
+# Exclude local environment files
+.env
+.env.local
+.env.*.local
