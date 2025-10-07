@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, Users, GraduationCap, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { LoadingSpinner, CenteredLoading } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export const LoginForm = () => {
@@ -38,6 +38,10 @@ export const LoginForm = () => {
     { role: 'Teacher', email: 'teacher@filiup.com',password:'teacher123', icon: GraduationCap, color: 'bg-gradient-warm' },
     { role: 'Student', email: 'student@filiup.com',password:'student123', icon: BookOpen, color: 'bg-gradient-success' },
   ];
+
+  if (isLoading) {
+    return <CenteredLoading message="Logging in..." />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -104,17 +108,9 @@ export const LoginForm = () => {
               <Button 
                 type="submit" 
                 variant="hero"
-                className="w-full btn-bounce" 
-                disabled={isLoading}
+                className="w-full btn-bounce"
               >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <LoadingSpinner size="sm" className="w-4 h-4" />
-                    <span>Naglo-login...</span>
-                  </div>
-                ) : (
-                  'Mag-login'
-                )}
+                Mag-login
               </Button>
               <div className="mt-2 text-sm text-muted-foreground text-center">
                 Wala ka pang account?{' '}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, BookOpen, TrendingUp, Settings, Plus, Eye, Key, Loader2 } from 'lucide-react';
+import { Users, BookOpen, TrendingUp, Settings, Plus, Eye, Key, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateSectionDialog } from './CreateSectionDialog';
 import { InviteCodeDialog } from './InviteCodeDialog';
@@ -21,6 +21,10 @@ export const TeacherDashboard = () => {
   const [dashboardData, setDashboardData] = useState<TeacherDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Pagination state for recent activity
+  const [currentPage, setCurrentPage] = useState(1);
+  const activitiesPerPage = 5;
 
   const handleLogout = () => {
     logout();
@@ -53,6 +57,22 @@ export const TeacherDashboard = () => {
     { label: 'Average Progress', key: 'averageProgress', icon: TrendingUp, color: 'text-warning', suffix: '%' },
    
   ];
+
+  // Sort activities by timestamp (most recent first) and paginate
+  const sortedActivities = dashboardData?.recentActivity
+    ? [...dashboardData.recentActivity].sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      )
+    : [];
+
+  const totalPages = Math.ceil(sortedActivities.length / activitiesPerPage);
+  const startIndex = (currentPage - 1) * activitiesPerPage;
+  const endIndex = startIndex + activitiesPerPage;
+  const currentActivities = sortedActivities.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   if (loading) {
     return <CenteredLoading message="Loading teacher dashboard..." />;
@@ -224,33 +244,90 @@ export const TeacherDashboard = () => {
 
           {/* Recent Activity */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Recent Student Activity</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Recent Student Activity</h2>
+              <div className="text-sm text-muted-foreground">
+                {sortedActivities.length} total activities
+              </div>
+            </div>
             <Card className="learning-card">
               <CardHeader>
                 <CardTitle className="text-lg">Latest Updates</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {dashboardData.recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 bg-muted/30 rounded-lg">
-                    <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">
-                        {activity.studentName.split(' ').map(n => n[0]).join('')}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{activity.studentName}</div>
-                      <div className="text-sm text-muted-foreground">{activity.activity}</div>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-xs text-muted-foreground">{activity.timeAgo}</span>
-                        {activity.score && (
-                          <Badge variant={activity.score >= 80 ? "default" : "secondary"}>
-                            {activity.score}%
-                          </Badge>
-                        )}
+                {currentActivities.length > 0 ? (
+                  <>
+                    {currentActivities.map((activity, index) => (
+                      <div key={`${activity.studentId}-${activity.timestamp}-${index}`} className="flex items-start space-x-3 p-3 bg-muted/30 rounded-lg">
+                        <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">
+                            {activity.studentName.split(' ').map(n => n[0]).join('')}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{activity.studentName}</div>
+                          <div className="text-sm text-muted-foreground">{activity.activity}</div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-xs text-muted-foreground">{activity.timeAgo}</span>
+                            {activity.score && (
+                              <Badge variant={activity.score >= 80 ? "default" : "secondary"}>
+                                {activity.score}%
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                    
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-4 border-t">
+                        <div className="text-sm text-muted-foreground">
+                          Showing {startIndex + 1}-{Math.min(endIndex, sortedActivities.length)} of {sortedActivities.length}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous
+                          </Button>
+                          
+                          <div className="flex items-center space-x-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                              <Button
+                                key={page}
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handlePageChange(page)}
+                                className="w-8 h-8 p-0"
+                              >
+                                {page}
+                              </Button>
+                            ))}
+                          </div>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No recent activity found</p>
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
           </div>

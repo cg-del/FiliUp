@@ -244,6 +244,61 @@ export const StudentDashboard = ({
     return activity?.isUnlocked || false;
   };
 
+  const isLessonUnlocked = (lessonId: string): boolean => {
+    if (!dashboardData) return false;
+
+    // Find the current lesson and its position
+    let currentLesson = null;
+    let allLessons: any[] = [];
+    
+    for (const phase of dashboardData.phases) {
+      for (const lesson of phase.lessons) {
+        allLessons.push(lesson);
+        if (lesson.id === lessonId) {
+          currentLesson = lesson;
+        }
+      }
+    }
+
+    if (!currentLesson) return false;
+
+    // Sort lessons by phase order and lesson order
+    allLessons.sort((a, b) => {
+      const phaseA = dashboardData.phases.find(p => p.lessons.some(l => l.id === a.id));
+      const phaseB = dashboardData.phases.find(p => p.lessons.some(l => l.id === b.id));
+      
+      if (phaseA?.orderIndex !== phaseB?.orderIndex) {
+        return (phaseA?.orderIndex || 0) - (phaseB?.orderIndex || 0);
+      }
+      
+      return a.orderIndex - b.orderIndex;
+    });
+
+    // Find the index of current lesson
+    const currentIndex = allLessons.findIndex(l => l.id === lessonId);
+    
+    // First lesson is always unlocked
+    if (currentIndex === 0) return true;
+
+    // Check if all activities in previous lessons are completed
+    for (let i = 0; i < currentIndex; i++) {
+      const previousLesson = allLessons[i];
+      
+      // Check if all activities in the previous lesson are completed
+      if (previousLesson.activities && previousLesson.activities.length > 0) {
+        const hasIncompleteActivities = previousLesson.activities.some(
+          (activity: any) => !activity.isCompleted
+        );
+        
+        if (hasIncompleteActivities) {
+          return false; // Previous lesson has incomplete activities
+        }
+      }
+    }
+
+    return true; // All previous activities are completed
+  };
+
   const getActivityStatus = (lessonId: string, activityType: ActivityType): 'locked' | 'unlocked' | 'completed' => {
     if (!dashboardData || !activityType) return 'locked';
 
@@ -740,18 +795,33 @@ export const StudentDashboard = ({
                         <div className="space-y-4">
                           {/* Read Lesson Button */}
                           <div className="border-b pb-4">
-                            <Button
-                              variant={lesson.isCompleted ? "success" : "hero"}
-                              className="w-full h-16 text-lg"
-                              onClick={() => handleStartLesson(lesson.id)}
-                            >
-                              {lesson.isCompleted ? (
-                                <CheckCircle className="h-5 w-5 mr-2" />
-                              ) : (
-                                <BookOpen className="h-5 w-5 mr-2" />
-                              )}
-                              {lesson.isCompleted ? 'Lesson Completed - Read Again' : 'Read Lesson First'}
-                            </Button>
+                            {(() => {
+                              const lessonUnlocked = isLessonUnlocked(lesson.id);
+                              const isLocked = !lessonUnlocked;
+                              
+                              return (
+                                <Button
+                                  variant={lesson.isCompleted ? "success" : isLocked ? "outline" : "hero"}
+                                  className={`w-full h-16 text-lg ${isLocked ? 'opacity-60' : ''}`}
+                                  disabled={isLocked}
+                                  onClick={() => {
+                                    if (!isLocked) {
+                                      handleStartLesson(lesson.id);
+                                    }
+                                  }}
+                                >
+                                  {isLocked && <Lock className="h-5 w-5 mr-2" />}
+                                  {!isLocked && lesson.isCompleted && <CheckCircle className="h-5 w-5 mr-2" />}
+                                  {!isLocked && !lesson.isCompleted && <BookOpen className="h-5 w-5 mr-2" />}
+                                  {isLocked 
+                                    ? 'Complete Previous Activities First' 
+                                    : lesson.isCompleted 
+                                    ? 'Lesson Completed - Read Again' 
+                                    : 'Read Lesson First'
+                                  }
+                                </Button>
+                              );
+                            })()}
                           </div>
 
                           {/* Activity Buttons */}
@@ -766,7 +836,7 @@ export const StudentDashboard = ({
                               return (
                                 <Button
                                   variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex-col space-y-1 w-full ${isCompleted ? 'border-success' : ''}`}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full ${isCompleted ? 'border-success' : ''}`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
@@ -774,12 +844,18 @@ export const StudentDashboard = ({
                                     }
                                   }}
                                 >
-                                  {isLocked && <Lock className="h-4 w-4 mb-1" />}
-                                  {isCompleted && <CheckCircle className="h-4 w-4 mb-1 text-success" />}
-                                  <Target className="h-5 w-5" />
-                                  <span className="text-xs">Multiple Choice</span>
+                                  <div className="flex items-center justify-center mb-1">
+                                    {isLocked ? (
+                                      <Lock className="h-4 w-4" />
+                                    ) : isCompleted ? (
+                                      <CheckCircle className="h-4 w-4 text-white" />
+                                    ) : (
+                                      <Target className="h-4 w-4" />
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-center leading-tight">Multiple Choice</span>
                                   {percentage !== undefined && (
-                                    <span className="text-xs font-semibold">{percentage}%</span>
+                                    <span className="text-xs font-semibold mt-1">{percentage}%</span>
                                   )}
                                 </Button>
                               );
@@ -795,7 +871,7 @@ export const StudentDashboard = ({
                               return (
                                 <Button
                                   variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex-col space-y-1 w-full ${isCompleted ? 'border-success' : ''}`}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full ${isCompleted ? 'border-success' : ''}`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
@@ -803,12 +879,18 @@ export const StudentDashboard = ({
                                     }
                                   }}
                                 >
-                                  {isLocked && <Lock className="h-4 w-4 mb-1" />}
-                                  {isCompleted && <CheckCircle className="h-4 w-4 mb-1 text-success" />}
-                                  <ArrowRight className="h-5 w-5" />
-                                  <span className="text-xs">Drag & Drop</span>
+                                  <div className="flex items-center justify-center mb-1">
+                                    {isLocked ? (
+                                      <Lock className="h-4 w-4" />
+                                    ) : isCompleted ? (
+                                      <CheckCircle className="h-4 w-4 text-white" />
+                                    ) : (
+                                      <ArrowRight className="h-4 w-4" />
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-center leading-tight">Drag & Drop</span>
                                   {percentage !== undefined && (
-                                    <span className="text-xs font-semibold">{percentage}%</span>
+                                    <span className="text-xs font-semibold mt-1">{percentage}%</span>
                                   )}
                                 </Button>
                               );
@@ -824,7 +906,7 @@ export const StudentDashboard = ({
                               return (
                                 <Button
                                   variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex-col space-y-1 w-full ${isCompleted ? 'border-success' : ''}`}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full ${isCompleted ? 'border-success' : ''}`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
@@ -832,12 +914,18 @@ export const StudentDashboard = ({
                                     }
                                   }}
                                 >
-                                  {isLocked && <Lock className="h-4 w-4 mb-1" />}
-                                  {isCompleted && <CheckCircle className="h-4 w-4 mb-1 text-success" />}
-                                  <Star className="h-5 w-5" />
-                                  <span className="text-xs">Matching Pairs</span>
+                                  <div className="flex items-center justify-center mb-1">
+                                    {isLocked ? (
+                                      <Lock className="h-4 w-4" />
+                                    ) : isCompleted ? (
+                                      <CheckCircle className="h-4 w-4 text-white" />
+                                    ) : (
+                                      <Star className="h-4 w-4" />
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-center leading-tight">Matching Pairs</span>
                                   {percentage !== undefined && (
-                                    <span className="text-xs font-semibold">{percentage}%</span>
+                                    <span className="text-xs font-semibold mt-1">{percentage}%</span>
                                   )}
                                 </Button>
                               );
@@ -853,7 +941,7 @@ export const StudentDashboard = ({
                               return (
                                 <Button
                                   variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex-col space-y-1 w-full ${isCompleted ? 'border-success' : ''}`}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full ${isCompleted ? 'border-success' : ''}`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
@@ -861,12 +949,18 @@ export const StudentDashboard = ({
                                     }
                                   }}
                                 >
-                                  {isLocked && <Lock className="h-4 w-4 mb-1" />}
-                                  {isCompleted && <CheckCircle className="h-4 w-4 mb-1 text-success" />}
-                                  <BookOpen className="h-5 w-5" />
-                                  <span className="text-xs">Story Reading</span>
+                                  <div className="flex items-center justify-center mb-1">
+                                    {isLocked ? (
+                                      <Lock className="h-4 w-4" />
+                                    ) : isCompleted ? (
+                                      <CheckCircle className="h-4 w-4 text-white" />
+                                    ) : (
+                                      <BookOpen className="h-4 w-4" />
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-center leading-tight">Story Reading</span>
                                   {percentage !== undefined && (
-                                    <span className="text-xs font-semibold">{percentage}%</span>
+                                    <span className="text-xs font-semibold mt-1">{percentage}%</span>
                                   )}
                                 </Button>
                               );

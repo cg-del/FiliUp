@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { LoadingSpinner, CenteredLoading } from '@/components/ui/loading-spinner';
 
 export const RegisterForm: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -36,6 +36,10 @@ export const RegisterForm: React.FC = () => {
       setError(message);
     }
   };
+
+  if (isLoading) {
+    return <CenteredLoading message="Creating account..." />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -131,17 +135,9 @@ export const RegisterForm: React.FC = () => {
               <Button 
                 type="submit" 
                 variant="hero"
-                className="w-full btn-bounce" 
-                disabled={isLoading}
+                className="w-full btn-bounce"
               >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <LoadingSpinner size="sm" className="w-4 h-4" />
-                    <span>Registering...</span>
-                  </div>
-                ) : (
-                  'Create Account'
-                )}
+                Create Account
               </Button>
             </form>
 

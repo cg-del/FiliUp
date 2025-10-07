@@ -227,7 +227,7 @@ export const StudentProfile = () => {
 
           <Card className="learning-card">
             <CardContent className="flex items-center p-4">
-              <div className="p-2 rounded-lg bg-gradient-accent mr-3">
+              <div className="p-2 rounded-lg bg-gradient-primary mr-3">
                 <Calendar className="h-5 w-5 text-white" />
               </div>
               <div>

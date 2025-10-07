@@ -51,16 +51,16 @@ export const StudentLeaderboard = () => {
   const students = leaderboardData.students || [];
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Trophy className="h-6 w-6 text-warning" />;
-    if (rank === 2) return <Medal className="h-6 w-6 text-muted-foreground" />;
-    if (rank === 3) return <Medal className="h-6 w-6 text-accent" />;
+    if (rank === 1) return <Trophy className="h-6 w-6 text-white" />; // White on gold
+    if (rank === 2) return <Medal className="h-6 w-6 text-white" />; // White on silver
+    if (rank === 3) return <Medal className="h-6 w-6 text-white" />; // White on bronze
     return <Award className="h-6 w-6 text-muted-foreground/50" />;
   };
 
   const getRankBadge = (rank: number) => {
-    if (rank === 1) return 'bg-gradient-warm';
-    if (rank === 2) return 'bg-gradient-to-br from-gray-300 to-gray-400';
-    if (rank === 3) return 'bg-gradient-accent';
+    if (rank === 1) return 'bg-gradient-to-br from-yellow-400 to-yellow-600'; // Gold gradient
+    if (rank === 2) return 'bg-gradient-to-br from-gray-300 to-gray-500'; // Silver gradient
+    if (rank === 3) return 'bg-gradient-to-br from-amber-500 to-amber-700'; // Bronze gradient
     return 'bg-muted';
   };
 
@@ -126,14 +126,20 @@ export const StudentLeaderboard = () => {
         {/* Top 3 Podium */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {students.slice(0, 3).sort((a, b) => a.rank - b.rank).map((student, index) => {
-            const positions = [1, 0, 2];
-            const actualIndex = positions[index];
+            // Position mapping: rank 1 in middle, rank 2 on left, rank 3 on right
+            const getPositionClass = (rank: number) => {
+              if (rank === 1) return 'order-2'; // Middle position
+              if (rank === 2) return 'order-1 mt-8'; // Left position, slightly lower
+              if (rank === 3) return 'order-3 mt-8'; // Right position, slightly lower
+              return 'order-3 mt-8'; // Fallback
+            };
+            
             const isFirst = student.rank === 1;
             
             return (
               <div 
                 key={student.id} 
-                className={`flex flex-col items-center ${actualIndex === 0 ? 'order-2' : actualIndex === 1 ? 'order-1 mt-8' : 'order-3 mt-8'}`}
+                className={`flex flex-col items-center ${getPositionClass(student.rank)}`}
               >
                 <Card className={`learning-card w-full ${isFirst ? 'ring-2 ring-warning' : ''} ${student.id === user?.id ? 'ring-2 ring-primary' : ''}`}>
                   <CardContent className="p-4 text-center">
