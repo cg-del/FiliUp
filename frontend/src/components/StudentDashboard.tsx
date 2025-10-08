@@ -752,7 +752,7 @@ export const StudentDashboard = ({
           {dashboardData.phases.map((phase) => (
             <div key={phase.id} className="space-y-4">
               <div className="flex items-center space-x-3">
-                <h3 className="text-xl font-semibold text-primary">{phase.title}</h3>
+                <h3 className="text-2xl font-semibold text-primary">{phase.title}</h3>
               </div>
               <p className="text-muted-foreground mb-4">{phase.description}</p>
               

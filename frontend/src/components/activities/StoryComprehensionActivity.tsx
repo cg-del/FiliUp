@@ -127,7 +127,7 @@ export const StoryComprehensionActivity: React.FC<StoryComprehensionActivityProp
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="bg-muted/50 p-6 rounded-lg">
-              <h3 className="font-semibold text-lg mb-4 text-center">Basahin ang Kwento</h3>
+              <h3 className="font-semibold text-lg mb-4 text-center">Basahin ang Kwento:</h3>
               <div className="text-base leading-relaxed space-y-4">
                 {story.split('\n').map((paragraph, index) => (
                   <p key={index} className="text-justify">
@@ -139,7 +139,7 @@ export const StoryComprehensionActivity: React.FC<StoryComprehensionActivityProp
 
             <div className="text-center space-y-4">
               <p className="text-muted-foreground">
-                Basahin mabuti ang kwento. Pagkatapos, sasagutan ninyo ang mga tanong tungkol dito.
+                Basahin nang mabuti ang kwento. <br></br>Pagkatapos ay sasagutan ninyo ang mga tanong tungkol dito.
               </p>
               <Button 
                 variant="activity" 

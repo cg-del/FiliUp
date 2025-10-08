@@ -236,7 +236,7 @@ export const DragDropActivity: React.FC<DragDropActivityProps> = ({
           <div className="flex justify-between">
             <Button variant="ghost" onClick={resetActivity}>
               <RotateCcw className="h-4 w-4 mr-2" />
-              Ulit-ulitin
+              Ulitin
             </Button>
             
             <Button 

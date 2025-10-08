@@ -216,7 +216,7 @@ export const SectionDetailsPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-bold">{sectionData.sectionName}</h2>
-              <p className="text-blue-100">Grade {sectionData.gradeLevel} • {stats.totalStudents} Students</p>
+              <p className="text-blue-100"> {sectionData.gradeLevel} • {stats.totalStudents} Students</p>
             </div>
             <div className="flex space-x-3">
               <Button 
@@ -283,7 +283,7 @@ export const SectionDetailsPage = () => {
                 <TrendingUp className="h-8 w-8 text-purple-500" />
                 <div>
                   <div className="text-2xl font-bold">{stats.averagePercentage}%</div>
-                  <div className="text-sm text-muted-foreground">Avg Percentage</div>
+                  <div className="text-sm text-muted-foreground">Average Percentage</div>
                 </div>
               </div>
             </CardContent>

@@ -111,7 +111,7 @@ export const StudentProfile = () => {
         <div className="max-w-4xl mx-auto">
           <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Bumalik sa Dashboard
+            Back to Dashboard
           </Button>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -179,7 +179,7 @@ export const StudentProfile = () => {
                 </DialogContent>
               </Dialog>
               <Button variant="outline" onClick={handleLogout}>
-                Mag-logout
+                Logout
               </Button>
             </div>
           </div>
@@ -219,7 +219,7 @@ export const StudentProfile = () => {
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{profileData.stats.currentPhase}</div>
+                <div className="text-xl font-bold">{profileData.stats.currentPhase}</div>
                 <div className="text-xs text-muted-foreground">Phase</div>
               </div>
             </CardContent>
@@ -231,7 +231,7 @@ export const StudentProfile = () => {
                 <Calendar className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="text-sm font-bold">{profileData.student.joinDate}</div>
+                <div className="text-md font-bold">{profileData.student.joinDate}</div>
                 <div className="text-xs text-muted-foreground">Joined</div>
               </div>
             </CardContent>

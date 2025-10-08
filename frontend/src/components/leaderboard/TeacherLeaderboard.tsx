@@ -136,7 +136,7 @@ const TeacherLeaderboard: React.FC = () => {
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </Button>
-              <Button variant="ghost" onClick={handleLogout}>Mag-logout</Button>
+              <Button variant="ghost" onClick={handleLogout}>Logout</Button>
             </div>
             {/* Mobile menu button */}
             <div className="md:hidden">
