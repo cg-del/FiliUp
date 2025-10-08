@@ -44,8 +44,37 @@ export const LoginForm = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen bg-background">
+      <div className="grid lg:grid-cols-[40%_60%] min-h-screen">
+        {/* Left side - Branding */}
+        <div className="hidden lg:flex flex-col justify-center items-center p-8 bg-gradient-primary relative overflow-hidden shadow-2xl rounded-tr-3xl rounded-br-3xl">
+          {/* Background decoration */}
+          <div className="absolute inset-0 bg-gradient-to-b from-teal-400/20 via-teal-500/30 to-cyan-400/20"></div>
+
+          <div className="relative z-10 text-center text-white max-w-md">
+            <div className="mb-8">
+ 
+              <h1 className="text-4xl font-bold mb-4">FiliUp</h1>
+              <p className="text-xl text-white/90 mb-8">"Welcome! I'm excited to help you learn Filipino!"</p>
+
+              {/* Child-friendly illustration */}
+              <div className="mb-8 flex justify-center">
+                <div className="relative">
+                  <img
+                    src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1759940468/Remove_background_project-1_hidqxj.png"
+                    alt="FiliUp Learning Illustration"
+                    className="w-100 h-auto rounded-2xl transform hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right side - Login Form */}
+        <div className="flex items-center justify-center p-8 shadow-2xl bg-gradient-to-b from-white via-gray-50 to-white">
+          <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <div className="flex items-center justify-center mb-4">
             <div className="h-16 w-16 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg">
@@ -56,7 +85,7 @@ export const LoginForm = () => {
           <p className="text-muted-foreground">Learn Filipino with joy!</p>
         </div>
 
-        <Card className="learning-card">
+        <Card className="learning-card border-0 bg-white/95 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>Login to your account</CardTitle>
             <CardDescription>
@@ -149,6 +178,8 @@ Don't have an account?{' '}
             </div>
           </CardContent>
         </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

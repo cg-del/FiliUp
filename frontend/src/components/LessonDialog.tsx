@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Trash2, GripVertical } from 'lucide-react';
 import { adminAPI } from '@/lib/api';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 
 interface Phase {
   id: string;
@@ -349,17 +350,13 @@ export const LessonDialog: React.FC<LessonDialogProps> = ({
 
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe what students will learn in this lesson..."
+              <RichTextEditor
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className={errors.description ? 'border-red-500' : ''}
-                rows={3}
+                onChange={(value) => handleInputChange('description', value)}
+                placeholder="Describe what students will learn in this lesson..."
+                error={errors.description}
+                rows={4}
               />
-              {errors.description && (
-                <p className="text-sm text-red-500">{errors.description}</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -435,25 +432,29 @@ export const LessonDialog: React.FC<LessonDialogProps> = ({
                         </Button>
                       </div>
                       
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {slide.content.map((line, lineIndex) => (
-                          <div key={lineIndex} className="flex items-center space-x-2">
-                            <Input
-                              placeholder={`Content line ${lineIndex + 1}...`}
+                          <div key={lineIndex} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-sm font-medium">Content Line {lineIndex + 1}</Label>
+                              {slide.content.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeContentLine(slideIndex, lineIndex)}
+                                  className="text-destructive h-6 w-6 p-0"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                            <RichTextEditor
                               value={line}
-                              onChange={(e) => updateContentLine(slideIndex, lineIndex, e.target.value)}
+                              onChange={(value) => updateContentLine(slideIndex, lineIndex, value)}
+                              placeholder={`Enter content for line ${lineIndex + 1}...`}
+                              rows={3}
                             />
-                            {slide.content.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeContentLine(slideIndex, lineIndex)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            )}
                           </div>
                         ))}
                       </div>

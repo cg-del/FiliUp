@@ -406,7 +406,7 @@ export const ContentManagement = ({ onBack }: { onBack: () => void }) => {
                         </div>
                         <div className="flex-1">
                           <h3 className="font-semibold text-lg">{phase.title}</h3>
-                          <p className="text-muted-foreground text-sm">{phase.description}</p>
+                          <p className="text-muted-foreground text-sm" dangerouslySetInnerHTML={{ __html: phase.description }} />
                           <div className="flex items-center space-x-4 mt-2">
                             <Badge variant="secondary">
                               {phase.lessonsCount} lessons
@@ -477,7 +477,7 @@ export const ContentManagement = ({ onBack }: { onBack: () => void }) => {
                         </div>
                         <div className="flex-1">
                           <h3 className="font-semibold text-lg">{lesson.title}</h3>
-                          <p className="text-muted-foreground text-sm">{lesson.description}</p>
+                          <p className="text-muted-foreground text-sm" dangerouslySetInnerHTML={{ __html: lesson.description }} />
                           <div className="flex items-center space-x-4 mt-2">
                             <Badge variant="secondary">
                               {lesson.slidesCount} slides

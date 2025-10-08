@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Loader2 } from 'lucide-react';
 
 interface Phase {
@@ -170,17 +171,13 @@ export const PhaseDialog: React.FC<PhaseDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Describe what students will learn in this phase..."
+            <RichTextEditor
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              className={errors.description ? 'border-red-500' : ''}
-              rows={3}
+              onChange={(value) => handleInputChange('description', value)}
+              placeholder="Describe what students will learn in this phase..."
+              error={errors.description}
+              rows={4}
             />
-            {errors.description && (
-              <p className="text-sm text-red-500">{errors.description}</p>
-            )}
           </div>
 
           <div className="space-y-2">

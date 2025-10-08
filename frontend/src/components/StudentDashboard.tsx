@@ -597,7 +597,7 @@ export const StudentDashboard = ({
                 <div className="space-y-3 text-lg leading-relaxed">
                   {lessonContent.slides[currentSlide].content.map((line, index) => (
                     <div key={index} className={line.trim() === '' ? 'h-2' : ''}>
-                      {line}
+                      <div dangerouslySetInnerHTML={{ __html: line }} />
                     </div>
                   ))}
                 </div>
@@ -754,7 +754,7 @@ export const StudentDashboard = ({
               <div className="flex items-center space-x-3">
                 <h3 className="text-2xl font-semibold text-primary">{phase.title}</h3>
               </div>
-              <p className="text-muted-foreground mb-4">{phase.description}</p>
+              <p className="text-muted-foreground mb-4" dangerouslySetInnerHTML={{ __html: phase.description }} />
               
               <div className="grid gap-6">
                 {phase.lessons.map((lesson) => {
@@ -772,7 +772,7 @@ export const StudentDashboard = ({
                             </div>
                             <div className="flex-1">
                               <h4 className="text-xl font-semibold mb-2">{lesson.title}</h4>
-                              <p className="text-muted-foreground mb-3">{lesson.description}</p>
+                              <p className="text-muted-foreground mb-3" dangerouslySetInnerHTML={{ __html: lesson.description }} />
                               
                               <div className="flex items-center space-x-4 mb-3">
                                 <div className="flex items-center space-x-2">

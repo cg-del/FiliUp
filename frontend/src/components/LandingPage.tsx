@@ -184,7 +184,7 @@ export const LandingPage = () => {
           </div>
           <div className="hidden lg:flex lg:flex-1 lg:justify-end gap-x-6">
             <Link to="/login">
-              <Button variant="ghost" className="text-muted-foreground hover:text-primary">
+              <Button variant="ghost" className="text-muted-foreground hover:white">
                 Login
               </Button>
             </Link>
@@ -245,43 +245,58 @@ export const LandingPage = () => {
           >
             <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-primary opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" />
           </div>
-          <div className="mx-auto max-w-4xl px-6 lg:px-8">
-            <div className="text-center">
-              <div className="flex items-center justify-center mb-8">
-                <span className="inline-flex items-center rounded-full bg-muted px-4 py-2 text-sm font-medium text-primary">
-                  <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse"></span>
-                  New: Interactive Learning
-                </span>
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              {/* Left side - Text content */}
+              <div className="text-center lg:text-left">
+                <div className="flex items-center justify-center lg:justify-start mb-8">
+                  <span className="inline-flex items-center rounded-full bg-muted px-4 py-2 text-sm font-medium text-primary">
+                    <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse"></span>
+                    New: Interactive Learning
+                  </span>
+                </div>
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground mb-8">
+                  <span className="block">FiliUp</span>
+                  <span className="block text-transparent bg-clip-text bg-gradient-primary">
+                    Learn Filipino with Joy!
+                  </span>
+                </h1>
+                <p className="mt-8 text-xl leading-8 text-muted-foreground max-w-3xl mx-auto lg:mx-0">
+                  Comprehensive platform for fundamental Filipino comprehension -
+                  Parts of Speech, Synonyms and Antonyms, and Sentence Construction using four types of activities.
+                </p>
+                <div className="mt-12 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6">
+                  <Link to="/register">
+                    <Button variant="hero" className="w-full sm:w-auto px-10 py-5 text-xl font-semibold">
+                      Start Learning
+                      <ArrowRight className="ml-3 h-6 w-6" />
+                    </Button>
+                  </Link>
+                  <Link to="/login">
+                    <Button variant="outline" className="w-full sm:w-auto px-10 py-5 text-xl font-semibold">
+                      Login
+                    </Button>
+                  </Link>
+                </div>
+                <div className="mt-10 flex items-center justify-center lg:justify-start text-base text-muted-foreground">
+                  <CheckCircle className="mr-2 h-5 w-5 text-primary" /> Free to use
+                  <span className="mx-4">•</span>
+                  <CheckCircle className="mr-2 h-5 w-5 text-primary" /> Interactive activities
+                  <span className="mx-4">•</span>
+                  <CheckCircle className="mr-2 h-5 w-5 text-primary" /> For all ages
+                </div>
               </div>
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground mb-8">
-                <span className="block">FiliUp</span>
-                <span className="block text-transparent bg-clip-text bg-gradient-primary">
-                  Learn Filipino with Joy!
-                </span>
-              </h1>
-              <p className="mt-8 text-xl leading-8 text-muted-foreground max-w-3xl mx-auto">
-                Comprehensive platform for fundamental Filipino comprehension - 
-                Parts of Speech, Synonyms and Antonyms, and Sentence Construction using four types of activities.
-              </p>
-              <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
-                <Link to="/register">
-                  <Button variant="hero" className="w-full sm:w-auto px-10 py-5 text-xl font-semibold">
-                    Start Learning
-                    <ArrowRight className="ml-3 h-6 w-6" />
-                  </Button>
-                </Link>
-                <Link to="/login">
-                  <Button variant="outline" className="w-full sm:w-auto px-10 py-5 text-xl font-semibold">
-                    Login
-                  </Button>
-                </Link>
-              </div>
-              <div className="mt-10 flex items-center justify-center text-base text-muted-foreground">
-                <CheckCircle className="mr-2 h-5 w-5 text-primary" /> Free to use
-                <span className="mx-4">•</span>
-                <CheckCircle className="mr-2 h-5 w-5 text-primary" /> Interactive activities
-                <span className="mx-4">•</span>
-                <CheckCircle className="mr-2 h-5 w-5 text-primary" /> For all ages
+
+              {/* Right side - Image */}
+              <div className="lg:pl-8">
+                <div className="relative">
+                  <img
+                    src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1759940116/Remove_background_project_hmwoyi.png"
+                    alt="FiliUp Learning Platform"
+                    className="w-full h-auto max-w-lg mx-auto rounded-2xl transform hover:scale-105 transition-transform duration-300"
+                    loading="eager"
+                  />
+                </div>
               </div>
             </div>
           </div>
