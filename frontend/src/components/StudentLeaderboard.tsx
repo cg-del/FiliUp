@@ -73,7 +73,7 @@ export const StudentLeaderboard = () => {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-            <p className="text-muted-foreground">Kumusta, {user?.name}! 👋</p>
+            <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
           </div>
           <div className="flex items-center space-x-3">
             <Button 
@@ -91,7 +91,7 @@ export const StudentLeaderboard = () => {
               Profile
             </Button>
             <Button variant="ghost" onClick={logout}>
-              Mag-logout
+              Logout
             </Button>
           </div>
         </div>
@@ -149,7 +149,7 @@ export const StudentLeaderboard = () => {
                     <div className="text-3xl font-bold mb-1">#{student.rank}</div>
                     <div className="font-semibold mb-2">{student.name}</div>
                     {student.id === user?.id && (
-                      <Badge className="mb-2">Ikaw</Badge>
+                      <Badge className="mb-2">You</Badge>
                     )}
                     <div className="flex items-center justify-center space-x-2 mb-2">
                       <Award className="h-4 w-4 text-warning" />
@@ -168,7 +168,7 @@ export const StudentLeaderboard = () => {
         {/* Full Rankings */}
         <Card className="learning-card">
           <CardHeader>
-            <CardTitle>Buong Rankings</CardTitle>
+            <CardTitle>Full Rankings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {students.map((student) => (

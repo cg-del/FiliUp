@@ -16,28 +16,28 @@ const navigation = [
 const features = [
   {
     name: 'Interactive Lessons',
-    description: 'Mag-aral ng Bahagi ng Pananalita sa pamamagitan ng interactive activities',
+    description: 'Learn Parts of Speech through interactive activities',
     icon: <BookOpen className="h-10 w-10 text-white" />,
     bgColor: 'bg-emerald-500',
     image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=500&h=300&fit=crop',
   },
   {
     name: 'Four Activity Types',
-    description: 'Multiple Choice, Drag & Drop, Matching Pairs, at Story Comprehension',
+    description: 'Multiple Choice, Drag & Drop, Matching Pairs, and Story Comprehension',
     icon: <Target className="h-10 w-10 text-white" />,
     bgColor: 'bg-green-500',
     image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=500&h=300&fit=crop',
   },
   {
     name: 'Progress Tracking',
-    description: 'Subaybayan ang inyong progress at makakuha ng mga rewards',
+    description: 'Track your progress and earn rewards',
     icon: <TrendingUp className="h-10 w-10 text-white" />,
     bgColor: 'bg-emerald-600',
     image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=500&h=300&fit=crop',
   },
   {
     name: 'Multi-Role System',
-    description: 'Admin, Teacher, at Student roles na may kanya-kanyang features',
+    description: 'Admin, Teacher, and Student roles with unique features',
     icon: <Users className="h-10 w-10 text-white" />,
     bgColor: 'bg-green-600',
     image: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=500&h=300&fit=crop',
@@ -46,25 +46,25 @@ const features = [
 
 // Stats
 const stats = [
-  { label: 'Mga Estudyante', value: '1000', display: '1,000+' },
-  { label: 'Mga Guro', value: '50', display: '50+' },
-  { label: 'Mga Paaralan', value: '20', display: '20+' },
+  { label: 'Students', value: '1000', display: '1,000+' },
+  { label: 'Teachers', value: '50', display: '50+' },
+  { label: 'Schools', value: '20', display: '20+' },
   { label: 'Success Rate', value: '95', display: '95%' },
 ];
 
 // FAQs
 const faqs = [
   {
-    question: 'Paano mag-start sa FiliUp?',
-    answer: 'Mag-register lang kayo bilang student o teacher, at magsisimula na kayo sa Level 1 - Pangngalan. Ang platform ay user-friendly at may mga tutorial para sa mga baguhan.',
+    question: 'How to get started with FiliUp?',
+    answer: 'Simply register as a student or teacher, and you can start with Level 1 - Nouns. The platform is user-friendly and has tutorials for beginners.',
   },
   {
-    question: 'Ano ang mga uri ng activities?',
-    answer: 'May apat na uri ng activities: Multiple Choice, Drag & Drop, Matching Pairs, at Story Comprehension. Lahat ng ito ay interactive at engaging para sa mga bata.',
+    question: 'What are the types of activities?',
+    answer: 'There are four types of activities: Multiple Choice, Drag & Drop, Matching Pairs, and Story Comprehension. All of these are interactive and engaging for children.',
   },
   {
-    question: 'May bayad ba ang FiliUp?',
-    answer: 'Ang basic features ay libre para sa lahat. May premium features din kami para sa mga guro na gusto ng mas advanced na tools.',
+    question: 'Is FiliUp free to use?',
+    answer: 'Basic features are free for everyone. We also have premium features for teachers who want more advanced tools.',
   },
 ];
 
@@ -90,7 +90,7 @@ const FeatureCard = memo(({ feature, idx, currentFeature, setCurrentFeature }: {
         onClick={() => setCurrentFeature(idx)}
         className="mt-6 text-sm font-medium text-emerald-600 hover:text-emerald-800 flex items-center"
       >
-        Matuto pa <ChevronRight className="ml-1 h-4 w-4" />
+        Learn more <ChevronRight className="ml-1 h-4 w-4" />
       </button>
     </div>
     <div className="mt-8 lg:mt-0 lg:w-1/2">
@@ -185,12 +185,12 @@ export const LandingPage = () => {
           <div className="hidden lg:flex lg:flex-1 lg:justify-end gap-x-6">
             <Link to="/login">
               <Button variant="ghost" className="text-muted-foreground hover:text-primary">
-                Mag-login
+                Login
               </Button>
             </Link>
             <Link to="/register">
               <Button variant="hero">
-                Mag-register
+                Register
               </Button>
             </Link>
           </div>
@@ -219,12 +219,12 @@ export const LandingPage = () => {
                 ))}
                 <Link to="/login" className="w-full">
                   <Button variant="ghost" className="w-full justify-start">
-                    Mag-login
+                    Login
                   </Button>
                 </Link>
                 <Link to="/register" className="w-full">
                   <Button variant="hero" className="w-full">
-                    Mag-register
+                    Register
                   </Button>
                 </Link>
               </div>
@@ -250,38 +250,38 @@ export const LandingPage = () => {
               <div className="flex items-center justify-center mb-8">
                 <span className="inline-flex items-center rounded-full bg-muted px-4 py-2 text-sm font-medium text-primary">
                   <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse"></span>
-                  Bagong: Interactive Learning
+                  New: Interactive Learning
                 </span>
               </div>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground mb-8">
                 <span className="block">FiliUp</span>
                 <span className="block text-transparent bg-clip-text bg-gradient-primary">
-                  Mag-aral ng Filipino nang Masaya!
+                  Learn Filipino with Joy!
                 </span>
               </h1>
               <p className="mt-8 text-xl leading-8 text-muted-foreground max-w-3xl mx-auto">
-                Comprehensive platform para sa pag-aaral ng Bahagi ng Pananalita - 
-                Pangngalan, Pandiwa, at Pang-uri gamit ang apat na uri ng activities.
+                Comprehensive platform for fundamental Filipino comprehension - 
+                Parts of Speech, Synonyms and Antonyms, and Sentence Construction using four types of activities.
               </p>
               <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
                 <Link to="/register">
                   <Button variant="hero" className="w-full sm:w-auto px-10 py-5 text-xl font-semibold">
-                    Simulan ang Pag-aaral
+                    Start Learning
                     <ArrowRight className="ml-3 h-6 w-6" />
                   </Button>
                 </Link>
                 <Link to="/login">
                   <Button variant="outline" className="w-full sm:w-auto px-10 py-5 text-xl font-semibold">
-                    Mag-login
+                    Login
                   </Button>
                 </Link>
               </div>
               <div className="mt-10 flex items-center justify-center text-base text-muted-foreground">
-                <CheckCircle className="mr-2 h-5 w-5 text-primary" /> Libre ang paggamit
+                <CheckCircle className="mr-2 h-5 w-5 text-primary" /> Free to use
                 <span className="mx-4">•</span>
                 <CheckCircle className="mr-2 h-5 w-5 text-primary" /> Interactive activities
                 <span className="mx-4">•</span>
-                <CheckCircle className="mr-2 h-5 w-5 text-primary" /> Para sa lahat ng edad
+                <CheckCircle className="mr-2 h-5 w-5 text-primary" /> For all ages
               </div>
             </div>
           </div>
@@ -293,10 +293,10 @@ export const LandingPage = () => {
             <div className="max-w-2xl mx-auto text-center">
               <h2 className="text-base font-semibold text-primary">Powerful Tools</h2>
               <p className="mt-2 text-4xl font-extrabold text-foreground sm:text-5xl">
-                Mga Features ng FiliUp
+                FiliUp Features
               </p>
               <p className="mt-6 text-lg text-muted-foreground">
-                Tuklasin ang mga features na magpapagaan sa pag-aaral ng Filipino.
+                Discover features that make learning Filipino easier and more enjoyable.
               </p>
             </div>
             <div className="mt-16 relative">
@@ -345,30 +345,30 @@ export const LandingPage = () => {
             <div className="text-center mb-16">
               <h2 className="text-base font-semibold text-primary">Learning Path</h2>
               <p className="mt-2 text-3xl font-extrabold text-foreground sm:text-4xl">
-                Mga Learning Phases
+                Learning Phases
               </p>
               <p className="mt-6 text-lg text-muted-foreground">
-                Structured curriculum na sunod-sunod ang pag-aaral ng Filipino
+                Structured curriculum for progressive Filipino learning
               </p>
             </div>
             <div className="space-y-6">
               {[
                 {
                   phase: 'Phase 1',
-                  title: 'Bahagi ng Pananalita',
-                  description: 'Pag-aaral ng mga pangunahing bahagi ng pananalita tulad ng pangngalan, pandiwa, at pang-uri',
+                  title: 'Bahagi ng Pananalita (Parts of Speech)',
+                  description: 'Learn the fundamental parts of speech such as nouns, verbs, and adjectives',
                   color: 'bg-gradient-teal-cyan',
                 },
                 {
                   phase: 'Phase 2', 
-                  title: 'Kasingkahulugan at Kasalungat',
-                  description: 'Pagkilala sa mga salitang magkakatulad at magkakasalungat ang kahulugan',
+                  title: 'Synonyms adn Antonyms (Kasingkahulugan at Kasalungat)',
+                  description: 'Identify words with similar and opposite meanings',
                   color: 'bg-gradient-warm',
                 },
                 {
                   phase: 'Phase 3',
-                  title: 'Pagbuo ng Pangungusap', 
-                  description: 'Sentence Construction & Structure - Pag-aaral ng tamang pagbuo at estruktura ng pangungusap',
+                  title: 'Pagbuo ng Pangungusap (Sentence Construction & Structure)', 
+                  description: 'Sentence Construction & Structure - Learn proper sentence formation and structure',
                   color: 'bg-gradient-success',
                 },
               ].map((phase, index) => (
@@ -382,7 +382,7 @@ export const LandingPage = () => {
                       <p className="text-muted-foreground">{phase.description}</p>
                     </div>
                     <Button variant="outline" className="btn-bounce">
-                      Simulan
+                      Start
                     </Button>
                   </CardContent>
                 </Card>
@@ -395,12 +395,12 @@ export const LandingPage = () => {
         <section id="faqs" className="bg-white py-20 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="text-center">
-              <h2 className="text-base font-semibold text-emerald-600">Mga Tanong</h2>
+              <h2 className="text-base font-semibold text-emerald-600">Questions</h2>
               <p className="mt-2 text-4xl font-extrabold text-gray-900 sm:text-5xl">
                 Frequently Asked Questions
               </p>
               <p className="mt-6 text-lg text-gray-600">
-                Mga sagot sa mga karaniwang tanong tungkol sa FiliUp.
+                Answers to frequently asked questions about FiliUp.
               </p>
             </div>
             <div className="mt-16 max-w-3xl mx-auto space-y-4">
@@ -436,29 +436,29 @@ export const LandingPage = () => {
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="text-center">
               <h2 className="text-4xl font-extrabold text-white sm:text-5xl">
-                Handa na ba kayong mag-aral ng Filipino?
+                Ready to learn Filipino?
               </h2>
               <p className="mt-6 text-lg text-white/80 max-w-2xl mx-auto">
-                Sumali sa libu-libong estudyante na nag-aaral ng Filipino gamit ang FiliUp.
+                Join thousands of students learning Filipino with FiliUp.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row justify-center gap-6">
                 <Link to="/register">
                   <Button className="px-8 py-4 text-lg font-semibold bg-white text-primary hover:bg-white/90">
-                    Simulan Ngayon
+                    Start Now
                   </Button>
                 </Link>
                 <Link to="/login">
                   <Button className="px-8 py-4 text-lg font-semibold bg-white text-primary hover:bg-white/90">
-                    Mag-login
+                    Login
                   </Button>
                 </Link>
               </div>
               <div className="mt-8 flex items-center justify-center text-sm text-white/70">
-                <CheckCircle className="mr-2 h-4 w-4" /> Libre ang paggamit
+                <CheckCircle className="mr-2 h-4 w-4" /> Free to use
                 <span className="mx-3">•</span>
                 <CheckCircle className="mr-2 h-4 w-4" /> Interactive learning
                 <span className="mx-3">•</span>
-                <CheckCircle className="mr-2 h-4 w-4" /> Para sa lahat ng edad
+                <CheckCircle className="mr-2 h-4 w-4" /> For all ages
               </div>
             </div>
           </div>
@@ -477,7 +477,7 @@ export const LandingPage = () => {
                 <span className="ml-3 text-2xl font-bold text-primary">FiliUp</span>
               </div>
               <p className="text-sm leading-6 text-muted-foreground">
-                Empowering students sa pag-aaral ng Filipino through interactive at engaging activities.
+                Empowering students to learn Filipino through interactive and engaging activities.
               </p>
               <div className="flex space-x-6">
                 <Facebook className="h-6 w-6 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />

@@ -53,14 +53,14 @@ export const LoginForm = () => {
             </div>
           </div>
           <h1 className="text-3xl font-bold mb-2 text-primary">FiliUp</h1>
-          <p className="text-muted-foreground">Mag-aral ng Filipino nang masaya!</p>
+          <p className="text-muted-foreground">Learn Filipino with joy!</p>
         </div>
 
         <Card className="learning-card">
           <CardHeader>
-            <CardTitle>Mag-login sa inyong account</CardTitle>
+            <CardTitle>Login to your account</CardTitle>
             <CardDescription>
-              Piliin ang inyong user type sa ibaba o mag-login gamit ang email
+              Choose your user type below or login with your email
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -80,7 +80,7 @@ export const LoginForm = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Ilagay ang inyong email"
+                  placeholder="Enter your email"
                   required
                 />
               </div>
@@ -92,7 +92,7 @@ export const LoginForm = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Ilagay ang inyong password"
+                    placeholder="Enter your password"
                     required
                   />
                   <button
@@ -110,11 +110,11 @@ export const LoginForm = () => {
                 variant="hero"
                 className="w-full btn-bounce"
               >
-                Mag-login
+Login
               </Button>
               <div className="mt-2 text-sm text-muted-foreground text-center">
-                Wala ka pang account?{' '}
-                <Link to="/register" className="text-primary hover:text-primary/80 font-medium hover:underline">Mag-register</Link>
+Don't have an account?{' '}
+                <Link to="/register" className="text-primary hover:text-primary/80 font-medium hover:underline">Register</Link>
               </div>
             </form>
 

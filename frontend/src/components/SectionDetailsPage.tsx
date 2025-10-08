@@ -99,7 +99,7 @@ export const SectionDetailsPage = () => {
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-              <p className="text-muted-foreground">Kumusta, {user?.name}! 👋</p>
+              <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
             </div>
             <div className="flex items-center space-x-3">
               <Button 
@@ -117,7 +117,7 @@ export const SectionDetailsPage = () => {
                 Profile
               </Button>
               <Button variant="ghost" onClick={logout}>
-                Mag-logout
+                Logout
               </Button>
             </div>
           </div>
@@ -141,7 +141,7 @@ export const SectionDetailsPage = () => {
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-              <p className="text-muted-foreground">Kumusta, {user?.name}! 👋</p>
+              <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
             </div>
             <div className="flex items-center space-x-3">
               <Button 
@@ -159,7 +159,7 @@ export const SectionDetailsPage = () => {
                 Profile
               </Button>
               <Button variant="ghost" onClick={logout}>
-                Mag-logout
+                Logout
               </Button>
             </div>
           </div>
@@ -186,7 +186,7 @@ export const SectionDetailsPage = () => {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-            <p className="text-muted-foreground">Kumusta, {user?.name}! 👋</p>
+            <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
           </div>
           <div className="flex items-center space-x-3">
             <Button 
@@ -204,7 +204,7 @@ export const SectionDetailsPage = () => {
               Profile
             </Button>
             <Button variant="ghost" onClick={logout}>
-              Mag-logout
+              Logout
             </Button>
           </div>
         </div>

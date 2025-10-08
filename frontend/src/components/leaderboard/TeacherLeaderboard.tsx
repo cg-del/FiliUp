@@ -124,7 +124,7 @@ const TeacherLeaderboard: React.FC = () => {
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-              <p className="text-muted-foreground">Kumusta, {user?.name}! 👋</p>
+              <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
             </div>
             {/* Desktop actions */}
             <div className="hidden md:flex items-center space-x-3">
@@ -149,7 +149,7 @@ const TeacherLeaderboard: React.FC = () => {
               <div className="flex flex-col gap-2">
                 <Button variant="outline" onClick={() => navigate('/teacher/dashboard')} className="w-full text-left">Dashboard</Button>
                 <Button variant="outline" onClick={() => navigate('/teacher/profile')} className="w-full text-left">Profile</Button>
-                <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Mag-logout</Button>
+                <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Logout</Button>
               </div>
             </div>
           )}
@@ -179,7 +179,7 @@ const TeacherLeaderboard: React.FC = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-            <p className="text-muted-foreground">Kumusta, {user?.name}! 👋</p>
+            <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
           </div>
           {/* Desktop actions */}
           <div className="hidden md:flex items-center space-x-3">
@@ -191,7 +191,7 @@ const TeacherLeaderboard: React.FC = () => {
               <User className="h-4 w-4 mr-2" />
               Profile
             </Button>
-            <Button variant="ghost" onClick={handleLogout}>Mag-logout</Button>
+            <Button variant="ghost" onClick={handleLogout}>Logout</Button>
           </div>
           {/* Mobile menu button */}
           <div className="md:hidden">
@@ -204,7 +204,7 @@ const TeacherLeaderboard: React.FC = () => {
             <div className="flex flex-col gap-2">
               <Button variant="outline" onClick={() => navigate('/')} className="w-full text-left">Dashboard</Button>
               <Button variant="outline" onClick={() => navigate('/teacher/profile')} className="w-full text-left">Profile</Button>
-              <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Mag-logout</Button>
+              <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Logout</Button>
             </div>
           </div>
         )}

@@ -178,9 +178,6 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <span className="text-2xl mr-2">{getRankIcon(student.rank)}</span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {student.rank <= 3 ? '' : `#${student.rank}`}
-                    </span>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
