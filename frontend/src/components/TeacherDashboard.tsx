@@ -10,6 +10,8 @@ import { InviteCodeDialog } from './InviteCodeDialog';
 import { teacherApi, TeacherDashboard as TeacherDashboardData } from '@/lib/teacherApi';
 import { useToast } from '@/hooks/use-toast';
 import { CenteredLoading } from '@/components/ui/loading-spinner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 export const TeacherDashboard = () => {
   const { user, logout } = useAuth();
@@ -21,12 +23,17 @@ export const TeacherDashboard = () => {
   const [dashboardData, setDashboardData] = useState<TeacherDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   
   // Pagination state for recent activity
   const [currentPage, setCurrentPage] = useState(1);
   const activitiesPerPage = 5;
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleConfirmLogout = () => {
     logout();
     navigate('/login', { replace: true });
   };
@@ -116,7 +123,7 @@ export const TeacherDashboard = () => {
               <Settings className="h-4 w-4 mr-2" />
               Profile
             </Button>
-            <Button variant="ghost" onClick={handleLogout}>
+            <Button variant="ghost" onClick={handleLogoutClick}>
               Logout
             </Button>
           </div>
@@ -137,7 +144,7 @@ export const TeacherDashboard = () => {
               <Button variant="outline" onClick={() => navigate('/teacher/profile')} className="w-full text-left">
                 Profile
               </Button>
-              <Button variant="ghost" onClick={handleLogout} className="w-full text-left">
+              <Button variant="ghost" onClick={handleLogoutClick} className="w-full text-left">
                 Logout
               </Button>
             </div>
@@ -413,20 +420,38 @@ export const TeacherDashboard = () => {
       </div>
 
       {/* Dialogs */}
-      <CreateSectionDialog 
-        open={showCreateSection} 
+      <CreateSectionDialog
+        open={showCreateSection}
         onOpenChange={setShowCreateSection}
         onSectionCreated={loadDashboard}
       />
       {selectedSection && (
-        <InviteCodeDialog 
-          open={showInviteCode} 
+        <InviteCodeDialog
+          open={showInviteCode}
           onOpenChange={setShowInviteCode}
           sectionName={selectedSection.name}
           sectionId={selectedSection.id}
           inviteCode={selectedSection.inviteCode}
         />
       )}
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You will need to login again to access your teacher dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

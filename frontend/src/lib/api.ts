@@ -130,6 +130,8 @@ export interface StudentDashboardResponse {
     totalScore: number;
     currentLevel: string;
     studyDays: number;
+    activitiesCompleted: number;
+    currentRank: number;
   };
   phases: Phase[];
 }

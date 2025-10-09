@@ -10,7 +10,8 @@ import { MultipleChoiceActivity } from './activities/MultipleChoiceActivity';
 import { DragDropActivity } from './activities/DragDropActivity';
 import { MatchingPairsActivity } from './activities/MatchingPairsActivity';
 import { StoryComprehensionActivity } from './activities/StoryComprehensionActivity';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { CenteredLoading, InlineLoading } from '@/components/ui/loading-spinner';
 import { 
   studentAPI, 
@@ -59,8 +60,15 @@ export const StudentDashboard = ({
   const [error, setError] = useState<string | null>(null);
   const [showPassModal, setShowPassModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+  const [selectedPhaseForModal, setSelectedPhaseForModal] = useState<string | null>(null);
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleConfirmLogout = () => {
     logout();
     navigate('/login', { replace: true });
   };
@@ -76,6 +84,25 @@ export const StudentDashboard = ({
       loadActivityContent(initialActivityId);
     }
   }, [initialLessonId, initialActivityId, initialActivityType]);
+
+  // Show welcome dialog for new students or first login (once per session)
+  useEffect(() => {
+    if (user && (user.firstLogin || user.isNewStudent) && !loading) {
+      // Check if welcome dialog has already been shown in this session
+      const welcomeShown = sessionStorage.getItem(`welcomeShown_${user.id}`);
+
+      if (!welcomeShown) {
+        // Small delay to ensure dashboard loads first
+        const timer = setTimeout(() => {
+          setShowWelcomeDialog(true);
+          // Mark as shown for this session
+          sessionStorage.setItem(`welcomeShown_${user.id}`, 'true');
+        }, 1000);
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user, loading]);
 
   const loadDashboardData = async () => {
     try {
@@ -238,7 +265,7 @@ export const StudentDashboard = ({
     if (!lesson) return false;
 
     const activity = lesson.activities?.find(
-      a => mapActivityType(a.activityType) === activityType
+      a => a.activityType && mapActivityType(a.activityType) === activityType
     );
 
     return activity?.isUnlocked || false;
@@ -309,7 +336,7 @@ export const StudentDashboard = ({
     if (!lesson) return 'locked';
 
     const activity = lesson.activities?.find(
-      a => mapActivityType(a.activityType) === activityType
+      a => a.activityType && mapActivityType(a.activityType) === activityType
     );
 
     if (!activity) return 'locked';
@@ -328,7 +355,7 @@ export const StudentDashboard = ({
     if (!lesson) return null;
 
     const activity = lesson.activities?.find(
-      a => mapActivityType(a.activityType) === activityType
+      a => a.activityType && mapActivityType(a.activityType) === activityType
     );
 
     return activity?.percentage || null;
@@ -572,7 +599,7 @@ export const StudentDashboard = ({
   // Lesson View
   if (currentView === 'lesson' && lessonContent) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-green-50/40">
         <div className="p-4">
           <Button variant="ghost" onClick={goToDashboard} className="mb-4">
             ← Back to Dashboard
@@ -664,7 +691,7 @@ export const StudentDashboard = ({
               <User className="h-4 w-4 mr-2" />
               Profile
             </Button>
-            <Button variant="ghost" onClick={handleLogout}>
+            <Button variant="ghost" onClick={handleLogoutClick}>
               Logout
             </Button>
           </div>
@@ -685,7 +712,7 @@ export const StudentDashboard = ({
               <Button variant="outline" onClick={() => navigate('/student/profile')} className="w-full text-left">
                 Profile
               </Button>
-              <Button variant="ghost" onClick={handleLogout} className="w-full text-left">
+              <Button variant="ghost" onClick={handleLogoutClick} className="w-full text-left">
                 Logout
               </Button>
             </div>
@@ -746,82 +773,194 @@ export const StudentDashboard = ({
         </div>
 
         {/* Learning Phases */}
-        <div className="space-y-8">
-          <h2 className="text-2xl font-bold">Lessons</h2>
-          
-          {dashboardData.phases.map((phase) => (
-            <div key={phase.id} className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <h3 className="text-2xl font-semibold text-primary">{phase.title}</h3>
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">Learning Phases</h2>
+
+          <div className="flex flex-col gap-6">
+            {dashboardData.phases.map((phase, phaseIndex) => (
+              <div key={phase.id} className="flex items-center gap-6">
+                {/* Left side image for phase 2 */}
+                {phaseIndex === 1 && (
+                  <div className="flex-[3]">
+                    <Card className={`h-full border-0 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300 ${
+                      phaseIndex === 1 ? 'bg-amber-50 hover:bg-amber-100' :
+                      phaseIndex === 0 ? 'bg-sky-50 hover:bg-sky-100' :
+                      'bg-emerald-50 hover:bg-emerald-100'
+                    }`}>
+                      <CardContent className="p-4 h-full flex items-center">
+                        <img
+                          src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1759982197/Remove_background_project-1_3_yjpzkq.png"
+                          alt="Phase 2 Character"
+                          className="w-full h-45 object-contain"
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                <Card className={`group hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300 flex-[7] min-h-[280px] border-0 shadow-sm ${
+                  phaseIndex === 0 ? 'bg-sky-50 hover:bg-sky-100' :
+                  phaseIndex === 1 ? 'bg-amber-50 hover:bg-amber-100' :
+                  'bg-emerald-50 hover:bg-emerald-100'
+                }`}>
+                  <CardContent className="p-6 h-full flex flex-col">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-lg transition-all duration-300 ${
+                          phaseIndex === 0 ? 'bg-sky-500' :
+                          phaseIndex === 1 ? 'bg-amber-500' :
+                          'bg-emerald-500'
+                        }`}>
+                          <span className="text-lg font-bold text-white">{phaseIndex + 1}</span>
+                        </div>
+                        <div>
+                          <h3 className={`text-xl font-semibold ${
+                            phaseIndex === 0 ? 'text-sky-700' :
+                            phaseIndex === 1 ? 'text-amber-700' :
+                            'text-emerald-700'
+                          }`}>{phase.title}</h3>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-muted-foreground mb-6 flex-grow" dangerouslySetInnerHTML={{ __html: phase.description }} />
+
+                    <div className="flex justify-end">
+                      <Button
+                        className={`hover:opacity-90 ${
+                          phaseIndex === 0 ? 'bg-sky-500 hover:bg-sky-600' :
+                          phaseIndex === 1 ? 'bg-amber-500 hover:bg-amber-600' :
+                          'bg-emerald-500 hover:bg-emerald-600'
+                        }`}
+                        onClick={() => setSelectedPhaseForModal(phase.id)}
+                      >
+                        View Lessons
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Right side images for phases 1 and 3 */}
+                {phaseIndex === 0 && (
+                  <div className="flex-[3]">
+                    <Card className="h-full border-0 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300 bg-sky-50 hover:bg-sky-100">
+                      <CardContent className="p-4 h-full flex items-center">
+                        <img
+                          src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1759982189/Remove_background_project-1_2_daxtwh.png"
+                          alt="Phase 1 Character"
+                          className="w-full h-45 object-contain"
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {phaseIndex === 2 && (
+                  <div className="flex-[3]">
+                    <Card className="h-full border-0 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300 bg-emerald-50 hover:bg-emerald-100">
+                      <CardContent className="p-4 h-full flex items-center">
+                        <img
+                          src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1759982201/Remove_background_project-1_4_heiu9a.png"
+                          alt="Phase 3 Character"
+                          className="w-full h-45 object-contain"
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
               </div>
-              <p className="text-muted-foreground mb-4" dangerouslySetInnerHTML={{ __html: phase.description }} />
-              
-              <div className="grid gap-6">
-                {phase.lessons.map((lesson) => {
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Phase Lessons Modal */}
+      {selectedPhaseForModal && dashboardData && (
+        <Dialog open={!!selectedPhaseForModal} onOpenChange={() => setSelectedPhaseForModal(null)}>
+          <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-primary">
+                {(() => {
+                  const phase = dashboardData.phases.find(p => p.id === selectedPhaseForModal);
+                  return phase ? phase.title : 'Phase Not Found';
+                })()}
+              </DialogTitle>
+              <DialogDescription className="hidden">
+                {(() => {
+                  const phase = dashboardData.phases.find(p => p.id === selectedPhaseForModal);
+                  return phase ? phase.description : '';
+                })()}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="max-h-[60vh] overflow-y-auto space-y-6">
+              {(() => {
+                const phase = dashboardData.phases.find(p => p.id === selectedPhaseForModal);
+                if (!phase || !phase.lessons || phase.lessons.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No lessons found for this phase.</p>
+                    </div>
+                  );
+                }
+
+                return phase.lessons.map((lesson) => {
                   const completedActivities = lesson.completedActivitiesCount || 0;
                   const totalActivities = lesson.totalActivities || 0;
                   const lessonProgress = lesson.progressPercentage || 0;
-                  
+
                   return (
-                    <Card key={lesson.id} className="learning-card">
+                    <Card key={lesson.id} className="bg-white border-green-200 shadow-sm">
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-start space-x-4">
-                            <div className="bg-gradient-primary p-3 rounded-lg text-white">
+                            <div className="bg-gradient-primary p-3 rounded-lg text-white flex-shrink-0">
                               <BookOpen className="h-6 w-6" />
                             </div>
-                            <div className="flex-1">
-                              <h4 className="text-xl font-semibold mb-2">{lesson.title}</h4>
-                              <p className="text-muted-foreground mb-3" dangerouslySetInnerHTML={{ __html: lesson.description }} />
-                              
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-xl font-semibold mb-2 text-gray-900">{lesson.title}</h4>
+                              <div className="text-gray-700 mb-3 leading-relaxed text-sm lesson-description prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: lesson.description }} />
+
                               <div className="flex items-center space-x-4 mb-3">
                                 <div className="flex items-center space-x-2">
                                   <Progress value={lessonProgress} className="w-32" />
-                                  <span className="text-sm font-medium">{lessonProgress}%</span>
+                                  <span className="text-sm font-medium text-gray-700">{lessonProgress}%</span>
                                 </div>
-                                <Badge variant="secondary">
+                                <Badge variant="secondary" className="text-xs">
                                   {completedActivities}/{totalActivities} activities
                                 </Badge>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            {lessonProgress > 0 && lessonProgress < 100 && <Star className="h-5 w-5 text-warning" />}
-                            {lessonProgress === 100 && <CheckCircle className="h-5 w-5 text-success" />}
+                          <div className="flex items-center space-x-2 flex-shrink-0">
+                            {lessonProgress > 0 && lessonProgress < 100 && <Star className="h-5 w-5 text-yellow-500" />}
+                            {lessonProgress === 100 && <CheckCircle className="h-5 w-5 text-green-500" />}
                           </div>
                         </div>
 
                         {/* Lesson and Activity Buttons */}
                         <div className="space-y-4">
                           {/* Read Lesson Button */}
-                          <div className="border-b pb-4">
-                            {(() => {
-                              const lessonUnlocked = isLessonUnlocked(lesson.id);
-                              const isLocked = !lessonUnlocked;
-                              
-                              return (
-                                <Button
-                                  variant={lesson.isCompleted ? "success" : isLocked ? "outline" : "hero"}
-                                  className={`w-full h-16 text-lg ${isLocked ? 'opacity-60' : ''}`}
-                                  disabled={isLocked}
-                                  onClick={() => {
-                                    if (!isLocked) {
-                                      handleStartLesson(lesson.id);
-                                    }
-                                  }}
-                                >
-                                  {isLocked && <Lock className="h-5 w-5 mr-2" />}
-                                  {!isLocked && lesson.isCompleted && <CheckCircle className="h-5 w-5 mr-2" />}
-                                  {!isLocked && !lesson.isCompleted && <BookOpen className="h-5 w-5 mr-2" />}
-                                  {isLocked 
-                                    ? 'Complete Previous Activities First' 
-                                    : lesson.isCompleted 
-                                    ? 'Lesson Completed - Read Again' 
-                                    : 'Read Lesson First'
-                                  }
-                                </Button>
-                              );
-                            })()}
+                          <div className="border-b border-gray-200 pb-4">
+                            <Button
+                              variant={lesson.isCompleted ? "success" : "default"}
+                              className="w-full h-16 text-lg font-medium"
+                              onClick={() => {
+                                setSelectedPhaseForModal(null);
+                                handleStartLesson(lesson.id);
+                              }}
+                            >
+                              <div className="flex items-center justify-center">
+                                {lesson.isCompleted ? (
+                                  <CheckCircle className="h-5 w-5 mr-2" />
+                                ) : (
+                                  <BookOpen className="h-5 w-5 mr-2" />
+                                )}
+                                <span>
+                                  {lesson.isCompleted ? 'Lesson Completed - Read Again' : 'Read Lesson'}
+                                </span>
+                              </div>
+                            </Button>
                           </div>
 
                           {/* Activity Buttons */}
@@ -832,30 +971,31 @@ export const StudentDashboard = ({
                               const percentage = getActivityPercentage(lesson.id, 'multiple-choice');
                               const isLocked = status === 'locked';
                               const isCompleted = status === 'completed';
-                              
+
                               return (
                                 <Button
                                   variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full ${isCompleted ? 'border-success' : ''}`}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${isCompleted ? '' : ''}`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
+                                      setSelectedPhaseForModal(null);
                                       handleStartActivity(lesson.id, 'multiple-choice');
                                     }
                                   }}
                                 >
                                   <div className="flex items-center justify-center mb-1">
                                     {isLocked ? (
-                                      <Lock className="h-4 w-4" />
+                                      <Lock className="h-4 w-4 text-gray-400" />
                                     ) : isCompleted ? (
-                                      <CheckCircle className="h-4 w-4 text-white" />
+                                      <CheckCircle className="h-4 w-4 text-white mr-2" />
                                     ) : (
-                                      <Target className="h-4 w-4" />
+                                      <Target className="h-4 w-4 text-blue-500" />
                                     )}
                                   </div>
-                                  <span className="text-xs text-center leading-tight">Multiple Choice</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-gray-700'}`}>Multiple Choice</span>
                                   {percentage !== undefined && (
-                                    <span className="text-xs font-semibold mt-1">{percentage}%</span>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-gray-600'}`}>{percentage}%</span>
                                   )}
                                 </Button>
                               );
@@ -867,30 +1007,31 @@ export const StudentDashboard = ({
                               const percentage = getActivityPercentage(lesson.id, 'drag-drop');
                               const isLocked = status === 'locked';
                               const isCompleted = status === 'completed';
-                              
+
                               return (
                                 <Button
                                   variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full ${isCompleted ? 'border-success' : ''}`}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${isCompleted ? '' : ''}`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
+                                      setSelectedPhaseForModal(null);
                                       handleStartActivity(lesson.id, 'drag-drop');
                                     }
                                   }}
                                 >
                                   <div className="flex items-center justify-center mb-1">
                                     {isLocked ? (
-                                      <Lock className="h-4 w-4" />
+                                      <Lock className="h-4 w-4 text-gray-400" />
                                     ) : isCompleted ? (
-                                      <CheckCircle className="h-4 w-4 text-white" />
+                                      <CheckCircle className="h-4 w-4 text-white mr-2" />
                                     ) : (
-                                      <ArrowRight className="h-4 w-4" />
+                                      <ArrowRight className="h-4 w-4 text-purple-500" />
                                     )}
                                   </div>
-                                  <span className="text-xs text-center leading-tight">Drag & Drop</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-gray-700'}`}>Drag & Drop</span>
                                   {percentage !== undefined && (
-                                    <span className="text-xs font-semibold mt-1">{percentage}%</span>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-gray-600'}`}>{percentage}%</span>
                                   )}
                                 </Button>
                               );
@@ -902,30 +1043,31 @@ export const StudentDashboard = ({
                               const percentage = getActivityPercentage(lesson.id, 'matching-pairs');
                               const isLocked = status === 'locked';
                               const isCompleted = status === 'completed';
-                              
+
                               return (
                                 <Button
                                   variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full ${isCompleted ? 'border-success' : ''}`}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${isCompleted ? '' : ''}`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
+                                      setSelectedPhaseForModal(null);
                                       handleStartActivity(lesson.id, 'matching-pairs');
                                     }
                                   }}
                                 >
                                   <div className="flex items-center justify-center mb-1">
                                     {isLocked ? (
-                                      <Lock className="h-4 w-4" />
+                                      <Lock className="h-4 w-4 text-gray-400" />
                                     ) : isCompleted ? (
-                                      <CheckCircle className="h-4 w-4 text-white" />
+                                      <CheckCircle className="h-4 w-4 text-white mr-2" />
                                     ) : (
-                                      <Star className="h-4 w-4" />
+                                      <Star className="h-4 w-4 text-orange-500" />
                                     )}
                                   </div>
-                                  <span className="text-xs text-center leading-tight">Matching Pairs</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-gray-700'}`}>Matching Pairs</span>
                                   {percentage !== undefined && (
-                                    <span className="text-xs font-semibold mt-1">{percentage}%</span>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-gray-600'}`}>{percentage}%</span>
                                   )}
                                 </Button>
                               );
@@ -937,30 +1079,31 @@ export const StudentDashboard = ({
                               const percentage = getActivityPercentage(lesson.id, 'story-comprehension');
                               const isLocked = status === 'locked';
                               const isCompleted = status === 'completed';
-                              
+
                               return (
                                 <Button
                                   variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full ${isCompleted ? 'border-success' : ''}`}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${isCompleted ? '' : ''}`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
+                                      setSelectedPhaseForModal(null);
                                       handleStartActivity(lesson.id, 'story-comprehension');
                                     }
                                   }}
                                 >
                                   <div className="flex items-center justify-center mb-1">
                                     {isLocked ? (
-                                      <Lock className="h-4 w-4" />
+                                      <Lock className="h-4 w-4 text-gray-400" />
                                     ) : isCompleted ? (
-                                      <CheckCircle className="h-4 w-4 text-white" />
+                                      <CheckCircle className="h-4 w-4 text-white mr-2" />
                                     ) : (
-                                      <BookOpen className="h-4 w-4" />
+                                      <BookOpen className="h-4 w-4 text-indigo-500" />
                                     )}
                                   </div>
-                                  <span className="text-xs text-center leading-tight">Story Reading</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-gray-700'}`}>Story Reading</span>
                                   {percentage !== undefined && (
-                                    <span className="text-xs font-semibold mt-1">{percentage}%</span>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-gray-600'}`}>{percentage}%</span>
                                   )}
                                 </Button>
                               );
@@ -970,12 +1113,79 @@ export const StudentDashboard = ({
                       </CardContent>
                     </Card>
                   );
-                })}
-              </div>
+                });
+              })()}
             </div>
-          ))}
-        </div>
-      </div>
+
+            <DialogFooter className="mt-6">
+              <Button onClick={() => setSelectedPhaseForModal(null)} variant="outline" className="w-full sm:w-auto">
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Welcome Dialog for new students */}
+      <Dialog open={showWelcomeDialog} onOpenChange={setShowWelcomeDialog}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-2xl font-bold text-primary mb-4">
+              Welcome to FiliUp! 🎉
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Welcome to your Filipino language learning journey!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-6">
+            <div className="relative">
+              <img
+                src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1759976738/Remove_background_project-1_1_q6lftl.png"
+                alt="Welcome Character"
+                className="w-48 h-48 object-contain"
+              />
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-semibold text-primary">
+                {user?.firstLogin ? 'Welcome back!' : 'Welcome to your learning journey!'}
+              </h3>
+              <p className="text-muted-foreground">
+                {user?.firstLogin
+                  ? `Great to see you again, ${user.name}! Ready to continue your Filipino language learning adventure?`
+                  : `Hello ${user?.name}! Get ready to embark on an exciting journey to learn Filipino through interactive lessons and fun activities.`
+                }
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex justify-center">
+            <Button
+              onClick={() => setShowWelcomeDialog(false)}
+              className="w-full sm:w-auto"
+              size="lg"
+            >
+              Let's Start Learning! 🚀
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? Your learning progress will be saved, but you'll need to login again to continue.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

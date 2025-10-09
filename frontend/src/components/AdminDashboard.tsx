@@ -9,6 +9,7 @@ import { AddUserDialog } from './AddUserDialog';
 import { ContentManagement } from './ContentManagement';
 import { adminAPI } from '@/lib/api';
 import { CenteredLoading } from '@/components/ui/loading-spinner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface SystemStats {
   totalUsers: number;
@@ -36,8 +37,13 @@ export const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleConfirmLogout = () => {
     logout();
     navigate('/login', { replace: true });
   };
@@ -102,7 +108,7 @@ export const AdminDashboard = () => {
           </div>
           {/* Desktop actions */}
           <div className="hidden md:flex items-center space-x-3">
-            <Button variant="ghost" onClick={handleLogout}>
+            <Button variant="ghost" onClick={handleLogoutClick}>
               Logout
             </Button>
           </div>
@@ -117,7 +123,7 @@ export const AdminDashboard = () => {
         {mobileMenuOpen && (
           <div className="md:hidden mt-3 max-w-7xl mx-auto">
             <div className="flex flex-col gap-2">
-              <Button variant="ghost" onClick={handleLogout} className="w-full text-left">
+              <Button variant="ghost" onClick={handleLogoutClick} className="w-full text-left">
                 Logout
               </Button>
             </div>
@@ -298,6 +304,24 @@ export const AdminDashboard = () => {
           }
         }}
       />
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You will need to login again to access your dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
