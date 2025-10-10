@@ -62,6 +62,10 @@ export const StudentDashboard = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+  const [showLessonReminder, setShowLessonReminder] = useState(false);
+  const [showLessonComplete, setShowLessonComplete] = useState(false);
+  const [selectedLessonForReminder, setSelectedLessonForReminder] = useState<{id: string, title: string} | null>(null);
+  const [completedLessonTitle, setCompletedLessonTitle] = useState<string>('');
   const [selectedPhaseForModal, setSelectedPhaseForModal] = useState<string | null>(null);
 
   const handleLogoutClick = () => {
@@ -173,6 +177,17 @@ export const StudentDashboard = ({
     try {
       await studentAPI.completeLesson(selectedLessonId);
       await loadDashboardData(); // Refresh dashboard data
+      
+      // Find the completed lesson to get its title
+      const lesson = dashboardData?.phases
+        .flatMap(phase => phase.lessons)
+        .find(l => l.id === selectedLessonId);
+      
+      if (lesson) {
+        setCompletedLessonTitle(lesson.title);
+        setShowLessonComplete(true);
+      }
+      
       setCurrentView('activities');
     } catch (err: unknown) {
       console.error('Failed to complete lesson:', err);
@@ -245,11 +260,30 @@ export const StudentDashboard = ({
   };
 
   const handleStartLesson = async (lessonId: string) => {
+    // Find the lesson to get its title
+    const lesson = dashboardData?.phases
+      .flatMap(phase => phase.lessons)
+      .find(l => l.id === lessonId);
+    
+    if (lesson) {
+      setSelectedLessonForReminder({
+        id: lessonId,
+        title: lesson.title
+      });
+      setShowLessonReminder(true);
+    }
+  };
+
+  const handleConfirmStartLesson = async () => {
+    if (!selectedLessonForReminder) return;
+    
+    setShowLessonReminder(false);
+    
     // Update URL without refreshing the page
-    navigate(`/student/lesson/${lessonId}`, { replace: true });
+    navigate(`/student/lesson/${selectedLessonForReminder.id}`, { replace: true });
     
     // Load lesson content directly
-    await loadLessonContent(lessonId);
+    await loadLessonContent(selectedLessonForReminder.id);
     setCurrentView('lesson');
     setCurrentSlide(0);
   };
@@ -879,10 +913,22 @@ export const StudentDashboard = ({
         <Dialog open={!!selectedPhaseForModal} onOpenChange={() => setSelectedPhaseForModal(null)}>
           <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-hidden">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-primary">
+              <DialogTitle className="text-2xl font-bold">
                 {(() => {
                   const phase = dashboardData.phases.find(p => p.id === selectedPhaseForModal);
-                  return phase ? phase.title : 'Phase Not Found';
+                  if (!phase) return 'Phase Not Found';
+                  const phaseIndex = dashboardData.phases.findIndex(p => p.id === selectedPhaseForModal);
+                  return (
+                    <span className={`${
+                      [
+                        'text-sky-700',    // Phase 1
+                        'text-amber-700',  // Phase 2
+                        'text-emerald-700' // Phase 3
+                      ][phaseIndex] || 'text-primary'
+                    }`}>
+                      {phase.title}
+                    </span>
+                  );
                 })()}
               </DialogTitle>
               <DialogDescription className="hidden">
@@ -904,29 +950,94 @@ export const StudentDashboard = ({
                   );
                 }
 
+                // Get the phase index for color theming
+                const phaseIndex = dashboardData.phases.findIndex(p => p.id === selectedPhaseForModal);
+                
                 return phase.lessons.map((lesson) => {
                   const completedActivities = lesson.completedActivitiesCount || 0;
                   const totalActivities = lesson.totalActivities || 0;
                   const lessonProgress = lesson.progressPercentage || 0;
 
+                  // Determine colors based on phase index
+                  const bgColor = [
+                    'bg-sky-50',    // Phase 1
+                    'bg-amber-50',  // Phase 2
+                    'bg-emerald-50' // Phase 3
+                  ][phaseIndex] || 'bg-white';
+                  
+                  const borderColor = [
+                    'border-sky-200',    // Phase 1
+                    'border-amber-200',  // Phase 2
+                    'border-emerald-200' // Phase 3
+                  ][phaseIndex] || 'border-green-200';
+
                   return (
-                    <Card key={lesson.id} className="bg-white border-green-200 shadow-sm">
+                    <Card key={lesson.id} className={`${bgColor} ${borderColor} shadow-sm hover:shadow-md transition-shadow duration-300`}>
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-start space-x-4">
-                            <div className="bg-gradient-primary p-3 rounded-lg text-white flex-shrink-0">
+                            <div className={`p-3 rounded-lg flex-shrink-0 ${
+                              [
+                                'bg-sky-500 text-white',    // Phase 1
+                                'bg-amber-500 text-white',  // Phase 2
+                                'bg-emerald-500 text-white' // Phase 3
+                              ][phaseIndex] || 'bg-primary text-white'
+                            }`}>
                               <BookOpen className="h-6 w-6" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-xl font-semibold mb-2 text-gray-900">{lesson.title}</h4>
+                              <h4 className={`text-xl font-semibold mb-2 ${
+                                [
+                                  'text-sky-800',    // Phase 1
+                                  'text-amber-800',  // Phase 2
+                                  'text-emerald-800' // Phase 3
+                                ][phaseIndex] || 'text-gray-900'
+                              }`}>
+                                {lesson.title}
+                              </h4>
                               <div className="text-gray-700 mb-3 leading-relaxed text-sm lesson-description prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: lesson.description }} />
 
                               <div className="flex items-center space-x-4 mb-3">
                                 <div className="flex items-center space-x-2">
-                                  <Progress value={lessonProgress} className="w-32" />
-                                  <span className="text-sm font-medium text-gray-700">{lessonProgress}%</span>
+                                  <div className="relative w-32 h-2 rounded-full overflow-hidden">
+                                    <div className={`absolute top-0 left-0 h-full ${
+                                      [
+                                        'bg-sky-100',    // Phase 1
+                                        'bg-amber-100',  // Phase 2
+                                        'bg-emerald-100' // Phase 3
+                                      ][phaseIndex] || 'bg-gray-100'
+                                    } w-full`} />
+                                    <div 
+                                      className={`absolute top-0 left-0 h-full ${
+                                        [
+                                          'bg-sky-500',    // Phase 1
+                                          'bg-amber-500',  // Phase 2
+                                          'bg-emerald-500' // Phase 3
+                                        ][phaseIndex] || 'bg-primary'
+                                      } transition-all duration-300`}
+                                      style={{ width: `${lessonProgress}%` }}
+                                    />
+                                  </div>
+                                <span className={`text-sm font-medium ${
+                                  [
+                                    'text-sky-700',    // Phase 1
+                                    'text-amber-700',  // Phase 2
+                                    'text-emerald-700' // Phase 3
+                                  ][phaseIndex] || 'text-gray-700'
+                                }`}>
+                                  {lessonProgress}%
+                                </span>
                                 </div>
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge 
+                                  variant="secondary" 
+                                  className={`text-xs ${
+                                    [
+                                      'bg-sky-100 text-sky-700 hover:bg-sky-200',    // Phase 1
+                                      'bg-amber-100 text-amber-700 hover:bg-amber-200',  // Phase 2
+                                      'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' // Phase 3
+                                    ][phaseIndex] || ''
+                                  }`}
+                                >
                                   {completedActivities}/{totalActivities} activities
                                 </Badge>
                               </div>
@@ -943,8 +1054,22 @@ export const StudentDashboard = ({
                           {/* Read Lesson Button */}
                           <div className="border-b border-gray-200 pb-4">
                             <Button
-                              variant={lesson.isCompleted ? "success" : "default"}
-                              className="w-full h-16 text-lg font-medium"
+                              variant={lesson.isCompleted ? "default" : "default"}
+                              className={`w-full h-16 text-lg font-medium ${
+                                lesson.isCompleted ? (
+                                  [
+                                    'bg-sky-700 hover:bg-sky-800 text-white',    // Phase 1 - Completed
+                                    'bg-amber-700 hover:bg-amber-800 text-white',  // Phase 2 - Completed
+                                    'bg-emerald-700 hover:bg-emerald-800 text-white' // Phase 3 - Completed
+                                  ][phaseIndex] || 'bg-primary text-white'
+                                ) : (
+                                  [
+                                    'bg-sky-500 hover:bg-sky-600 text-white',    // Phase 1 - Not completed
+                                    'bg-amber-500 hover:bg-amber-600 text-white',  // Phase 2 - Not completed
+                                    'bg-emerald-500 hover:bg-emerald-600 text-white' // Phase 3 - Not completed
+                                  ][phaseIndex] || ''
+                                )
+                              }`}
                               onClick={() => {
                                 setSelectedPhaseForModal(null);
                                 handleStartLesson(lesson.id);
@@ -974,8 +1099,22 @@ export const StudentDashboard = ({
 
                               return (
                                 <Button
-                                  variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${isCompleted ? '' : ''}`}
+                                  variant={isCompleted ? "default" : "outline"}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${
+                                    isLocked 
+                                      ? 'opacity-70' 
+                                      : isCompleted 
+                                        ? [
+                                            'bg-sky-700 hover:bg-sky-800 text-white',    // Phase 1 - Completed
+                                            'bg-amber-700 hover:bg-amber-800 text-white',  // Phase 2 - Completed
+                                            'bg-emerald-700 hover:bg-emerald-800 text-white' // Phase 3 - Completed
+                                          ][phaseIndex] || 'bg-primary text-white'
+                                        : [
+                                            'border-sky-500 text-sky-700 hover:bg-sky-50',    // Phase 1 - Not completed
+                                            'border-amber-500 text-amber-700 hover:bg-amber-50',  // Phase 2 - Not completed
+                                            'border-emerald-500 text-emerald-700 hover:bg-emerald-50' // Phase 3 - Not completed
+                                          ][phaseIndex] || ''
+                                  }`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
@@ -988,9 +1127,15 @@ export const StudentDashboard = ({
                                     {isLocked ? (
                                       <Lock className="h-4 w-4 text-gray-400" />
                                     ) : isCompleted ? (
-                                      <CheckCircle className="h-4 w-4 text-white mr-2" />
+                                      <CheckCircle className="h-4 w-4 text-white mr-1" />
                                     ) : (
-                                      <Target className="h-4 w-4 text-blue-500" />
+                                      <Target className={`h-4 w-4 ${
+                                        [
+                                          'text-sky-500',    // Phase 1
+                                          'text-amber-500',  // Phase 2
+                                          'text-emerald-500' // Phase 3
+                                        ][phaseIndex] || 'text-primary'
+                                      }`} />
                                     )}
                                   </div>
                                   <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-gray-700'}`}>Multiple Choice</span>
@@ -1010,8 +1155,22 @@ export const StudentDashboard = ({
 
                               return (
                                 <Button
-                                  variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${isCompleted ? '' : ''}`}
+                                  variant={isCompleted ? "default" : "outline"}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${
+                                    isLocked 
+                                      ? 'opacity-70' 
+                                      : isCompleted 
+                                        ? [
+                                            'bg-sky-700 hover:bg-sky-800 text-white',
+                                            'bg-amber-700 hover:bg-amber-800 text-white',
+                                            'bg-emerald-700 hover:bg-emerald-800 text-white'
+                                          ][phaseIndex] || 'bg-primary text-white'
+                                        : [
+                                            'border-sky-500 text-sky-700 hover:bg-sky-50',
+                                            'border-amber-500 text-amber-700 hover:bg-amber-50',
+                                            'border-emerald-500 text-emerald-700 hover:bg-emerald-50'
+                                          ][phaseIndex] || ''
+                                  }`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
@@ -1024,14 +1183,22 @@ export const StudentDashboard = ({
                                     {isLocked ? (
                                       <Lock className="h-4 w-4 text-gray-400" />
                                     ) : isCompleted ? (
-                                      <CheckCircle className="h-4 w-4 text-white mr-2" />
+                                      <CheckCircle className="h-4 w-4 text-white mr-1" />
                                     ) : (
-                                      <ArrowRight className="h-4 w-4 text-purple-500" />
+                                      <ArrowRight className={`h-4 w-4 ${
+                                        [
+                                          'text-sky-500',
+                                          'text-amber-500',
+                                          'text-emerald-500'
+                                        ][phaseIndex] || 'text-primary'
+                                      }`} />
                                     )}
                                   </div>
-                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-gray-700'}`}>Drag & Drop</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-inherit'}`}>Drag & Drop</span>
                                   {percentage !== undefined && (
-                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-gray-600'}`}>{percentage}%</span>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-inherit'}`}>
+                                      {percentage}%
+                                    </span>
                                   )}
                                 </Button>
                               );
@@ -1046,8 +1213,22 @@ export const StudentDashboard = ({
 
                               return (
                                 <Button
-                                  variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${isCompleted ? '' : ''}`}
+                                  variant={isCompleted ? "default" : "outline"}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${
+                                    isLocked 
+                                      ? 'opacity-70'  
+                                      : isCompleted 
+                                        ? [
+                                            'bg-sky-700 hover:bg-sky-800 text-white',
+                                            'bg-amber-700 hover:bg-amber-800 text-white',
+                                            'bg-emerald-700 hover:bg-emerald-800 text-white'
+                                          ][phaseIndex] || 'bg-primary text-white'
+                                        : [
+                                            'border-sky-500 text-sky-700 hover:bg-sky-50',
+                                            'border-amber-500 text-amber-700 hover:bg-amber-50',
+                                            'border-emerald-500 text-emerald-700 hover:bg-emerald-50'
+                                          ][phaseIndex] || ''
+                                  }`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
@@ -1060,14 +1241,22 @@ export const StudentDashboard = ({
                                     {isLocked ? (
                                       <Lock className="h-4 w-4 text-gray-400" />
                                     ) : isCompleted ? (
-                                      <CheckCircle className="h-4 w-4 text-white mr-2" />
+                                      <CheckCircle className="h-4 w-4 text-white mr-1" />
                                     ) : (
-                                      <Star className="h-4 w-4 text-orange-500" />
+                                      <Star className={`h-4 w-4 ${
+                                        [
+                                          'text-sky-500',
+                                          'text-amber-500',
+                                          'text-emerald-500'
+                                        ][phaseIndex] || 'text-primary'
+                                      }`} />
                                     )}
                                   </div>
-                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-gray-700'}`}>Matching Pairs</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-inherit'}`}>Matching Pairs</span>
                                   {percentage !== undefined && (
-                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-gray-600'}`}>{percentage}%</span>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-inherit'}`}>
+                                      {percentage}%
+                                    </span>
                                   )}
                                 </Button>
                               );
@@ -1082,8 +1271,22 @@ export const StudentDashboard = ({
 
                               return (
                                 <Button
-                                  variant={isCompleted ? "success" : "outline"}
-                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${isCompleted ? '' : ''}`}
+                                  variant={isCompleted ? "default" : "outline"}
+                                  className={`h-20 flex flex-col justify-center items-center p-2 w-full text-xs font-medium ${
+                                    isLocked 
+                                      ? 'opacity-70'  
+                                      : isCompleted 
+                                        ? [
+                                            'bg-sky-700 hover:bg-sky-800 text-white',
+                                            'bg-amber-700 hover:bg-amber-800 text-white',
+                                            'bg-emerald-700 hover:bg-emerald-800 text-white'
+                                          ][phaseIndex] || 'bg-primary text-white'
+                                        : [
+                                            'border-sky-500 text-sky-700 hover:bg-sky-50',
+                                            'border-amber-500 text-amber-700 hover:bg-amber-50',
+                                            'border-emerald-500 text-emerald-700 hover:bg-emerald-50'
+                                          ][phaseIndex] || ''
+                                  }`}
                                   disabled={isLocked}
                                   onClick={() => {
                                     if (!isLocked) {
@@ -1096,14 +1299,22 @@ export const StudentDashboard = ({
                                     {isLocked ? (
                                       <Lock className="h-4 w-4 text-gray-400" />
                                     ) : isCompleted ? (
-                                      <CheckCircle className="h-4 w-4 text-white mr-2" />
+                                      <CheckCircle className="h-4 w-4 text-white mr-1" />
                                     ) : (
-                                      <BookOpen className="h-4 w-4 text-indigo-500" />
+                                      <BookOpen className={`h-4 w-4 ${
+                                        [
+                                          'text-sky-500',
+                                          'text-amber-500',
+                                          'text-emerald-500'
+                                        ][phaseIndex] || 'text-primary'
+                                      }`} />
                                     )}
                                   </div>
-                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-gray-700'}`}>Story Reading</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-inherit'}`}>Story Reading</span>
                                   {percentage !== undefined && (
-                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-gray-600'}`}>{percentage}%</span>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-inherit'}`}>
+                                      {percentage}%
+                                    </span>
                                   )}
                                 </Button>
                               );
@@ -1186,6 +1397,93 @@ export const StudentDashboard = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Lesson Reminder Modal */}
+      <Dialog open={showLessonReminder} onOpenChange={setShowLessonReminder}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl font-bold text-primary">
+              Ready to Learn?
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              You're about to start the lesson:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="w-full flex flex-col items-center space-y-4 py-4">
+            <img
+              src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1759976738/Remove_background_project-1_1_q6lftl.png"
+              alt="Lesson Reminder"
+              className="max-w-[300px] h-auto"
+            />
+            <h3 className="text-xl font-semibold text-center">
+              {selectedLessonForReminder?.title}
+            </h3>
+            <p className="text-center text-muted-foreground">
+              Take your time to understand the concepts. You can review this lesson anytime!
+            </p>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowLessonReminder(false)}
+              className="w-full"
+            >
+              Not Now
+            </Button>
+            <Button 
+              onClick={handleConfirmStartLesson}
+              className="w-full"
+            >
+              Start Learning
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lesson Complete Modal */}
+      <Dialog open={showLessonComplete} onOpenChange={setShowLessonComplete}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl font-bold text-primary">
+              Lesson Completed! 🎉
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Great job completing:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="w-full flex flex-col items-center space-y-4 py-4">
+            <img
+              src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1760111954/Remove_background_project-1_7_qg2prd.png"
+              alt="Lesson Completed"
+              className="max-w-[300px] h-auto"
+            />
+            <h3 className="text-xl font-semibold text-center">
+              {completedLessonTitle}
+            </h3>
+            <p className="text-center text-muted-foreground">
+              You're making great progress! Keep up the good work!
+            </p>
+          </div>
+          <DialogFooter className="flex justify-center">
+            <Button 
+              onClick={() => {
+                setShowLessonComplete(false);
+                // Open the lessons list modal
+                const currentPhase = dashboardData?.phases.find(phase => 
+                  phase.lessons.some(lesson => lesson.id === selectedLessonId)
+                );
+                if (currentPhase) {
+                  setSelectedPhaseForModal(currentPhase.id);
+                }
+              }}
+              className="w-full sm:w-auto"
+              size="lg"
+            >
+              Continue Learning
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
