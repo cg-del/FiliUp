@@ -15,4 +15,7 @@ public class StudentStatsResponse {
     private Integer totalPoints;
     private String currentLevel;
     private Integer studyDays;
+    private Integer currentRank;
+    private String currentPhase;
+    private Integer activitiesCompleted;
 }

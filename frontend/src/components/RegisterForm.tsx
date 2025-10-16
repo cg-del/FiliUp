@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { Link, useNavigate } from 'react-router-dom';
 import { LoadingSpinner, CenteredLoading } from '@/components/ui/loading-spinner';
 
@@ -43,6 +44,10 @@ export const RegisterForm: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Theme toggle in top right corner */}
+      <div className="absolute top-4 right-4 z-50">
+        <SimpleThemeToggle />
+      </div>
       <div className="grid lg:grid-cols-[40%_60%] min-h-screen">
         {/* Left side - Branding */}
         <div className="hidden lg:flex flex-col justify-center items-center p-8 bg-gradient-primary relative overflow-hidden shadow-2xl rounded-tr-3xl rounded-br-3xl">
@@ -70,7 +75,7 @@ export const RegisterForm: React.FC = () => {
         </div>
 
         {/* Right side - Registration Form */}
-        <div className="flex items-center justify-center p-8 shadow-2xl bg-gradient-to-b from-white via-gray-50 to-white">
+        <div className="flex items-center justify-center p-8 bg-background">
           <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <div className="flex items-center justify-center mb-4">
@@ -82,7 +87,7 @@ export const RegisterForm: React.FC = () => {
           <p className="text-muted-foreground">Create your student account</p>
         </div>
 
-        <Card className="learning-card border-0 bg-white/95 backdrop-blur-sm">
+        <Card className="learning-card border border-border bg-card">
           <CardHeader>
             <CardTitle>Register as Student</CardTitle>
             <CardDescription>

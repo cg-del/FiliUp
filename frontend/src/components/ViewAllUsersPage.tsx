@@ -11,6 +11,7 @@ import {
   Search, 
   Filter 
 } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { adminAPI } from '@/lib/api';
 import { CenteredLoading } from '@/components/ui/loading-spinner';
@@ -115,6 +116,7 @@ export const ViewAllUsersPage = () => {
               <ChevronLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
+            <SimpleThemeToggle />
             <Button variant="default" onClick={() => setShowAddUser(true)}>
               <Users className="h-4 w-4 mr-2" />
               Add User

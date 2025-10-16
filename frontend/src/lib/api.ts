@@ -132,6 +132,7 @@ export interface StudentDashboardResponse {
     studyDays: number;
     activitiesCompleted: number;
     currentRank: number;
+    currentPhase: string;
   };
   phases: Phase[];
 }
@@ -141,6 +142,9 @@ export interface Phase {
   title: string;
   description: string;
   orderIndex: number;
+  isUnlocked: boolean;
+  totalActivitiesCount: number;
+  completedActivitiesCount: number;
   lessons: LessonSummary[];
 }
 
@@ -152,6 +156,7 @@ export interface LessonSummary {
   colorClass: string;
   totalActivities: number;
   isCompleted: boolean;
+  isUnlocked: boolean;
   activitiesUnlocked: boolean;
   progressPercentage: number;
   completedActivitiesCount: number;

@@ -85,25 +85,25 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-card rounded-lg shadow-sm border border-border p-6">
         <InlineLoading message="Loading leaderboard data..." size="sm" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Class Leaderboard</h3>
-        <p className="text-sm text-gray-600 mt-1">Rankings based on overall performance</p>
+    <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+      <div className="px-6 py-4 border-b border-border">
+        <h3 className="text-lg font-semibold text-foreground">Class Leaderboard</h3>
+        <p className="text-sm text-muted-foreground mt-1">Rankings based on overall performance</p>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-muted/50">
             <tr>
               <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted"
                 onClick={() => handleSort('rank')}
               >
                 <div className="flex items-center space-x-1">
@@ -115,11 +115,11 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                   )}
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Student
               </th>
               <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted"
                 onClick={() => handleSort('score')}
               >
                 <div className="flex items-center space-x-1">
@@ -132,7 +132,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                 </div>
               </th>
               <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted"
                 onClick={() => handleSort('percentage')}
               >
                 <div className="flex items-center space-x-1">
@@ -145,7 +145,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                 </div>
               </th>
               <th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted"
                 onClick={() => handleSort('activities')}
               >
                 <div className="flex items-center space-x-1">
@@ -158,20 +158,20 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                 </div>
               </th>
               {showFullDetails && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Lessons
                 </th>
               )}
              
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-card divide-y divide-border">
             {sortedRankings.map((student) => (
               <tr 
                 key={student.id}
-                className={`hover:bg-gray-50 ${
+                className={`hover:bg-muted/50 ${
                   currentStudentId === student.id 
-                    ? 'bg-blue-50 border-l-4 border-blue-500' 
+                    ? 'bg-primary/10 border-l-4 border-primary' 
                     : ''
                 }`}
               >
@@ -190,24 +190,24 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                       </div>
                     </div>
                     <div className="ml-3">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-foreground">
                         {currentStudentId === student.id ? 'You' : student.name}
                       </div>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-semibold text-gray-900">
+                  <div className="text-sm font-semibold text-foreground">
                     {student.totalScore.toLocaleString()}
                   </div>
-                  <div className="text-xs text-gray-500">points</div>
+                  <div className="text-xs text-muted-foreground">points</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-foreground">
                       {student.averageScore.toFixed(1)}%
                     </div>
-                    <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                    <div className="ml-2 w-16 bg-muted rounded-full h-2">
                       <div 
                         className="bg-blue-500 h-2 rounded-full" 
                         style={{ width: `${Math.min(student.averageScore, 100)}%` }}
@@ -216,17 +216,17 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-foreground">
                     {student.activitiesCompleted}
                   </div>
-                  <div className="text-xs text-gray-500">completed</div>
+                  <div className="text-xs text-muted-foreground">completed</div>
                 </td>
                 {showFullDetails && (
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-foreground">
                       {student.lessonsCompleted}
                     </div>
-                    <div className="text-xs text-gray-500">lessons</div>
+                    <div className="text-xs text-muted-foreground">lessons</div>
                   </td>
                 )}
               
@@ -238,9 +238,9 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
 
       {rankings.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-gray-500 text-lg mb-2">📊</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">No rankings yet</h3>
-          <p className="text-gray-500">Complete some activities to see the leaderboard!</p>
+          <div className="text-muted-foreground text-lg mb-2">📊</div>
+          <h3 className="text-lg font-medium text-foreground mb-1">No rankings yet</h3>
+          <p className="text-muted-foreground">Complete some activities to see the leaderboard!</p>
         </div>
       )}
     </div>

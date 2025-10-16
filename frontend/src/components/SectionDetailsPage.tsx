@@ -409,7 +409,7 @@ export const SectionDetailsPage = () => {
               <Button 
                 variant="outline" 
                 className="h-auto p-4 flex flex-col items-center space-y-2"
-                onClick={() => navigate('/teacher/dashboard')}
+                onClick={() => navigate('/')}
               >
                 <ArrowLeft className="h-8 w-8 text-gray-500" />
                 <span>Back to Dashboard</span>

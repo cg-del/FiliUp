@@ -20,6 +20,7 @@ public class LessonProgressResponse {
     private String colorClass;
     private Integer totalActivities;
     private Boolean isCompleted;
+    private Boolean isUnlocked;
     private Boolean activitiesUnlocked;
     private Integer progressPercentage;
     private Integer completedActivitiesCount;

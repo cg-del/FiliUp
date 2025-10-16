@@ -238,11 +238,11 @@
 
   /* Lesson description styling for proper HTML content rendering */
   .lesson-description {
-    @apply text-gray-700 leading-relaxed text-sm;
+    @apply text-muted-foreground leading-relaxed text-sm;
   }
 
   .lesson-description * {
-    @apply text-gray-700;
+    @apply text-muted-foreground;
   }
 
   .lesson-description p {
@@ -251,16 +251,16 @@
 
   .lesson-description strong,
   .lesson-description b {
-    @apply font-semibold text-gray-900;
+    @apply font-semibold text-foreground;
   }
 
   .lesson-description em,
   .lesson-description i {
-    @apply italic text-gray-800;
+    @apply italic text-foreground;
   }
 
   .lesson-description u {
-    @apply underline decoration-gray-400;
+    @apply underline decoration-muted-foreground/50;
   }
 
   .lesson-description h1,
@@ -269,7 +269,7 @@
   .lesson-description h4,
   .lesson-description h5,
   .lesson-description h6 {
-    @apply font-semibold text-gray-900 mb-2 mt-3 first:mt-0;
+    @apply font-semibold text-foreground mb-2 mt-3 first:mt-0;
   }
 
   .lesson-description h1 { @apply text-xl; }
@@ -287,15 +287,15 @@
   }
 
   .lesson-description blockquote {
-    @apply border-l-4 border-primary/30 pl-4 italic text-gray-600 my-2;
+    @apply border-l-4 border-primary/30 pl-4 italic text-muted-foreground my-2;
   }
 
   .lesson-description code {
-    @apply bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-xs font-mono;
+    @apply bg-muted text-foreground px-1 py-0.5 rounded text-xs font-mono;
   }
 
   .lesson-description pre {
-    @apply bg-gray-100 text-gray-800 p-3 rounded-md overflow-x-auto text-xs font-mono mb-2;
+    @apply bg-muted text-foreground p-3 rounded-md overflow-x-auto text-xs font-mono mb-2;
   }
 
   .lesson-description a {
@@ -307,15 +307,15 @@
   }
 
   .lesson-description table {
-    @apply w-full border-collapse border border-gray-300 my-2;
+    @apply w-full border-collapse border border-border my-2;
   }
 
   .lesson-description th,
   .lesson-description td {
-    @apply border border-gray-300 px-3 py-2 text-left;
+    @apply border border-border px-3 py-2 text-left;
   }
 
   .lesson-description th {
-    @apply bg-gray-50 font-semibold text-gray-900;
+    @apply bg-muted font-semibold text-foreground;
   }
 }

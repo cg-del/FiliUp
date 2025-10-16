@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, Users, GraduationCap, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { Link, useNavigate } from 'react-router-dom';
 import { LoadingSpinner, CenteredLoading } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -35,8 +36,8 @@ export const LoginForm = () => {
 
   const demoUsers = [
     { role: 'Admin', email: 'admin@filiup.com',password:'admin123', icon: Users, color: 'bg-gradient-teal-cyan' },
-    { role: 'Teacher', email: 'teacher@filiup.com',password:'teacher123', icon: GraduationCap, color: 'bg-gradient-warm' },
-    { role: 'Student', email: 'student@filiup.com',password:'student123', icon: BookOpen, color: 'bg-gradient-success' },
+    { role: 'Teacher', email: 'joshcervantes@gmail.com',password:'iamnumber123', icon: GraduationCap, color: 'bg-gradient-warm' },
+    { role: 'Student', email: 'mike@gmail.com',password:'iamnumber123', icon: BookOpen, color: 'bg-gradient-success' },
   ];
 
   if (isLoading) {
@@ -45,6 +46,10 @@ export const LoginForm = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Theme toggle in top right corner */}
+      <div className="absolute top-4 right-4 z-50">
+        <SimpleThemeToggle />
+      </div>
       <div className="grid lg:grid-cols-[40%_60%] min-h-screen">
         {/* Left side - Branding */}
         <div className="hidden lg:flex flex-col justify-center items-center p-8 bg-gradient-primary relative overflow-hidden shadow-2xl rounded-tr-3xl rounded-br-3xl">
@@ -73,7 +78,7 @@ export const LoginForm = () => {
         </div>
 
         {/* Right side - Login Form */}
-        <div className="flex items-center justify-center p-8 shadow-2xl bg-gradient-to-b from-white via-gray-50 to-white">
+        <div className="flex items-center justify-center p-8 bg-background">
           <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <div className="flex items-center justify-center mb-4">
@@ -85,7 +90,7 @@ export const LoginForm = () => {
           <p className="text-muted-foreground">Learn Filipino with joy!</p>
         </div>
 
-        <Card className="learning-card border-0 bg-white/95 backdrop-blur-sm">
+        <Card className="learning-card border border-border bg-card">
           <CardHeader>
             <CardTitle>Login to your account</CardTitle>
             <CardDescription>

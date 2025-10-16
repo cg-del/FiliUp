@@ -17,5 +17,8 @@ public class PhaseResponse {
     private String title;
     private String description;
     private Integer orderIndex;
+    private Boolean isUnlocked;
+    private Integer totalActivitiesCount;
+    private Integer completedActivitiesCount;
     private List<LessonProgressResponse> lessons;
 }

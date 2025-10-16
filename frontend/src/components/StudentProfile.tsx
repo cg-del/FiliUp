@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, User, Award, BookOpen, TrendingUp, Calendar, Loader2 } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentAPI, StudentProfileResponse, authAPI, PasswordResetRequest } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
@@ -124,6 +125,7 @@ export const StudentProfile = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <SimpleThemeToggle />
               <Dialog>
                 <DialogTrigger asChild>
                   <Button>Reset Password</Button>

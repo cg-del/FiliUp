@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, User } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { PasswordResetDialog } from '@/components/PasswordResetDialog';
 
@@ -30,6 +31,7 @@ export const TeacherProfile: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <SimpleThemeToggle />
               <Button onClick={() => setShowReset(true)}>Reset Password</Button>
               <Button variant="outline" onClick={logout}>Logout</Button>
             </div>
