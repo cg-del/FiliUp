@@ -5,6 +5,7 @@ import LeaderboardTable from './LeaderboardTable';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, User } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { CenteredLoading, InlineLoading } from '@/components/ui/loading-spinner';
 
 const TeacherLeaderboard: React.FC = () => {
@@ -136,6 +137,7 @@ const TeacherLeaderboard: React.FC = () => {
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </Button>
+              <SimpleThemeToggle />
               <Button variant="ghost" onClick={handleLogout}>Logout</Button>
             </div>
             {/* Mobile menu button */}
@@ -149,6 +151,9 @@ const TeacherLeaderboard: React.FC = () => {
               <div className="flex flex-col gap-2">
                 <Button variant="outline" onClick={() => navigate('/teacher/dashboard')} className="w-full text-left">Dashboard</Button>
                 <Button variant="outline" onClick={() => navigate('/teacher/profile')} className="w-full text-left">Profile</Button>
+                <div className="flex justify-center py-2">
+                  <SimpleThemeToggle />
+                </div>
                 <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Logout</Button>
               </div>
             </div>
@@ -191,6 +196,7 @@ const TeacherLeaderboard: React.FC = () => {
               <User className="h-4 w-4 mr-2" />
               Profile
             </Button>
+            <SimpleThemeToggle />
             <Button variant="ghost" onClick={handleLogout}>Logout</Button>
           </div>
           {/* Mobile menu button */}
@@ -204,6 +210,9 @@ const TeacherLeaderboard: React.FC = () => {
             <div className="flex flex-col gap-2">
               <Button variant="outline" onClick={() => navigate('/')} className="w-full text-left">Dashboard</Button>
               <Button variant="outline" onClick={() => navigate('/teacher/profile')} className="w-full text-left">Profile</Button>
+              <div className="flex justify-center py-2">
+                <SimpleThemeToggle />
+              </div>
               <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Logout</Button>
             </div>
           </div>
@@ -214,19 +223,19 @@ const TeacherLeaderboard: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Class Leaderboards</h1>
-          <p className="text-gray-600 mt-1">Monitor student performance and progress</p>
+          <h1 className="text-3xl font-bold text-foreground">Class Leaderboards</h1>
+          <p className="text-muted-foreground mt-1">Monitor student performance and progress</p>
         </div>
         
         <div className="flex items-center space-x-4">
           {/* View Mode Toggle */}
-          <div className="bg-gray-100 rounded-lg p-1 flex">
+          <div className="bg-muted rounded-lg p-1 flex">
             <button
               onClick={() => handleViewModeChange('single')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 viewMode === 'single'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Single Section
@@ -235,8 +244,8 @@ const TeacherLeaderboard: React.FC = () => {
               onClick={() => handleViewModeChange('all')}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 viewMode === 'all'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-card text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               All Sections
@@ -257,16 +266,16 @@ const TeacherLeaderboard: React.FC = () => {
 
       {/* Section Selector (for single section view) */}
       {viewMode === 'single' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-4">
           <div className="flex items-center space-x-4">
-            <label htmlFor="section-select" className="text-sm font-medium text-gray-700">
+            <label htmlFor="section-select" className="text-sm font-medium text-foreground">
               Select Section:
             </label>
             <select
               id="section-select"
               value={selectedSectionId}
               onChange={(e) => handleSectionChange(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="border border-border rounded-md px-3 py-2 bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             >
               {sections.map((section) => (
                 <option key={section.id} value={section.id}>
@@ -283,33 +292,33 @@ const TeacherLeaderboard: React.FC = () => {
         <>
           {/* Section Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-gray-900">{leaderboardData.students.length}</div>
-              <div className="text-sm text-gray-600">Total Students</div>
+            <div className="bg-card rounded-lg shadow-sm border border-border p-4">
+              <div className="text-2xl font-bold text-foreground">{leaderboardData.students.length}</div>
+              <div className="text-sm text-muted-foreground">Total Students</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="bg-card rounded-lg shadow-sm border border-border p-4">
+              <div className="text-2xl font-bold text-foreground">
                 {leaderboardData.students.length > 0 
                   ? Math.round(leaderboardData.students.reduce((sum, s) => sum + s.totalScore, 0) / leaderboardData.students.length)
                   : 0}
               </div>
-              <div className="text-sm text-gray-600">Average Score</div>
+              <div className="text-sm text-muted-foreground">Average Score</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="bg-card rounded-lg shadow-sm border border-border p-4">
+              <div className="text-2xl font-bold text-foreground">
                 {leaderboardData.students.length > 0 
                   ? Math.max(...leaderboardData.students.map(s => s.totalScore)).toLocaleString()
                   : 0}
               </div>
-              <div className="text-sm text-gray-600">Highest Score</div>
+              <div className="text-sm text-muted-foreground">Highest Score</div>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-gray-900">
+            <div className="bg-card rounded-lg shadow-sm border border-border p-4">
+              <div className="text-2xl font-bold text-foreground">
                 {leaderboardData.students.length > 0 
                   ? (leaderboardData.students.reduce((sum, s) => sum + s.averageScore, 0) / leaderboardData.students.length).toFixed(1)
                   : 0}%
               </div>
-              <div className="text-sm text-gray-600">Avg Percentage</div>
+              <div className="text-sm text-muted-foreground">Avg Percentage</div>
             </div>
           </div>
 
@@ -328,8 +337,8 @@ const TeacherLeaderboard: React.FC = () => {
           {allSectionsData.map((section) => (
             <div key={section.sectionId} className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">{section.sectionName}</h2>
-                <div className="text-sm text-gray-600">
+                <h2 className="text-xl font-semibold text-foreground">{section.sectionName}</h2>
+                <div className="text-sm text-muted-foreground">
                   {section.students.length} students • Avg: {section.students.length > 0 ? Math.round(section.students.reduce((sum, s) => sum + s.totalScore, 0) / section.students.length) : 0} points
                 </div>
               </div>
@@ -354,28 +363,28 @@ const TeacherLeaderboard: React.FC = () => {
       {/* Empty State */}
       {!isLoading && viewMode === 'single' && leaderboardData?.students.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-gray-500 text-6xl mb-4">📊</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No student data yet</h3>
-          <p className="text-gray-500">Students need to complete activities to appear on the leaderboard.</p>
+          <div className="text-muted-foreground text-6xl mb-4">📊</div>
+          <h3 className="text-lg font-medium text-foreground mb-2">No student data yet</h3>
+          <p className="text-muted-foreground">Students need to complete activities to appear on the leaderboard.</p>
         </div>
       )}
 
       {/* Teacher Insights */}
       {(leaderboardData || allSectionsData) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">📈 Teaching Insights</h3>
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-primary mb-4">📈 Teaching Insights</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div className="bg-white rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">🎯 Engagement Tips</h4>
-              <ul className="text-gray-600 space-y-1">
+            <div className="bg-card rounded-lg p-4 border border-border">
+              <h4 className="font-medium text-foreground mb-2">🎯 Engagement Tips</h4>
+              <ul className="text-muted-foreground space-y-1">
                 <li>• Celebrate top performers publicly</li>
                 <li>• Encourage struggling students privately</li>
                 <li>• Set class-wide completion goals</li>
               </ul>
             </div>
-            <div className="bg-white rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">📊 Performance Tracking</h4>
-              <ul className="text-gray-600 space-y-1">
+            <div className="bg-card rounded-lg p-4 border border-border">
+              <h4 className="font-medium text-foreground mb-2">📊 Performance Tracking</h4>
+              <ul className="text-muted-foreground space-y-1">
                 <li>• Monitor weekly progress trends</li>
                 <li>• Identify students needing extra help</li>
                 <li>• Use data for parent conferences</li>

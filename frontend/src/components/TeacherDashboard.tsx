@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, BookOpen, TrendingUp, Settings, Plus, Eye, Key, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateSectionDialog } from './CreateSectionDialog';
 import { InviteCodeDialog } from './InviteCodeDialog';
@@ -123,6 +124,7 @@ export const TeacherDashboard = () => {
               <Settings className="h-4 w-4 mr-2" />
               Profile
             </Button>
+            <SimpleThemeToggle />
             <Button variant="ghost" onClick={handleLogoutClick}>
               Logout
             </Button>
@@ -144,6 +146,9 @@ export const TeacherDashboard = () => {
               <Button variant="outline" onClick={() => navigate('/teacher/profile')} className="w-full text-left">
                 Profile
               </Button>
+              <div className="flex justify-center py-2">
+                <SimpleThemeToggle />
+              </div>
               <Button variant="ghost" onClick={handleLogoutClick} className="w-full text-left">
                 Logout
               </Button>
@@ -288,7 +293,7 @@ export const TeacherDashboard = () => {
                     
                     {/* Pagination Controls */}
                     {totalPages > 1 && (
-                      <div className="flex items-center justify-between pt-4 border-t">
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
                         <div className="text-sm text-muted-foreground">
                           Showing {startIndex + 1}-{Math.min(endIndex, sortedActivities.length)} of {sortedActivities.length}
                         </div>

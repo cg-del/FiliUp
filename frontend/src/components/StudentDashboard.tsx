@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Trophy, Target, Clock, Star, ArrowRight, CheckCircle, Lock, User, TrendingUp } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { MultipleChoiceActivity } from './activities/MultipleChoiceActivity';
 import { DragDropActivity } from './activities/DragDropActivity';
@@ -67,6 +68,8 @@ export const StudentDashboard = ({
   const [selectedLessonForReminder, setSelectedLessonForReminder] = useState<{id: string, title: string} | null>(null);
   const [completedLessonTitle, setCompletedLessonTitle] = useState<string>('');
   const [selectedPhaseForModal, setSelectedPhaseForModal] = useState<string | null>(null);
+  const [showActivityConfirmation, setShowActivityConfirmation] = useState(false);
+  const [pendingActivity, setPendingActivity] = useState<{lessonId: string, activityType: ActivityType} | null>(null);
 
   const handleLogoutClick = () => {
     setShowLogoutDialog(true);
@@ -87,6 +90,7 @@ export const StudentDashboard = ({
     } else if (initialActivityId && initialActivityType) {
       loadActivityContent(initialActivityId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialLessonId, initialActivityId, initialActivityType]);
 
   // Show welcome dialog for new students or first login (once per session)
@@ -142,6 +146,21 @@ export const StudentDashboard = ({
     try {
       setLoading(true);
       setError(null);
+      
+      // Check if lesson is unlocked before loading content
+      if (dashboardData) {
+        const lesson = dashboardData.phases
+          .flatMap(phase => phase.lessons)
+          .find(l => l.id === lessonId);
+        
+        if (lesson && !lesson.isUnlocked) {
+          setError('This lesson is locked. Please complete all activities in the previous lesson first.');
+          setLoading(false);
+          goToDashboard();
+          return;
+        }
+      }
+      
       const content = await studentAPI.getLessonContentStructured(lessonId);
       setLessonContent(content);
       setSelectedLessonId(lessonId);
@@ -251,6 +270,34 @@ export const StudentDashboard = ({
 
     if (!activity) return;
 
+    // Show confirmation modal before starting activity
+    setPendingActivity({ lessonId, activityType });
+    setShowActivityConfirmation(true);
+  };
+
+  const handleConfirmStartActivity = async () => {
+    if (!pendingActivity || !dashboardData) return;
+
+    const { lessonId, activityType } = pendingActivity;
+
+    // Find the lesson and its activities
+    const lesson = dashboardData.phases
+      .flatMap(phase => phase.lessons)
+      .find(l => l.id === lessonId);
+    
+    if (!lesson) return;
+
+    // Find the specific activity
+    const activity = lesson.activities?.find(
+      a => mapActivityType(a.activityType) === activityType
+    );
+
+    if (!activity) return;
+
+    // Close confirmation modal
+    setShowActivityConfirmation(false);
+    setPendingActivity(null);
+
     // Update URL without refreshing the page
     navigate(`/student/activity/${activity.id}/${activityType}`, { replace: true });
     
@@ -266,6 +313,12 @@ export const StudentDashboard = ({
       .find(l => l.id === lessonId);
     
     if (lesson) {
+      // Check if lesson is unlocked before allowing access
+      if (!lesson.isUnlocked) {
+        setError('This lesson is locked. Please complete all activities in the previous lesson first.');
+        return;
+      }
+      
       setSelectedLessonForReminder({
         id: lessonId,
         title: lesson.title
@@ -308,56 +361,13 @@ export const StudentDashboard = ({
   const isLessonUnlocked = (lessonId: string): boolean => {
     if (!dashboardData) return false;
 
-    // Find the current lesson and its position
-    let currentLesson = null;
-    let allLessons: any[] = [];
+    // Find the lesson in the dashboard data
+    const lesson = dashboardData.phases
+      .flatMap(phase => phase.lessons)
+      .find(l => l.id === lessonId);
     
-    for (const phase of dashboardData.phases) {
-      for (const lesson of phase.lessons) {
-        allLessons.push(lesson);
-        if (lesson.id === lessonId) {
-          currentLesson = lesson;
-        }
-      }
-    }
-
-    if (!currentLesson) return false;
-
-    // Sort lessons by phase order and lesson order
-    allLessons.sort((a, b) => {
-      const phaseA = dashboardData.phases.find(p => p.lessons.some(l => l.id === a.id));
-      const phaseB = dashboardData.phases.find(p => p.lessons.some(l => l.id === b.id));
-      
-      if (phaseA?.orderIndex !== phaseB?.orderIndex) {
-        return (phaseA?.orderIndex || 0) - (phaseB?.orderIndex || 0);
-      }
-      
-      return a.orderIndex - b.orderIndex;
-    });
-
-    // Find the index of current lesson
-    const currentIndex = allLessons.findIndex(l => l.id === lessonId);
-    
-    // First lesson is always unlocked
-    if (currentIndex === 0) return true;
-
-    // Check if all activities in previous lessons are completed
-    for (let i = 0; i < currentIndex; i++) {
-      const previousLesson = allLessons[i];
-      
-      // Check if all activities in the previous lesson are completed
-      if (previousLesson.activities && previousLesson.activities.length > 0) {
-        const hasIncompleteActivities = previousLesson.activities.some(
-          (activity: any) => !activity.isCompleted
-        );
-        
-        if (hasIncompleteActivities) {
-          return false; // Previous lesson has incomplete activities
-        }
-      }
-    }
-
-    return true; // All previous activities are completed
+    // Return the isUnlocked status from backend
+    return lesson?.isUnlocked ?? false;
   };
 
   const getActivityStatus = (lessonId: string, activityType: ActivityType): 'locked' | 'unlocked' | 'completed' => {
@@ -633,7 +643,7 @@ export const StudentDashboard = ({
   // Lesson View
   if (currentView === 'lesson' && lessonContent) {
     return (
-      <div className="min-h-screen bg-green-50/40">
+      <div className="min-h-screen bg-background">
         <div className="p-4">
           <Button variant="ghost" onClick={goToDashboard} className="mb-4">
             ← Back to Dashboard
@@ -725,6 +735,7 @@ export const StudentDashboard = ({
               <User className="h-4 w-4 mr-2" />
               Profile
             </Button>
+            <SimpleThemeToggle />
             <Button variant="ghost" onClick={handleLogoutClick}>
               Logout
             </Button>
@@ -746,6 +757,9 @@ export const StudentDashboard = ({
               <Button variant="outline" onClick={() => navigate('/student/profile')} className="w-full text-left">
                 Profile
               </Button>
+              <div className="flex justify-center py-2">
+                <SimpleThemeToggle />
+              </div>
               <Button variant="ghost" onClick={handleLogoutClick} className="w-full text-left">
                 Logout
               </Button>
@@ -755,6 +769,29 @@ export const StudentDashboard = ({
       </header>
 
       <div className="max-w-6xl mx-auto p-6 space-y-8">
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-destructive" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="ml-3 flex-shrink-0 text-destructive/60 hover:text-destructive"
+            >
+              <span className="sr-only">Dismiss</span>
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        )}
+        
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="learning-card">
@@ -787,8 +824,8 @@ export const StudentDashboard = ({
                 <Target className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{dashboardData.stats.currentLevel}</div>
-                <div className="text-xs text-muted-foreground">Current Level</div>
+                <div className="text-m font-bold">{dashboardData.stats.currentPhase}</div>
+                <div className="text-xs text-muted-foreground">Current Phase</div>
               </div>
             </CardContent>
           </Card>
@@ -796,11 +833,11 @@ export const StudentDashboard = ({
           <Card className="learning-card">
             <CardContent className="flex items-center p-4">
               <div className="p-2 rounded-lg bg-gradient-primary mr-3">
-                <Clock className="h-5 w-5 text-white" />
+                <TrendingUp className="h-5 w-5 text-white" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{dashboardData.stats.studyDays}</div>
-                <div className="text-xs text-muted-foreground">Study Days</div>
+                <div className="text-2xl font-bold">#{dashboardData.stats.currentRank}</div>
+                <div className="text-xs text-muted-foreground">Leaderboard Rank</div>
               </div>
             </CardContent>
           </Card>
@@ -817,9 +854,9 @@ export const StudentDashboard = ({
                 {phaseIndex === 1 && (
                   <div className="flex-[3]">
                     <Card className={`h-full border-0 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300 ${
-                      phaseIndex === 1 ? 'bg-amber-50 hover:bg-amber-100' :
-                      phaseIndex === 0 ? 'bg-sky-50 hover:bg-sky-100' :
-                      'bg-emerald-50 hover:bg-emerald-100'
+                      phaseIndex === 1 ? 'bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-950/30' :
+                      phaseIndex === 0 ? 'bg-sky-50 dark:bg-sky-950/20 hover:bg-sky-100 dark:hover:bg-sky-950/30' :
+                      'bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-950/30'
                     }`}>
                       <CardContent className="p-4 h-full flex items-center">
                         <img
@@ -833,9 +870,9 @@ export const StudentDashboard = ({
                 )}
 
                 <Card className={`group hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300 flex-[7] min-h-[280px] border-0 shadow-sm ${
-                  phaseIndex === 0 ? 'bg-sky-50 hover:bg-sky-100' :
-                  phaseIndex === 1 ? 'bg-amber-50 hover:bg-amber-100' :
-                  'bg-emerald-50 hover:bg-emerald-100'
+                  phaseIndex === 0 ? 'bg-sky-50 dark:bg-sky-950/20 hover:bg-sky-100 dark:hover:bg-sky-950/30' :
+                  phaseIndex === 1 ? 'bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-950/30' :
+                  'bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-950/30'
                 }`}>
                   <CardContent className="p-6 h-full flex flex-col">
                     <div className="flex items-start justify-between mb-4">
@@ -849,9 +886,9 @@ export const StudentDashboard = ({
                         </div>
                         <div>
                           <h3 className={`text-xl font-semibold ${
-                            phaseIndex === 0 ? 'text-sky-700' :
-                            phaseIndex === 1 ? 'text-amber-700' :
-                            'text-emerald-700'
+                            phaseIndex === 0 ? 'text-sky-700 dark:text-sky-400' :
+                            phaseIndex === 1 ? 'text-amber-700 dark:text-amber-400' :
+                            'text-emerald-700 dark:text-emerald-400'
                           }`}>{phase.title}</h3>
                         </div>
                       </div>
@@ -859,16 +896,54 @@ export const StudentDashboard = ({
 
                     <p className="text-muted-foreground mb-6 flex-grow" dangerouslySetInnerHTML={{ __html: phase.description }} />
 
-                    <div className="flex justify-end">
+                    <div className="flex justify-between items-center">
+                      {!phase.isUnlocked && (
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Lock className="h-4 w-4 mr-2" />
+                          <span>Complete all activities in previous phase to unlock</span>
+                        </div>
+                      )}
+                      {phase.isUnlocked && phase.completedActivitiesCount < phase.totalActivitiesCount && (
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <span>{phase.completedActivitiesCount}/{phase.totalActivitiesCount} activities completed</span>
+                        </div>
+                      )}
+                      {phase.isUnlocked && phase.completedActivitiesCount === phase.totalActivitiesCount && (
+                        <div className="flex items-center text-sm text-green-600 font-medium">
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          <span>Phase Completed!</span>
+                        </div>
+                      )}
                       <Button
                         className={`hover:opacity-90 ${
                           phaseIndex === 0 ? 'bg-sky-500 hover:bg-sky-600' :
                           phaseIndex === 1 ? 'bg-amber-500 hover:bg-amber-600' :
                           'bg-emerald-500 hover:bg-emerald-600'
                         }`}
-                        onClick={() => setSelectedPhaseForModal(phase.id)}
+                        onClick={() => {
+                          // Check if ALL previous phases are completed before allowing access
+                          if (phaseIndex > 0) {
+                            // Check each previous phase in order
+                            for (let i = 0; i < phaseIndex; i++) {
+                              const previousPhase = dashboardData.phases[i];
+                              if (previousPhase && previousPhase.completedActivitiesCount < previousPhase.totalActivitiesCount) {
+                                setError(`Please complete all activities in ${previousPhase.title} before accessing ${phase.title}.`);
+                                // Scroll to top to show error
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                return;
+                              }
+                            }
+                          }
+                          setSelectedPhaseForModal(phase.id);
+                        }}
+                        disabled={!phase.isUnlocked}
                       >
-                        View Lessons
+                        {phase.isUnlocked ? 'View Lessons' : (
+                          <>
+                            <Lock className="h-4 w-4 mr-2" />
+                            Locked
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
@@ -877,7 +952,7 @@ export const StudentDashboard = ({
                 {/* Right side images for phases 1 and 3 */}
                 {phaseIndex === 0 && (
                   <div className="flex-[3]">
-                    <Card className="h-full border-0 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300 bg-sky-50 hover:bg-sky-100">
+                    <Card className="h-full border-0 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300 bg-sky-50 dark:bg-sky-950/20 hover:bg-sky-100 dark:hover:bg-sky-950/30">
                       <CardContent className="p-4 h-full flex items-center">
                         <img
                           src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1759982189/Remove_background_project-1_2_daxtwh.png"
@@ -891,7 +966,7 @@ export const StudentDashboard = ({
 
                 {phaseIndex === 2 && (
                   <div className="flex-[3]">
-                    <Card className="h-full border-0 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300 bg-emerald-50 hover:bg-emerald-100">
+                    <Card className="h-full border-0 shadow-sm hover:shadow-md hover:-translate-y-0.5 transform transition-all duration-300 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-950/30">
                       <CardContent className="p-4 h-full flex items-center">
                         <img
                           src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1759982201/Remove_background_project-1_4_heiu9a.png"
@@ -921,9 +996,9 @@ export const StudentDashboard = ({
                   return (
                     <span className={`${
                       [
-                        'text-sky-700',    // Phase 1
-                        'text-amber-700',  // Phase 2
-                        'text-emerald-700' // Phase 3
+                        'text-sky-700 dark:text-sky-400',    // Phase 1
+                        'text-amber-700 dark:text-amber-400',  // Phase 2
+                        'text-emerald-700 dark:text-emerald-400' // Phase 3
                       ][phaseIndex] || 'text-primary'
                     }`}>
                       {phase.title}
@@ -960,16 +1035,16 @@ export const StudentDashboard = ({
 
                   // Determine colors based on phase index
                   const bgColor = [
-                    'bg-sky-50',    // Phase 1
-                    'bg-amber-50',  // Phase 2
-                    'bg-emerald-50' // Phase 3
-                  ][phaseIndex] || 'bg-white';
+                    'bg-sky-50 dark:bg-sky-950/20',    // Phase 1
+                    'bg-amber-50 dark:bg-amber-950/20',  // Phase 2
+                    'bg-emerald-50 dark:bg-emerald-950/20' // Phase 3
+                  ][phaseIndex] || 'bg-card';
                   
                   const borderColor = [
-                    'border-sky-200',    // Phase 1
-                    'border-amber-200',  // Phase 2
-                    'border-emerald-200' // Phase 3
-                  ][phaseIndex] || 'border-green-200';
+                    'border-sky-200 dark:border-sky-800',    // Phase 1
+                    'border-amber-200 dark:border-amber-800',  // Phase 2
+                    'border-emerald-200 dark:border-emerald-800' // Phase 3
+                  ][phaseIndex] || 'border-border';
 
                   return (
                     <Card key={lesson.id} className={`${bgColor} ${borderColor} shadow-sm hover:shadow-md transition-shadow duration-300`}>
@@ -978,9 +1053,9 @@ export const StudentDashboard = ({
                           <div className="flex items-start space-x-4">
                             <div className={`p-3 rounded-lg flex-shrink-0 ${
                               [
-                                'bg-sky-500 text-white',    // Phase 1
-                                'bg-amber-500 text-white',  // Phase 2
-                                'bg-emerald-500 text-white' // Phase 3
+                                'bg-sky-500 text-white dark:bg-sky-900',    // Phase 1
+                                'bg-amber-500 text-white dark:bg-amber-900',  // Phase 2
+                                'bg-emerald-500 text-white dark:bg-emerald-900' // Phase 3
                               ][phaseIndex] || 'bg-primary text-white'
                             }`}>
                               <BookOpen className="h-6 w-6" />
@@ -988,24 +1063,24 @@ export const StudentDashboard = ({
                             <div className="flex-1 min-w-0">
                               <h4 className={`text-xl font-semibold mb-2 ${
                                 [
-                                  'text-sky-800',    // Phase 1
-                                  'text-amber-800',  // Phase 2
-                                  'text-emerald-800' // Phase 3
-                                ][phaseIndex] || 'text-gray-900'
+                                  'text-sky-800 dark:text-sky-300',    // Phase 1
+                                  'text-amber-800 dark:text-amber-300',  // Phase 2
+                                  'text-emerald-800 dark:text-emerald-300' // Phase 3
+                                ][phaseIndex] || 'text-foreground'
                               }`}>
                                 {lesson.title}
                               </h4>
-                              <div className="text-gray-700 mb-3 leading-relaxed text-sm lesson-description prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: lesson.description }} />
+                              <div className="text-foreground/80 mb-3 leading-relaxed text-sm lesson-description prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: lesson.description }} />
 
                               <div className="flex items-center space-x-4 mb-3">
                                 <div className="flex items-center space-x-2">
                                   <div className="relative w-32 h-2 rounded-full overflow-hidden">
                                     <div className={`absolute top-0 left-0 h-full ${
                                       [
-                                        'bg-sky-100',    // Phase 1
-                                        'bg-amber-100',  // Phase 2
-                                        'bg-emerald-100' // Phase 3
-                                      ][phaseIndex] || 'bg-gray-100'
+                                        'bg-sky-100 dark:bg-sky-900/30',    // Phase 1
+                                        'bg-amber-100 dark:bg-amber-900/30',  // Phase 2
+                                        'bg-emerald-100 dark:bg-emerald-900/30' // Phase 3
+                                      ][phaseIndex] || 'bg-muted'
                                     } w-full`} />
                                     <div 
                                       className={`absolute top-0 left-0 h-full ${
@@ -1020,10 +1095,10 @@ export const StudentDashboard = ({
                                   </div>
                                 <span className={`text-sm font-medium ${
                                   [
-                                    'text-sky-700',    // Phase 1
-                                    'text-amber-700',  // Phase 2
-                                    'text-emerald-700' // Phase 3
-                                  ][phaseIndex] || 'text-gray-700'
+                                    'text-sky-700 dark:text-sky-400',    // Phase 1
+                                    'text-amber-700 dark:text-amber-400',  // Phase 2
+                                    'text-emerald-700 dark:text-emerald-400' // Phase 3
+                                  ][phaseIndex] || 'text-foreground'
                                 }`}>
                                   {lessonProgress}%
                                 </span>
@@ -1032,9 +1107,9 @@ export const StudentDashboard = ({
                                   variant="secondary" 
                                   className={`text-xs ${
                                     [
-                                      'bg-sky-100 text-sky-700 hover:bg-sky-200',    // Phase 1
-                                      'bg-amber-100 text-amber-700 hover:bg-amber-200',  // Phase 2
-                                      'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' // Phase 3
+                                      'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 hover:bg-sky-200 dark:hover:bg-sky-900/50',    // Phase 1
+                                      'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50',  // Phase 2
+                                      'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50' // Phase 3
                                     ][phaseIndex] || ''
                                   }`}
                                 >
@@ -1052,10 +1127,20 @@ export const StudentDashboard = ({
                         {/* Lesson and Activity Buttons */}
                         <div className="space-y-4">
                           {/* Read Lesson Button */}
-                          <div className="border-b border-gray-200 pb-4">
+                          <div className="border-b border-border pb-4">
+                            {!lesson.isUnlocked && (
+                              <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                                <div className="flex items-center text-sm text-yellow-800 dark:text-yellow-400">
+                                  <Lock className="h-4 w-4 mr-2 flex-shrink-0" />
+                                  <span>Complete all activities in the previous lesson to unlock this lesson</span>
+                                </div>
+                              </div>
+                            )}
                             <Button
                               variant={lesson.isCompleted ? "default" : "default"}
                               className={`w-full h-16 text-lg font-medium ${
+                                !lesson.isUnlocked ? 'opacity-60 cursor-not-allowed' : ''
+                              } ${
                                 lesson.isCompleted ? (
                                   [
                                     'bg-sky-700 hover:bg-sky-800 text-white',    // Phase 1 - Completed
@@ -1070,20 +1155,31 @@ export const StudentDashboard = ({
                                   ][phaseIndex] || ''
                                 )
                               }`}
+                              disabled={!lesson.isUnlocked}
                               onClick={() => {
-                                setSelectedPhaseForModal(null);
-                                handleStartLesson(lesson.id);
+                                if (lesson.isUnlocked) {
+                                  setSelectedPhaseForModal(null);
+                                  handleStartLesson(lesson.id);
+                                }
                               }}
                             >
                               <div className="flex items-center justify-center">
-                                {lesson.isCompleted ? (
-                                  <CheckCircle className="h-5 w-5 mr-2" />
+                                {!lesson.isUnlocked ? (
+                                  <>
+                                    <Lock className="h-5 w-5 mr-2" />
+                                    <span>Lesson Locked</span>
+                                  </>
+                                ) : lesson.isCompleted ? (
+                                  <>
+                                    <CheckCircle className="h-5 w-5 mr-2" />
+                                    <span>Lesson Completed - Read Again</span>
+                                  </>
                                 ) : (
-                                  <BookOpen className="h-5 w-5 mr-2" />
+                                  <>
+                                    <BookOpen className="h-5 w-5 mr-2" />
+                                    <span>Read Lesson</span>
+                                  </>
                                 )}
-                                <span>
-                                  {lesson.isCompleted ? 'Lesson Completed - Read Again' : 'Read Lesson'}
-                                </span>
                               </div>
                             </Button>
                           </div>
@@ -1125,7 +1221,7 @@ export const StudentDashboard = ({
                                 >
                                   <div className="flex items-center justify-center mb-1">
                                     {isLocked ? (
-                                      <Lock className="h-4 w-4 text-gray-400" />
+                                      <Lock className="h-4 w-4 text-muted-foreground" />
                                     ) : isCompleted ? (
                                       <CheckCircle className="h-4 w-4 text-white mr-1" />
                                     ) : (
@@ -1138,9 +1234,9 @@ export const StudentDashboard = ({
                                       }`} />
                                     )}
                                   </div>
-                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-gray-700'}`}>Multiple Choice</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-foreground'}`}>Multiple Choice</span>
                                   {percentage !== undefined && (
-                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-gray-600'}`}>{percentage}%</span>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-muted-foreground'}`}>{percentage}%</span>
                                   )}
                                 </Button>
                               );
@@ -1181,7 +1277,7 @@ export const StudentDashboard = ({
                                 >
                                   <div className="flex items-center justify-center mb-1">
                                     {isLocked ? (
-                                      <Lock className="h-4 w-4 text-gray-400" />
+                                      <Lock className="h-4 w-4 text-muted-foreground" />
                                     ) : isCompleted ? (
                                       <CheckCircle className="h-4 w-4 text-white mr-1" />
                                     ) : (
@@ -1194,9 +1290,9 @@ export const StudentDashboard = ({
                                       }`} />
                                     )}
                                   </div>
-                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-inherit'}`}>Drag & Drop</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-foreground'}`}>Drag & Drop</span>
                                   {percentage !== undefined && (
-                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-inherit'}`}>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-muted-foreground'}`}>
                                       {percentage}%
                                     </span>
                                   )}
@@ -1239,7 +1335,7 @@ export const StudentDashboard = ({
                                 >
                                   <div className="flex items-center justify-center mb-1">
                                     {isLocked ? (
-                                      <Lock className="h-4 w-4 text-gray-400" />
+                                      <Lock className="h-4 w-4 text-muted-foreground" />
                                     ) : isCompleted ? (
                                       <CheckCircle className="h-4 w-4 text-white mr-1" />
                                     ) : (
@@ -1252,9 +1348,9 @@ export const StudentDashboard = ({
                                       }`} />
                                     )}
                                   </div>
-                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-inherit'}`}>Matching Pairs</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-foreground'}`}>Matching Pairs</span>
                                   {percentage !== undefined && (
-                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-inherit'}`}>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-muted-foreground'}`}>
                                       {percentage}%
                                     </span>
                                   )}
@@ -1297,7 +1393,7 @@ export const StudentDashboard = ({
                                 >
                                   <div className="flex items-center justify-center mb-1">
                                     {isLocked ? (
-                                      <Lock className="h-4 w-4 text-gray-400" />
+                                      <Lock className="h-4 w-4 text-muted-foreground" />
                                     ) : isCompleted ? (
                                       <CheckCircle className="h-4 w-4 text-white mr-1" />
                                     ) : (
@@ -1310,9 +1406,9 @@ export const StudentDashboard = ({
                                       }`} />
                                     )}
                                   </div>
-                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-inherit'}`}>Story Reading</span>
+                                  <span className={`text-center leading-tight ${isCompleted ? 'text-white font-semibold' : 'text-foreground'}`}>Story Reading</span>
                                   {percentage !== undefined && (
-                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-inherit'}`}>
+                                    <span className={`text-xs font-semibold mt-1 ${isCompleted ? 'text-white' : 'text-muted-foreground'}`}>
                                       {percentage}%
                                     </span>
                                   )}
@@ -1439,6 +1535,44 @@ export const StudentDashboard = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Activity Confirmation Modal */}
+      <AlertDialog open={showActivityConfirmation} onOpenChange={setShowActivityConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center text-xl font-bold">Ready to Start Activity?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center space-y-3">
+              <div className="flex justify-center my-4">
+                <img
+                  src="https://res.cloudinary.com/dxygu2aeh/image/upload/v1759976738/Remove_background_project-1_1_q6lftl.png"
+                  alt="Activity Reminder"
+                  className="max-w-[200px] h-auto"
+                />
+              </div>
+              <p className="text-base font-medium">
+                This activity will open in fullscreen mode for the best learning experience.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Make sure you're ready to focus and complete the activity without interruptions.
+              </p>
+              <p className="text-sm font-semibold text-primary">
+                Are you ready to take this activity?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => {
+              setShowActivityConfirmation(false);
+              setPendingActivity(null);
+            }}>
+              Not Yet
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmStartActivity} className="bg-primary hover:bg-primary/90">
+              Yes, I'm Ready!
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Lesson Complete Modal */}
       <Dialog open={showLessonComplete} onOpenChange={setShowLessonComplete}>

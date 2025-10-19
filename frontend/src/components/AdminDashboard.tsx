@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, GraduationCap, BookOpen, Settings, TrendingUp, UserPlus, Shield, Database, Loader2 } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { AddUserDialog } from './AddUserDialog';
 import { ContentManagement } from './ContentManagement';
@@ -108,6 +109,7 @@ export const AdminDashboard = () => {
           </div>
           {/* Desktop actions */}
           <div className="hidden md:flex items-center space-x-3">
+            <SimpleThemeToggle />
             <Button variant="ghost" onClick={handleLogoutClick}>
               Logout
             </Button>
@@ -123,6 +125,9 @@ export const AdminDashboard = () => {
         {mobileMenuOpen && (
           <div className="md:hidden mt-3 max-w-7xl mx-auto">
             <div className="flex flex-col gap-2">
+              <div className="flex justify-center py-2">
+                <SimpleThemeToggle />
+              </div>
               <Button variant="ghost" onClick={handleLogoutClick} className="w-full text-left">
                 Logout
               </Button>

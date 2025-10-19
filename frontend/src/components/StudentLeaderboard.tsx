@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Trophy, Medal, Award, User } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentAPI, SectionLeaderboardResponse } from '@/lib/api';
 import { CenteredLoading } from '@/components/ui/loading-spinner';
@@ -90,6 +91,7 @@ export const StudentLeaderboard = () => {
               <User className="h-4 w-4 mr-2" />
               Profile
             </Button>
+            <SimpleThemeToggle />
             <Button variant="ghost" onClick={logout}>
               Logout
             </Button>
