@@ -135,7 +135,7 @@ export const LoginForm = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -152,7 +152,8 @@ Don't have an account?{' '}
               </div>
             </form>
 
-            <div className="mt-6">
+            {/* Demo Accounts Section */}
+            {/* <div className="mt-6">
               <div className="text-sm text-muted-foreground text-center mb-4">
                 Demo Accounts 
               </div>
@@ -180,7 +181,7 @@ Don't have an account?{' '}
                   );
                 })}
               </div>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
           </div>

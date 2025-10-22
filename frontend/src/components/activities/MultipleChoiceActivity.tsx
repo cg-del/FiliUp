@@ -140,13 +140,13 @@ export const MultipleChoiceActivity: React.FC<MultipleChoiceActivityProps> = ({
               if (showResult) {
                 if (index === currentQ.correctAnswer) {
                   variant = "success";
-                  buttonClass += " border-success bg-success-light";
+                  buttonClass += " border-success bg-green-100 text-green-900";  // Added text-success-foreground
                 } else if (index === selectedAnswer && selectedAnswer !== currentQ.correctAnswer) {
                   variant = "destructive";
-                  buttonClass += " border-destructive bg-destructive/10";
+                  buttonClass += " border-destructive bg-red-100 text-red-900"; // Added text-destructive-foreground
                 }
               } else if (selectedAnswer === index) {
-                buttonClass += " border-primary bg-primary/10";
+                buttonClass += " border-primary bg-primary/90 text-primary-foreground";  // Changed to bg-primary/90 and added text-primary-foreground
               }
 
               return (

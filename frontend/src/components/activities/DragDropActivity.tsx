@@ -188,9 +188,20 @@ export const DragDropActivity: React.FC<DragDropActivityProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {categories.map((category) => (
               <div key={category.id} className="space-y-2">
-                <h3 className={`font-medium text-center p-2 rounded-lg text-black ${category.colorClass}`}>
-                  {category.name}
-                </h3>
+               <h3 
+                className="font-medium text-center p-2 rounded-lg text-black"
+                style={{ 
+                  backgroundColor: category.colorClass === 'bg-primary' ? 'hsl(222.2 47.4% 11.2%)' : 
+                                  category.colorClass === 'bg-green-100' ? '#DCFCE7' : 
+                                  category.colorClass === 'bg-yellow-100' ? '#FEF9C3' : 
+                                  category.colorClass === 'bg-red-100' ? '#FEE2E2' : 
+                                  category.colorClass === 'bg-purple-100' ? '#F3E8FF' : 
+                                  '#DBEAFE' // Default to blue-100
+                }}
+                data-color-class={category.colorClass}
+              >
+                {category.name}
+              </h3>
                 <div
                   className="drop-zone min-h-[120px] p-3 space-y-2 border-2 border-dashed border-muted-foreground/30 rounded-lg"
                   onDrop={(e) => {

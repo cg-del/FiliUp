@@ -115,7 +115,7 @@ export const StudentLeaderboard = () => {
                 <CardContent className="p-4">
                   <div className="text-center">
                     <div className="text-sm text-blue-100">Your Rank</div>
-                    <div className="text-3xl font-bold">#{currentUserRank.rank}</div>
+                    <div className="text-3xl font-bold text-white">#{currentUserRank.rank}</div>
                   </div>
                 </CardContent>
               </Card>
@@ -127,7 +127,9 @@ export const StudentLeaderboard = () => {
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Top 3 Podium */}
         <div className="grid grid-cols-3 gap-4 mb-8">
-          {students.slice(0, 3).sort((a, b) => a.rank - b.rank).map((student, index) => {
+          {[2, 1, 3].map((position) => {
+            const student = students.find(s => s.rank === position);
+            
             // Position mapping: rank 1 in middle, rank 2 on left, rank 3 on right
             const getPositionClass = (rank: number) => {
               if (rank === 1) return 'order-2'; // Middle position
@@ -135,6 +137,19 @@ export const StudentLeaderboard = () => {
               if (rank === 3) return 'order-3 mt-8'; // Right position, slightly lower
               return 'order-3 mt-8'; // Fallback
             };
+            
+            if (!student) {
+              return (
+                <div 
+                  key={`empty-${position}`} 
+                  className={`flex flex-col items-center ${getPositionClass(position)}`}
+                >
+                  <div className="w-full h-full opacity-0">
+                    {/* Empty placeholder to maintain grid structure */}
+                  </div>
+                </div>
+              );
+            }
             
             const isFirst = student.rank === 1;
             
@@ -170,7 +185,7 @@ export const StudentLeaderboard = () => {
         {/* Full Rankings */}
         <Card className="learning-card">
           <CardHeader>
-            <CardTitle>Full Rankings</CardTitle>
+            <CardTitle>Overall Rankings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {students.map((student) => (

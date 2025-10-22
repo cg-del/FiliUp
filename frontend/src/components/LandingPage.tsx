@@ -80,18 +80,18 @@ const FeatureCard = memo(({ feature, idx, currentFeature, setCurrentFeature }: {
       idx === currentFeature ? 'opacity-100 scale-100' : 'opacity-50 scale-95'
     }`}
   >
-    <div className="lg:w-1/2">
+    <div className="lg:w-1/2 ml-12">
       <div className={`inline-flex rounded-full p-4 ${feature.bgColor} shadow-md mb-6 transform hover:scale-110 transition-transform duration-300`}>
         {feature.icon}
       </div>
-      <h3 className="text-2xl font-bold text-gray-900">{feature.name}</h3>
-      <p className="mt-4 text-gray-600">{feature.description}</p>
-      <button
-        onClick={() => setCurrentFeature(idx)}
-        className="mt-6 text-sm font-medium text-emerald-600 hover:text-emerald-800 flex items-center"
-      >
-        Learn more <ChevronRight className="ml-1 h-4 w-4" />
-      </button>
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{feature.name}</h3>
+<p className="mt-4 text-gray-600 dark:text-gray-300">{feature.description}</p>
+<button
+  onClick={() => setCurrentFeature(idx)}
+  className="mt-6 text-sm font-medium text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 flex items-center"
+>
+  Learn more <ChevronRight className="ml-1 h-4 w-4" />
+</button>
     </div>
     <div className="mt-8 lg:mt-0 lg:w-1/2">
       <img
@@ -236,7 +236,7 @@ export const LandingPage = () => {
       {/* Main Content */}
       <main>
         {/* Hero Section */}
-        <div className="relative isolate pt-24 sm:pt-32 lg:pt-40 pb-24 lg:pb-32 overflow-hidden">
+        <div className="relative isolate pt-24 sm:pt-32 lg:pt-40 pb-24 lg:pb-32 overflow-visible">
           <div
             className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-60"
             style={{
@@ -248,20 +248,20 @@ export const LandingPage = () => {
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               {/* Left side - Text content */}
-              <div className="text-center lg:text-left">
-                <div className="flex items-center justify-center lg:justify-start mb-8">
+              <div className="text-center lg:text-left pt-4">
+                <div className="flex items-center justify-center lg:justify-start mb-4">
                   <span className="inline-flex items-center rounded-full bg-muted px-4 py-2 text-sm font-medium text-primary">
                     <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse"></span>
                     New: Interactive Learning
                   </span>
                 </div>
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground mb-8">
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground">
                   <span className="block">FiliUp</span>
-                  <span className="block text-transparent bg-clip-text bg-gradient-primary">
+                  <span className="block text-transparent bg-clip-text bg-gradient-primary relative z-10 text-4xl sm:text-5xl lg:text-6xl leading-[1.2] pb-4 mt-3">
                     Learn Filipino with Joy!
                   </span>
                 </h1>
-                <p className="mt-8 text-xl leading-8 text-muted-foreground max-w-3xl mx-auto lg:mx-0">
+                <p className="mt-4 text-xl leading-8 text-muted-foreground max-w-3xl mx-auto lg:mx-0 relative z-0">
                   Comprehensive platform for fundamental Filipino comprehension -
                   Parts of Speech, Synonyms and Antonyms, and Sentence Construction using four types of activities.
                 </p>

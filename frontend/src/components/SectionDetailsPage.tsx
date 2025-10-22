@@ -312,65 +312,77 @@ export const SectionDetailsPage = () => {
                   .map((student) => (
                   <div 
                     key={student.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    className="flex items-center p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-center space-x-4">
+                    {/* Student Info - Fixed width */}
+                    <div className="flex items-center space-x-4 w-64 shrink-0">
                       <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 text-white font-bold">
                         #{student.rank}
                       </div>
-                      <div>
-                        <div className="font-semibold text-lg">{student.name}</div>
+                      <div className="min-h-[60px] flex flex-col justify-center">
+                        <div className="font-semibold text-lg leading-tight">{student.name}</div>
                         <div className="text-sm text-muted-foreground">
                           Student ID: {student.id.substring(0, 8)}...
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                      <div>
-                        <div className="text-2xl font-bold text-primary">{student.totalScore}</div>
-                        <div className="text-xs text-muted-foreground">Total Score</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-green-600">{student.averageScore.toFixed(1)}%</div>
-                        <div className="text-xs text-muted-foreground">Average</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-blue-600">{student.activitiesCompleted}</div>
-                        <div className="text-xs text-muted-foreground">Activities</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-purple-600">{student.lessonsCompleted}</div>
-                        <div className="text-xs text-muted-foreground">Lessons</div>
+                    {/* Statistics - Takes remaining space */}
+                    <div className="flex-1 px-4">
+                      <div className="grid grid-cols-4 gap-6 text-center">
+                        <div className="w-24">
+                          <div className="text-2xl font-bold text-primary">{student.totalScore}</div>
+                          <div className="text-xs text-muted-foreground">Total Score</div>
+                        </div>
+                        <div className="w-24">
+                          <div className="text-2xl font-bold text-green-600">{student.averageScore.toFixed(1)}%</div>
+                          <div className="text-xs text-muted-foreground">Average</div>
+                        </div>
+                        <div className="w-24">
+                          <div className="text-2xl font-bold text-blue-600">{student.activitiesCompleted}</div>
+                          <div className="text-xs text-muted-foreground">Activities</div>
+                        </div>
+                        <div className="w-24">
+                          <div className="text-2xl font-bold text-purple-600">{student.lessonsCompleted}</div>
+                          <div className="text-xs text-muted-foreground">Lessons</div>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      {student.rank === 1 && (
-                        <Badge variant="default" className="bg-yellow-500">
-                          🥇 Top Student
-                        </Badge>
-                      )}
-                      {student.rank === 2 && (
-                        <Badge variant="secondary">
-                          🥈 2nd Place
-                        </Badge>
-                      )}
-                      {student.rank === 3 && (
-                        <Badge variant="secondary">
-                          🥉 3rd Place
-                        </Badge>
-                      )}
-                      {student.averageScore >= 90 && (
-                        <Badge variant="default" className="bg-green-500">
-                          ⭐ Excellent
-                        </Badge>
-                      )}
-                      {student.averageScore >= 75 && student.averageScore < 90 && (
-                        <Badge variant="outline">
-                          👍 Good
-                        </Badge>
-                      )}
+                    {/* Badges - Fixed width and right-aligned */}
+                    <div className="w-48 shrink-0 flex flex-col items-end gap-2">
+                      {/* First row for rank badges */}
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {student.rank === 1 && (
+                          <Badge variant="default" className="bg-yellow-500 whitespace-nowrap py-1">
+                            🥇 Top Student
+                          </Badge>
+                        )}
+                        {student.rank === 2 && (
+                          <Badge variant="secondary" className="whitespace-nowrap py-1">
+                            🥈 2nd Place
+                          </Badge>
+                        )}
+                        {student.rank === 3 && (
+                          <Badge variant="secondary" className="whitespace-nowrap py-1">
+                            🥉 3rd Place
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* Second row for achievement badges */}
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {student.averageScore >= 90 && (
+                          <Badge variant="default" className="bg-green-500 whitespace-nowrap py-1">
+                            ⭐ Excellent
+                          </Badge>
+                        )}
+                        {student.averageScore >= 75 && student.averageScore < 90 && (
+                          <Badge variant="outline" className="whitespace-nowrap py-1">
+                            👍 Good
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

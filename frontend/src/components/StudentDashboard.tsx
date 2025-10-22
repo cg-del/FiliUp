@@ -513,7 +513,7 @@ export const StudentDashboard = ({
                 id: cat.id,
                 categoryId: cat.categoryId ?? cat.id,
                 name: cat.name,
-                colorClass: cat.colorClass ?? cat.color ?? 'bg-blue-100',
+                colorClass: cat.colorClass || 'bg-blue-100',
                 orderIndex: cat.orderIndex ?? 0,
               };
             })}
@@ -819,7 +819,7 @@ export const StudentDashboard = ({
           </Card>
 
           <Card className="learning-card">
-            <CardContent className="flex items-center p-4">
+            <CardContent className="flex items-start p-5">
               <div className="p-2 rounded-lg bg-gradient-primary mr-3">
                 <Target className="h-5 w-5 text-white" />
               </div>
