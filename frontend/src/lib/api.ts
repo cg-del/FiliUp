@@ -63,7 +63,7 @@ export interface CreateUserRequest {
   fullName: string;
   role: 'ADMIN' | 'TEACHER' | 'STUDENT';
   password: string;
-  section?: string;
+  section?: string | null;  // Changed from sectionId to section to match backend
 }
 
 export interface AuthResponse {
@@ -333,21 +333,64 @@ export const adminAPI = {
     return response.data;
   },
 
-  getUsers: async (page = 0, size = 10, role?: string) => {
-    const params = new URLSearchParams({ page: page.toString(), size: size.toString() });
+  getUsers: async (page = 0, size = 10, role?: string, search?: string) => {
+    const params = new URLSearchParams({ 
+      page: page.toString(), 
+      size: size.toString(),
+      sort: 'created_at,desc'  // Sort by created_at in descending order
+    });
     if (role) params.append('role', role);
+    if (search && search.trim()) params.append('search', search.trim());
     const response = await api.get(`/admin/users?${params}`);
     return response.data;
   },
 
   createUser: async (data: CreateUserRequest) => {
-    const response = await api.post('/admin/users', data);
+    // Create a clean copy of the data
+    const { sectionId, ...restData } = data;
+    const requestData: any = { ...restData };
+    
+    // Handle sectionId - only include if it's a valid UUID
+    if (sectionId !== undefined) {
+      if (sectionId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sectionId)) {
+        requestData.sectionId = sectionId.toLowerCase();
+      } else if (sectionId === '') {
+        // If sectionId is an empty string, set it to null
+        requestData.sectionId = null;
+      } else {
+        console.warn('Invalid sectionId format, removing from request:', sectionId);
+      }
+    }
+    
+    console.log('Creating user with data:', JSON.stringify(requestData, null, 2));
+    const response = await api.post('/admin/users', requestData);
     return response.data;
   },
 
-  updateUser: async (id: string, data: Partial<CreateUserRequest>) => {
-    const response = await api.put(`/admin/users/${id}`, data);
-    return response.data;
+  updateUser: (id: string, data: Partial<CreateUserRequest>) => {
+    // Create a clean copy of the data
+    const { sectionId, ...restData } = data;
+    
+    // Create a new object with the correct field names
+    const requestData: any = { ...restData };
+    
+    // Handle sectionId - use the value from the original data
+    if (sectionId !== undefined) {
+      if (sectionId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sectionId)) {
+        requestData.sectionId = sectionId.toLowerCase();
+      } else if (sectionId === '') {
+        // If sectionId is an empty string, set it to null to clear the section
+        requestData.sectionId = null;
+      }
+    }
+    
+    // Remove password if it's empty or undefined
+    if (requestData.password === '' || requestData.password === undefined) {
+      delete requestData.password;
+    }
+    
+    console.log('Sending to server:', JSON.stringify(requestData, null, 2));
+    return api.put(`/admin/users/${id}`, requestData);
   },
 
   deleteUser: async (id: string) => {

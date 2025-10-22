@@ -28,5 +28,5 @@ public class CreateUserRequest {
     @NotNull(message = "Role is required")
     private UserRole role;
     
-    private UUID sectionId;
+    private UUID section;
 }

@@ -45,6 +45,19 @@ public class AdminService {
         return stats;
     }
 
+    public Page<UserResponse> searchUsers(String searchTerm, Pageable pageable, UserRole role) {
+        String searchPattern = "%" + searchTerm.toLowerCase() + "%";
+        Page<User> users;
+        
+        if (role != null) {
+            users = userRepository.findByRoleAndSearch(role, searchPattern, pageable);
+        } else {
+            users = userRepository.searchAllUsers(searchPattern, pageable);
+        }
+        
+        return users.map(this::mapToUserResponse);
+    }
+    
     public Page<UserResponse> getAllUsers(Pageable pageable, UserRole role) {
         Page<User> users;
         
@@ -78,8 +91,8 @@ public class AdminService {
                 .firstLogin(request.getRole() == UserRole.TEACHER) // Only teachers need to reset password on first login
                 .build();
 
-        if (request.getSectionId() != null) {
-            Section section = sectionRepository.findById(request.getSectionId())
+        if (request.getSection() != null) {
+            Section section = sectionRepository.findById(request.getSection())
                     .orElseThrow(() -> new RuntimeException("Section not found"));
             user.setSection(section);
         }
@@ -95,12 +108,17 @@ public class AdminService {
 
         user.setFullName(request.getFullName());
         
+        // Update role if provided and different from current role
+        if (request.getRole() != null && !request.getRole().equals(user.getRole())) {
+            user.setRole(request.getRole());
+        }
+        
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }
 
-        if (request.getSectionId() != null) {
-            Section section = sectionRepository.findById(request.getSectionId())
+        if (request.getSection() != null) {
+            Section section = sectionRepository.findById(request.getSection())
                     .orElseThrow(() -> new RuntimeException("Section not found"));
             user.setSection(section);
         }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Award, BookOpen, TrendingUp, Calendar, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, Award, BookOpen, TrendingUp, Calendar, Loader2, Eye, EyeOff } from 'lucide-react';
 import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentAPI, StudentProfileResponse, authAPI, PasswordResetRequest } from '@/lib/api';
@@ -19,6 +19,11 @@ export const StudentProfile = () => {
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<StudentProfileResponse | null>(null);
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
   const [resetLoading, setResetLoading] = useState(false);
   const handleLogout = () => {
     logout();
@@ -137,36 +142,66 @@ export const StudentProfile = () => {
                   <form onSubmit={handleResetPassword} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="currentPassword">Kasalukuyang Password</Label>
-                      <Input
-                        id="currentPassword"
-                        type="password"
-                        value={passwords.currentPassword}
-                        onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
-                        placeholder="Enter current password"
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="currentPassword"
+                          type={showPasswords.current ? "text" : "password"}
+                          value={passwords.currentPassword}
+                          onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                          placeholder="Enter current password"
+                          required
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswords({...showPasswords, current: !showPasswords.current})}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPasswords.current ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="newPassword">Bagong Password</Label>
-                      <Input
-                        id="newPassword"
-                        type="password"
-                        value={passwords.newPassword}
-                        onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                        placeholder="Enter new password"
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="newPassword"
+                          type={showPasswords.new ? "text" : "password"}
+                          value={passwords.newPassword}
+                          onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                          placeholder="Enter new password"
+                          required
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswords({...showPasswords, new: !showPasswords.new})}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPasswords.new ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword">Kumpirmahin ang Bagong Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        value={passwords.confirmPassword}
-                        onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                        placeholder="Confirm new password"
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showPasswords.confirm ? "text" : "password"}
+                          value={passwords.confirmPassword}
+                          onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                          placeholder="Confirm new password"
+                          required
+                          className="pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswords({...showPasswords, confirm: !showPasswords.confirm})}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPasswords.confirm ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button type="submit" disabled={resetLoading} className="btn-bounce">

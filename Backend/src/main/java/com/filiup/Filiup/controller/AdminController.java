@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,10 +32,45 @@ public class AdminController {
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) UserRole role) {
+            @RequestParam(required = false) UserRole role,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "created_at,desc") String sort) {
         
-        Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(adminService.getAllUsers(pageable, role));
+        try {
+            String[] sortParams = sort.split(",");
+            if (sortParams.length != 2) {
+                throw new IllegalArgumentException("Invalid sort parameter format. Expected 'field,direction'");
+            }
+            
+            String sortField = sortParams[0];
+            String sortDirection = sortParams[1];
+            
+            // Map frontend field names to entity field names if needed
+            if ("created_at".equals(sortField)) {
+                sortField = "createdAt";
+            }
+            
+            Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") 
+                ? Sort.Direction.DESC 
+                : Sort.Direction.ASC;
+                
+            Sort sortObj = Sort.by(direction, sortField);
+            Pageable pageable = PageRequest.of(page, size, sortObj);
+            
+            System.out.println("Sorting users by: " + sortField + " " + direction);
+            if (search != null && !search.trim().isEmpty()) {
+                System.out.println("Searching for: " + search.trim());
+                return ResponseEntity.ok(adminService.searchUsers(search.trim(), pageable, role));
+            }
+            return ResponseEntity.ok(adminService.getAllUsers(pageable, role));
+            
+        } catch (Exception e) {
+            System.err.println("Error processing sort parameter: " + sort);
+            e.printStackTrace();
+            // Fallback to default sorting
+            Pageable defaultPageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            return ResponseEntity.ok(adminService.getAllUsers(defaultPageable, role));
+        }
     }
 
     @PostMapping("/users")

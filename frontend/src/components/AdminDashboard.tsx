@@ -49,42 +49,47 @@ export const AdminDashboard = () => {
     navigate('/login', { replace: true });
   };
 
-  const systemStatsDisplay = [
-    { label: 'Total Users', value: stats?.totalUsers || 0, icon: Users },
-    { label: 'Active Students', value: stats?.activeStudents || 0, icon: GraduationCap },
-    { label: 'Total Sections', value: stats?.totalSections || 0, icon: BookOpen },
-    { label: 'System Health', value: `${stats?.systemHealth || 0}%`, icon: TrendingUp },
-  ];
+  
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [statsResponse, usersResponse] = await Promise.all([
+        adminAPI.getStats(),
+        adminAPI.getUsers(0, 5)
+      ]);
+      
+      setStats(statsResponse);
+      
+      // Get users array from response
+      const users = Array.isArray(usersResponse.content) ? usersResponse.content : 
+                   Array.isArray(usersResponse) ? usersResponse : [];
+      
+      // Sort users by ID in descending order (newest first, assuming auto-incrementing IDs)
+      const sortedUsers = [...users].sort((a, b) => {
+        // Convert string IDs to numbers for comparison
+        const idA = parseInt(a.id || '0', 10);
+        const idB = parseInt(b.id || '0', 10);
+        
+        // Sort by ID in descending order (newest first)
+        return idB - idA;
+      });
+      
+      setRecentUsers(sortedUsers);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error.message : 'Failed to load dashboard data';
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Handle user added event
   const handleUserAdded = () => {
-    // Refresh stats and recent users after adding a new user
-    const fetchData = async () => {
-      try {
-        const statsResponse = await adminAPI.getStats();
-        setStats(statsResponse);
-        const usersResponse = await adminAPI.getUsers(0, 5);
-        setRecentUsers(usersResponse.content || usersResponse);
-      } catch (error) {
-        console.error('Failed to refresh stats:', error);
-      }
-    };
     fetchData();
   };
 
+  // Initial data fetch
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const statsResponse = await adminAPI.getStats();
-        setStats(statsResponse);
-        const usersResponse = await adminAPI.getUsers(0, 5);
-        setRecentUsers(usersResponse.content || usersResponse);
-        setLoading(false);
-      } catch (error: unknown) {
-        const err = error instanceof Error ? error.message : 'Failed to load dashboard data';
-        setError(err);
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
 
@@ -137,7 +142,7 @@ export const AdminDashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* System Stats */}
+        {/* System Stats
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {systemStatsDisplay.map((stat, index) => {
             const Icon = stat.icon;
@@ -157,14 +162,14 @@ export const AdminDashboard = () => {
               </Card>
             );
           })}
-        </div>
+        </div> */}
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* User Management */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">User Management</h2>
-              <Button variant="activity" onClick={() => setShowAddUser(true)}>
+              <h2 className="text-2xl font-bold text-foreground">User Management</h2>
+              <Button variant="activity" onClick={() => setShowAddUser(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 <UserPlus className="h-4 w-4 mr-2" />
                 Add User
               </Button>
@@ -172,15 +177,15 @@ export const AdminDashboard = () => {
             
             <Card className="learning-card">
               <CardHeader>
-                <CardTitle className="text-lg">Recent Users</CardTitle>
+                <CardTitle className="text-lg text-foreground">Recent Users</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {recentUsers.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-4">No users found</p>
+                  <p className="text-center text-foreground/90 py-4">No users found</p>
                 ) : (
                   recentUsers.map((userData) => (
                     <div key={userData.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2 text-foreground/90">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                           userData.role === 'TEACHER' ? 'bg-gradient-warm' : 
                           userData.role === 'ADMIN' ? 'bg-gradient-primary' : 
@@ -290,13 +295,8 @@ export const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          </div>
-          
+          </div>         
         </div>
-
-    
-
-       
       </div>
 
       {/* Add User Dialog */}

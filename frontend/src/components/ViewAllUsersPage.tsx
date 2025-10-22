@@ -9,8 +9,22 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Search, 
-  Filter 
+  Filter,
+  Edit2,
+  Trash2,
+  Loader2
 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { adminAPI } from '@/lib/api';
@@ -25,11 +39,15 @@ import {
 } from '@/components/ui/select';
 import { AddUserDialog } from './AddUserDialog';
 
+type UserRole = 'TEACHER' | 'ADMIN' | 'STUDENT';
+
 interface UserData {
   id: string;
   email: string;
   fullName: string;
-  role: string;
+  role: UserRole;
+  password?: string;
+  sectionId?: string;
   isActive: boolean;
   createdAt?: string;
   firstLogin?: boolean;
@@ -46,6 +64,11 @@ export const ViewAllUsersPage = () => {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddUser, setShowAddUser] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   const pageSize = 10;
 
@@ -53,7 +76,9 @@ export const ViewAllUsersPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await adminAPI.getUsers(page, pageSize, roleFilter || undefined);
+      // Include search term in the API call if it's not empty
+      const searchQuery = searchTerm.trim() ? searchTerm : undefined;
+      const response = await adminAPI.getUsers(page, pageSize, roleFilter || undefined, searchQuery);
       setUsers(response.content || []);
       setTotalPages(response.totalPages || 1);
       setTotalElements(response.totalElements || 0);
@@ -68,10 +93,74 @@ export const ViewAllUsersPage = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [page, roleFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [page, roleFilter, searchTerm]); // Add searchTerm to the dependency array
 
   const handleUserAdded = () => {
     fetchUsers();
+    toast({
+      title: 'Success',
+      description: 'User created successfully',
+      variant: 'default',
+    });
+  };
+
+  const handleEditUser = (user: UserData) => {
+    setEditingUser(user);
+  };
+
+  const handleUpdateUser = async (updatedUser: UserData) => {
+    try {
+      await adminAPI.updateUser(updatedUser.id, {
+        email: updatedUser.email,
+        fullName: updatedUser.fullName,
+        role: updatedUser.role as any,
+      });
+      toast({
+        title: 'Success',
+        description: 'User updated successfully',
+        variant: 'default',
+      });
+      fetchUsers();
+      setEditingUser(null);
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update user',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteClick = (userId: string) => {
+    setUserToDelete(userId);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await adminAPI.deleteUser(userToDelete);
+      toast({
+        title: 'Success',
+        description: 'User deleted successfully',
+        variant: 'default',
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete user',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
+    }
   };
 
   const handlePreviousPage = () => {
@@ -89,15 +178,20 @@ export const ViewAllUsersPage = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real implementation, you would send the search term to the backend
-    // For now, we'll just reset the page
+    // Reset to first page when searching
     setPage(0);
-    fetchUsers();
+    // The useEffect will trigger fetchUsers with the new search term
   };
 
   if (loading && users.length === 0) {
     return <CenteredLoading message="Loading users..." />;
   }
+
+  const roleOptions = [
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'TEACHER', label: 'Teacher' },
+    { value: 'STUDENT', label: 'Student' },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -196,7 +290,26 @@ export const ViewAllUsersPage = () => {
                       </div>
                     </div>
                     <div className="flex flex-col items-end">
+                      <div className="text-sm text-muted-foreground mb-1">
+                        {new Date(userData.createdAt || '').toLocaleDateString()}
+                      </div>
                       <div className="flex space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => handleEditUser(userData)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteClick(userData.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                         <Badge variant={userData.isActive ? 'default' : 'secondary'}>
                           {userData.isActive ? 'Active' : 'Inactive'}
                         </Badge>
@@ -248,13 +361,49 @@ export const ViewAllUsersPage = () => {
       {/* Add User Dialog */}
       <AddUserDialog 
         open={showAddUser} 
-        onOpenChange={(open) => {
-          setShowAddUser(open);
-          if (!open) {
-            handleUserAdded();
-          }
-        }}
+        onOpenChange={setShowAddUser} 
+        onUserAdded={handleUserAdded}
       />
+      
+      {/* Edit User Dialog */}
+      {editingUser && (
+        <AddUserDialog
+          open={!!editingUser}
+          onOpenChange={(open) => !open && setEditingUser(null)}
+          onUserAdded={() => {}}
+          userToEdit={editingUser}
+          onUpdateUser={handleUpdateUser}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteUser} 
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
