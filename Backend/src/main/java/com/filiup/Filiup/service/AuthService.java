@@ -52,6 +52,7 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         try {
             authenticationManager.authenticate(
@@ -63,6 +64,12 @@ public class AuthService {
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Update firstLogin to false if this is the user's first login
+        if (user.getFirstLogin()) {
+            user.setFirstLogin(false);
+            user = userRepository.save(user);
+        }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name(), user.getId().toString());
 
@@ -105,6 +112,7 @@ public class AuthService {
                 .sectionId(user.getSection() != null ? user.getSection().getId() : null)
                 .isActive(user.getIsActive())
                 .firstLogin(user.getFirstLogin())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }

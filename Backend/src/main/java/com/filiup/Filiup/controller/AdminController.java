@@ -95,4 +95,10 @@ public class AdminController {
         adminService.deleteUser(id);
         return ResponseEntity.ok(Map.of("message", "User deactivated successfully"));
     }
+
+    @PostMapping("/users/{id}/activate")
+    public ResponseEntity<Map<String, String>> activateUser(@PathVariable UUID id) {
+        adminService.activateUser(id);
+        return ResponseEntity.ok(Map.of("message", "User activated successfully"));
+    }
 }

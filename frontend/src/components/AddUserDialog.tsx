@@ -112,7 +112,6 @@ export const AddUserDialog = ({
       return;
     }
 
-    console.log('Form data before submit:', { formData, role });
     setSubmitting(true);
 
     try {
@@ -132,15 +131,12 @@ export const AddUserDialog = ({
           role: role,
         };
 
-        // For updates, use the provided password or set a default one for students
+        // For updates, always provide a default password since backend requires it
         if (formData.password && formData.password.trim() !== '') {
           updateData.password = formData.password;
-        } else if (role === 'STUDENT') {
-          // Set a default password for student updates if none provided
-          updateData.password = 'student123';
         } else {
-          // For other roles, don't include password if not changing it
-          delete updateData.password;
+          // Set a default password for updates if none provided
+          updateData.password = 'password123';
         }
 
         // Handle section - use the existing section from userToEdit
@@ -150,11 +146,6 @@ export const AddUserDialog = ({
           updateData.section = null;
         }
 
-        console.log('Final update payload:', {
-          ...updateData,
-          password: updateData.password ? '***REDACTED***' : undefined,
-          section: updateData.section || null
-        });
 
         await adminAPI.updateUser(updatedUser.id, updateData);
         toast({
@@ -174,11 +165,6 @@ export const AddUserDialog = ({
           section: userToEdit?.sectionId?.trim() || null
         };
 
-        console.log('Creating user with payload:', {
-          ...payload,
-          password: '***REDACTED***',
-          section: payload.section || null
-        });
 
         await adminAPI.createUser(payload);
 

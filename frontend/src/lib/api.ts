@@ -347,18 +347,18 @@ export const adminAPI = {
 
   createUser: async (data: CreateUserRequest) => {
     // Create a clean copy of the data
-    const { sectionId, ...restData } = data;
+    const { section, ...restData } = data;
     const requestData: any = { ...restData };
     
-    // Handle sectionId - only include if it's a valid UUID
-    if (sectionId !== undefined) {
-      if (sectionId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sectionId)) {
-        requestData.sectionId = sectionId.toLowerCase();
-      } else if (sectionId === '') {
-        // If sectionId is an empty string, set it to null
-        requestData.sectionId = null;
+    // Handle section - only include if it's a valid UUID
+    if (section !== undefined) {
+      if (section && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(section)) {
+        requestData.section = section.toLowerCase();
+      } else if (section === '') {
+        // If section is an empty string, set it to null
+        requestData.section = null;
       } else {
-        console.warn('Invalid sectionId format, removing from request:', sectionId);
+        console.warn('Invalid section format, removing from request:', section);
       }
     }
     
@@ -367,20 +367,20 @@ export const adminAPI = {
     return response.data;
   },
 
-  updateUser: (id: string, data: Partial<CreateUserRequest>) => {
+  updateUser: async (id: string, data: Partial<CreateUserRequest>) => {
     // Create a clean copy of the data
-    const { sectionId, ...restData } = data;
+    const { section, ...restData } = data;
     
     // Create a new object with the correct field names
     const requestData: any = { ...restData };
     
-    // Handle sectionId - use the value from the original data
-    if (sectionId !== undefined) {
-      if (sectionId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sectionId)) {
-        requestData.sectionId = sectionId.toLowerCase();
-      } else if (sectionId === '') {
-        // If sectionId is an empty string, set it to null to clear the section
-        requestData.sectionId = null;
+    // Handle section - use the value from the original data
+    if (section !== undefined) {
+      if (section && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(section)) {
+        requestData.section = section.toLowerCase();
+      } else if (section === '') {
+        // If section is an empty string, set it to null to clear the section
+        requestData.section = null;
       }
     }
     
@@ -389,12 +389,16 @@ export const adminAPI = {
       delete requestData.password;
     }
     
-    console.log('Sending to server:', JSON.stringify(requestData, null, 2));
     return api.put(`/admin/users/${id}`, requestData);
   },
 
   deleteUser: async (id: string) => {
     const response = await api.delete(`/admin/users/${id}`);
+    return response.data;
+  },
+
+  activateUser: async (id: string) => {
+    const response = await api.post(`/admin/users/${id}/activate`);
     return response.data;
   },
 

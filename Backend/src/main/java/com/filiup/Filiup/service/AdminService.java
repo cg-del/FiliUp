@@ -106,6 +106,15 @@ public class AdminService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // Update email if provided and different from current email
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            // Check if the new email already exists for another user
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new RuntimeException("Email already exists");
+            }
+            user.setEmail(request.getEmail());
+        }
+
         user.setFullName(request.getFullName());
         
         // Update role if provided and different from current role
@@ -136,6 +145,15 @@ public class AdminService {
         userRepository.save(user);
     }
 
+    @Transactional
+    public void activateUser(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        user.setIsActive(true);
+        userRepository.save(user);
+    }
+
     private UserResponse mapToUserResponse(User user) {
         return UserResponse.builder()
                 .id(user.getId())
@@ -145,6 +163,7 @@ public class AdminService {
                 .sectionId(user.getSection() != null ? user.getSection().getId() : null)
                 .isActive(user.getIsActive())
                 .firstLogin(user.getFirstLogin())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 }

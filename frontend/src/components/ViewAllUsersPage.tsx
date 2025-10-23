@@ -12,7 +12,10 @@ import {
   Filter,
   Edit2,
   Trash2,
-  Loader2
+  Loader2,
+  UserCheck,
+  Check,
+  X
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -145,21 +148,40 @@ export const ViewAllUsersPage = () => {
       await adminAPI.deleteUser(userToDelete);
       toast({
         title: 'Success',
-        description: 'User deleted successfully',
+        description: 'User deactivated successfully',
         variant: 'default',
       });
       fetchUsers();
     } catch (error) {
-      console.error('Failed to delete user:', error);
+      console.error('Failed to deactivate user:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete user',
+        description: 'Failed to deactivate user',
         variant: 'destructive',
       });
     } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
       setUserToDelete(null);
+    }
+  };
+
+  const handleActivateUser = async (userId: string) => {
+    try {
+      await adminAPI.activateUser(userId);
+      toast({
+        title: 'Success',
+        description: 'User activated successfully',
+        variant: 'default',
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Failed to activate user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to activate user',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -291,9 +313,48 @@ export const ViewAllUsersPage = () => {
                     </div>
                     <div className="flex flex-col items-end">
                       <div className="text-sm text-muted-foreground mb-1">
-                        {new Date(userData.createdAt || '').toLocaleDateString()}
+                        {userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'N/A'}
                       </div>
                       <div className="flex space-x-2">
+                        {userData.firstLogin && userData.role === 'TEACHER' && (
+                          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                            First Login Pending
+                          </Badge>
+                        )}
+                        <Badge variant="outline">
+                          {userData.role.toLowerCase()}
+                        </Badge>
+                        
+                        {/* Toggle Switch for Active/Inactive Status */}
+                        <div 
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors ${
+                            userData.isActive 
+                              ? 'bg-green-500' 
+                              : 'bg-red-500'
+                          }`}
+                          onClick={() => {
+                            if (userData.isActive) {
+                              handleDeleteClick(userData.id);
+                            } else {
+                              handleActivateUser(userData.id);
+                            }
+                          }}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              userData.isActive ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          >
+                            <div className="flex items-center justify-center h-full">
+                              {userData.isActive ? (
+                                <Check className="h-3 w-3 text-green-500" />
+                              ) : (
+                                <X className="h-3 w-3 text-red-500" />
+                              )}
+                            </div>
+                          </span>
+                        </div>
+                        
                         <Button 
                           variant="ghost" 
                           size="sm" 
@@ -302,25 +363,6 @@ export const ViewAllUsersPage = () => {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteClick(userData.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <Badge variant={userData.isActive ? 'default' : 'secondary'}>
-                          {userData.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                        <Badge variant="outline">
-                          {userData.role.toLowerCase()}
-                        </Badge>
-                        {userData.firstLogin && userData.role === 'TEACHER' && (
-                          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                            First Login Pending
-                          </Badge>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -382,7 +424,7 @@ export const ViewAllUsersPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the user account.
+              This will deactivate the user account. The user will not be able to log in, but the account can be reactivated later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -395,10 +437,10 @@ export const ViewAllUsersPage = () => {
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
+                  Deactivating...
                 </>
               ) : (
-                'Delete'
+                'Deactivate'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
