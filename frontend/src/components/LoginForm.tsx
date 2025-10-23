@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, Users, GraduationCap, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LoadingSpinner, CenteredLoading } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -15,8 +15,20 @@ export const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSessionExpired, setShowSessionExpired] = useState(false);
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    // Check for session expired flag in URL
+    if (searchParams.get('sessionExpired') === 'true') {
+      setShowSessionExpired(true);
+      // Remove the query parameter from URL without refreshing
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +62,18 @@ export const LoginForm = () => {
       <div className="absolute top-4 right-4 z-50">
         <SimpleThemeToggle />
       </div>
+
+      {showSessionExpired && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 px-4">
+          <Alert variant="destructive" className="animate-fade-in">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Session Expired</AlertTitle>
+            <AlertDescription>
+              Your session has expired. Please log in again to continue.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
       <div className="grid lg:grid-cols-[40%_60%] min-h-screen">
         {/* Left side - Branding */}
         <div className="hidden lg:flex flex-col justify-center items-center p-8 bg-gradient-primary relative overflow-hidden shadow-2xl rounded-tr-3xl rounded-br-3xl">

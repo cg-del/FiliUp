@@ -31,13 +31,82 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/';
+      const originalRequest = error.config;
+      
+      // Only handle if this is not a retry request and not already logging out
+      if (!originalRequest._retry && !originalRequest._isLogout) {
+        // If this is a page load request (not an API call), redirect to login
+        if (window.location.pathname !== '/login') {
+          // Clear auth data
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          
+          // Store the current URL to redirect back after login
+          const returnUrl = window.location.pathname + window.location.search;
+          sessionStorage.setItem('returnUrl', returnUrl);
+          
+          // Redirect to login with a flag to show session expired message
+          window.location.href = '/login?sessionExpired=true';
+          return Promise.reject(error);
+        }
+        
+        // For API calls, show the session expired modal
+        showSessionExpiredModal();
+      }
     }
     return Promise.reject(error);
   }
 );
+
+// Function to show session expired modal
+function showSessionExpiredModal() {
+  // Check if modal already exists
+  if (document.getElementById('session-expired-modal')) return;
+
+  // Create modal container
+  const modal = document.createElement('div');
+  modal.id = 'session-expired-modal';
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+  
+  // Modal content
+  modal.innerHTML = `
+    <div class="bg-background rounded-lg p-6 max-w-md w-full mx-auto shadow-xl">
+      <div class="flex items-center gap-3 mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="text-lg font-semibold">Session Expired</h3>
+      </div>
+      <p class="text-muted-foreground mb-6">Your session has ended. Please log in again to continue.</p>
+      <div class="flex justify-end gap-3">
+        <button id="logout-btn" class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+          Back to Login
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Add to body
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden'; // Prevent scrolling
+
+  // Add click handler for logout button
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.onclick = () => {
+      // Clear auth data
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      
+      // Remove modal and redirect to login
+      document.body.removeChild(modal);
+      document.body.style.overflow = '';
+      window.location.href = '/';
+    };
+  }
+}
 
 // Types
 export interface LoginRequest {
