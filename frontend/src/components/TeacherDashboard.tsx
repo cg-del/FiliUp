@@ -208,10 +208,13 @@ export const TeacherDashboard = () => {
                         <span>Average Progress</span>
                         <span className="font-medium">{Math.round(section.averageProgress)}%</span>
                       </div>
-                      <div className="w-full bg-muted rounded-full h-2">
+                      <div className="w-full bg-pink-100 dark:bg-pink-900/20 rounded-full h-2 overflow-hidden">
                         <div 
-                          className="bg-gradient-primary h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${section.averageProgress}%` }}
+                          className="bg-gradient-to-r from-pink-500 to-purple-500 h-2 rounded-full transition-all duration-300 min-w-[2px]"
+                          style={{ 
+                            width: `${Math.max(0, section.averageProgress)}%`,
+                            minWidth: section.averageProgress === 0 ? '2px' : '0'
+                          }}
                         />
                       </div>
                     </div>

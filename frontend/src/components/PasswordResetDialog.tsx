@@ -109,9 +109,6 @@ export const PasswordResetDialog = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Reset Your Password</DialogTitle>
-          <DialogDescription>
-            As this is your first login, please change your password to continue.
-          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit}>
@@ -124,7 +121,7 @@ export const PasswordResetDialog = ({
                   type={showPasswords.current ? "text" : "password"}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter your current password"
+                  placeholder="Enter current password"
                   className="pr-10"
                 />
                 <button
@@ -145,7 +142,7 @@ export const PasswordResetDialog = ({
                   type={showPasswords.new ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter your new password"
+                  placeholder="Enter new password"
                   className="pr-10"
                 />
                 <button
@@ -166,7 +163,7 @@ export const PasswordResetDialog = ({
                   type={showPasswords.confirm ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your new password"
+                  placeholder="Confirm new password"
                   className="pr-10"
                 />
                 <button

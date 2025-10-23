@@ -12,6 +12,7 @@ import TeacherLeaderboard from "./components/leaderboard/TeacherLeaderboard";
 import StudentLeaderboardWrapper from "./components/leaderboard/StudentLeaderboardWrapper";
 import { StudentProfile } from "./components/StudentProfile";
 import { TeacherProfile } from "./components/TeacherProfile";
+import { TeacherDashboard } from "./components/TeacherDashboard";
 import { RegisterForm } from "./components/RegisterForm";
 import { LoginForm } from "./components/LoginForm";
 import { ViewAllUsersPage } from "./components/ViewAllUsersPage";
@@ -30,6 +31,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               {/* Teacher routes wrapped with TeacherDashboardWrapper */}
+              <Route path="/teacher/dashboard" element={<TeacherDashboardWrapper><TeacherDashboard /></TeacherDashboardWrapper>} />
               <Route path="/teacher/section/:sectionId" element={<TeacherDashboardWrapper><SectionDetailsPage /></TeacherDashboardWrapper>} />
               <Route path="/teacher/leaderboard/:sectionId" element={<TeacherDashboardWrapper><TeacherLeaderboard /></TeacherDashboardWrapper>} />
               <Route path="/teacher/leaderboard" element={<TeacherDashboardWrapper><TeacherLeaderboard /></TeacherDashboardWrapper>} />

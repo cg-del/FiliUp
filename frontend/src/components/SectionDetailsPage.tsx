@@ -23,6 +23,14 @@ export const SectionDetailsPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [sectionData, setSectionData] = useState<SectionLeaderboardResponse | null>(null);
+
+  const handleLogout = () => {
+    logout();
+    // Use requestAnimationFrame to ensure state updates are processed before navigation
+    requestAnimationFrame(() => {
+      navigate('/login');
+    });
+  };
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,7 +124,7 @@ export const SectionDetailsPage = () => {
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </Button>
-              <Button variant="ghost" onClick={logout}>
+              <Button variant="ghost" onClick={handleLogout}>
                 Logout
               </Button>
             </div>
@@ -158,7 +166,7 @@ export const SectionDetailsPage = () => {
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </Button>
-              <Button variant="ghost" onClick={logout}>
+              <Button variant="ghost" onClick={handleLogout}>
                 Logout
               </Button>
             </div>
@@ -191,7 +199,7 @@ export const SectionDetailsPage = () => {
           <div className="flex items-center space-x-3">
             <Button 
               variant="outline" 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/teacher/dashboard')}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Dashboard
@@ -203,7 +211,7 @@ export const SectionDetailsPage = () => {
               <User className="h-4 w-4 mr-2" />
               Profile
             </Button>
-            <Button variant="ghost" onClick={logout}>
+            <Button variant="ghost" onClick={handleLogout}>
               Logout
             </Button>
           </div>

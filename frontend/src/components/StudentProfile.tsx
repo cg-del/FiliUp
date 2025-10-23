@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export const StudentProfile = () => {
   const navigate = useNavigate();
@@ -25,7 +26,14 @@ export const StudentProfile = () => {
     confirm: false
   });
   const [resetLoading, setResetLoading] = useState(false);
-  const handleLogout = () => {
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutDialog(false);
     logout();
     navigate('/login', { replace: true });
   };
@@ -137,11 +145,11 @@ export const StudentProfile = () => {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>I-reset ang Password</DialogTitle>
+                    <DialogTitle>Reset Your Password</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleResetPassword} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Kasalukuyang Password</Label>
+                      <Label htmlFor="currentPassword">Current Password</Label>
                       <div className="relative">
                         <Input
                           id="currentPassword"
@@ -162,7 +170,7 @@ export const StudentProfile = () => {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="newPassword">Bagong Password</Label>
+                      <Label htmlFor="newPassword">New Password</Label>
                       <div className="relative">
                         <Input
                           id="newPassword"
@@ -183,7 +191,7 @@ export const StudentProfile = () => {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Kumpirmahin ang Bagong Password</Label>
+                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
                       <div className="relative">
                         <Input
                           id="confirmPassword"
@@ -215,7 +223,7 @@ export const StudentProfile = () => {
                   </form>
                 </DialogContent>
               </Dialog>
-              <Button variant="outline" onClick={handleLogout}>
+              <Button variant="outline" onClick={handleLogoutClick}>
                 Logout
               </Button>
             </div>
@@ -300,6 +308,27 @@ export const StudentProfile = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You will need to login again to access your profile.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmLogout} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

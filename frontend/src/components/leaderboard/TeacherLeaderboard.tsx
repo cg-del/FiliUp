@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, User } from 'lucide-react';
 import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { CenteredLoading, InlineLoading } from '@/components/ui/loading-spinner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const TeacherLeaderboard: React.FC = () => {
   const { sectionId } = useParams<{ sectionId?: string }>();
@@ -20,8 +21,14 @@ const TeacherLeaderboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'single' | 'all'>(sectionId ? 'single' : 'all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutDialog(false);
     logout();
     navigate('/login', { replace: true });
   };
@@ -138,7 +145,9 @@ const TeacherLeaderboard: React.FC = () => {
                 Profile
               </Button>
               <SimpleThemeToggle />
-              <Button variant="ghost" onClick={handleLogout}>Logout</Button>
+              <Button variant="ghost" onClick={handleLogoutClick}>
+                Logout
+              </Button>
             </div>
             {/* Mobile menu button */}
             <div className="md:hidden">
@@ -154,7 +163,7 @@ const TeacherLeaderboard: React.FC = () => {
                 <div className="flex justify-center py-2">
                   <SimpleThemeToggle />
                 </div>
-                <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Logout</Button>
+                <Button variant="ghost" onClick={handleLogoutClick} className="w-full text-left">Logout</Button>
               </div>
             </div>
           )}
@@ -197,7 +206,7 @@ const TeacherLeaderboard: React.FC = () => {
               Profile
             </Button>
             <SimpleThemeToggle />
-            <Button variant="ghost" onClick={handleLogout}>Logout</Button>
+            <Button variant="ghost" onClick={handleLogoutClick}>Logout</Button>
           </div>
           {/* Mobile menu button */}
           <div className="md:hidden">
@@ -213,7 +222,7 @@ const TeacherLeaderboard: React.FC = () => {
               <div className="flex justify-center py-2">
                 <SimpleThemeToggle />
               </div>
-              <Button variant="ghost" onClick={handleLogout} className="w-full text-left">Logout</Button>
+              <Button variant="ghost" onClick={handleLogoutClick} className="w-full text-left">Logout</Button>
             </div>
           </div>
         )}
@@ -394,6 +403,24 @@ const TeacherLeaderboard: React.FC = () => {
         </div>
       )}
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You will need to login again to access the leaderboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

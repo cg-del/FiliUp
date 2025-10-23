@@ -22,7 +22,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: (onComplete?: () => void) => void;
   registerStudent: (registrationCode: string) => Promise<void>;
   register: (params: { fullName: string; email: string; password: string }) => Promise<void>;
   isLoading: boolean;
@@ -130,11 +130,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = (onComplete?: () => void) => {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
+    if (onComplete) onComplete();
   };
 
   const registerStudent = async (registrationCode: string) => {

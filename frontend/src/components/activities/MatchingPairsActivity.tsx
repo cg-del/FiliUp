@@ -150,7 +150,7 @@ export const MatchingPairsActivity: React.FC<MatchingPairsActivityProps> = ({
           <div className="grid grid-cols-2 gap-8">
             {/* Left Column */}
             <div className="space-y-3">
-              <h3 className="font-medium text-center">Salita</h3>
+              {/* Removed Salita heading */}
               {leftItems.map((item) => {
                 const isMatched = !!matches[item.id];
                 const isSelected = selectedLeft === item.id;
@@ -198,7 +198,7 @@ export const MatchingPairsActivity: React.FC<MatchingPairsActivityProps> = ({
 
             {/* Right Column */}
             <div className="space-y-3">
-              <h3 className="font-medium text-center">Uri / Katangian</h3>
+              {/* Removed Uri / Katangian heading */}
               {rightItems.map((item) => {
                 const isMatched = Object.values(matches).includes(item.id);
                 const isSelected = selectedRight === item.id;

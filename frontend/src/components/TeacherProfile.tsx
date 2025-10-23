@@ -6,11 +6,23 @@ import { ArrowLeft, User } from 'lucide-react';
 import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { PasswordResetDialog } from '@/components/PasswordResetDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export const TeacherProfile: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showReset, setShowReset] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutDialog(false);
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,7 +45,7 @@ export const TeacherProfile: React.FC = () => {
             <div className="flex items-center gap-2">
               <SimpleThemeToggle />
               <Button onClick={() => setShowReset(true)}>Reset Password</Button>
-              <Button variant="outline" onClick={logout}>Logout</Button>
+              <Button variant="outline" onClick={handleLogoutClick}>Logout</Button>
             </div>
           </div>
         </div>
@@ -64,6 +76,24 @@ export const TeacherProfile: React.FC = () => {
         onOpenChange={setShowReset}
         onSuccess={() => { /* wrapper handles firstLogin flag elsewhere */ }}
       />
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You will need to login again to access your profile.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

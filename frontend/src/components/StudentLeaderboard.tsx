@@ -8,6 +8,7 @@ import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentAPI, SectionLeaderboardResponse } from '@/lib/api';
 import { CenteredLoading } from '@/components/ui/loading-spinner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export const StudentLeaderboard = () => {
   const navigate = useNavigate();
@@ -15,6 +16,17 @@ export const StudentLeaderboard = () => {
   const [leaderboardData, setLeaderboardData] = useState<SectionLeaderboardResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutDialog(false);
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   useEffect(() => {
     loadLeaderboard();
@@ -92,7 +104,7 @@ export const StudentLeaderboard = () => {
               Profile
             </Button>
             <SimpleThemeToggle />
-            <Button variant="ghost" onClick={logout}>
+            <Button variant="ghost" onClick={handleLogoutClick}>
               Logout
             </Button>
           </div>
@@ -227,6 +239,24 @@ export const StudentLeaderboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You will need to login again to access the leaderboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
