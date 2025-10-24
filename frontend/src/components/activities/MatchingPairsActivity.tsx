@@ -66,7 +66,9 @@ export const MatchingPairsActivity: React.FC<MatchingPairsActivityProps> = ({
   const [startTime] = useState(Date.now());
 
   const leftItems = pairs.map(pair => ({ id: pair.id, text: pair.left }));
-  const rightItems = pairs.map(pair => ({ id: pair.id, text: pair.right })).sort(() => Math.random() - 0.5);
+  const [rightItems] = useState(() => 
+    pairs.map(pair => ({ id: pair.id, text: pair.right })).sort(() => Math.random() - 0.5)
+  );
 
   const handleLeftClick = (id: string) => {
     if (showResults || matches[id]) return;

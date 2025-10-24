@@ -140,13 +140,15 @@ export const MultipleChoiceActivity: React.FC<MultipleChoiceActivityProps> = ({
               if (showResult) {
                 if (index === currentQ.correctAnswer) {
                   variant = "success";
-                  buttonClass += " border-success bg-green-100 text-green-900";  // Added text-success-foreground
+                  buttonClass += " border-success bg-green-100 text-green-900 hover:bg-green-100 hover:text-green-900 dark:bg-green-900/30 dark:text-green-100 dark:hover:bg-green-900/30 dark:hover:text-green-100";
                 } else if (index === selectedAnswer && selectedAnswer !== currentQ.correctAnswer) {
                   variant = "destructive";
-                  buttonClass += " border-destructive bg-red-100 text-red-900"; // Added text-destructive-foreground
+                  buttonClass += " border-destructive bg-red-100 text-red-900 hover:bg-red-100 hover:text-red-900 dark:bg-red-900/30 dark:text-red-100 dark:hover:bg-red-900/30 dark:hover:text-red-100";
                 }
               } else if (selectedAnswer === index) {
-                buttonClass += " border-primary bg-primary/90 text-primary-foreground";  // Changed to bg-primary/90 and added text-primary-foreground
+                buttonClass += " border-primary bg-primary/90 text-primary-foreground hover:bg-primary hover:text-primary-foreground";
+              } else {
+                buttonClass += " hover:bg-primary/10 hover:text-foreground dark:hover:bg-primary/20 dark:hover:text-foreground";
               }
 
               return (

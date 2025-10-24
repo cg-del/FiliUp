@@ -76,9 +76,13 @@ export const DragDropActivity: React.FC<DragDropActivityProps> = ({
   const [draggedItem, setDraggedItem] = useState<DragDropItem | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [startTime] = useState(Date.now());
+  const [touchStartPos, setTouchStartPos] = useState<{x: number, y: number} | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState<{x: number, y: number} | null>(null);
 
   const handleDragStart = (item: DragDropItem) => {
     setDraggedItem(item);
+    setIsDragging(true);
   };
 
   const handleDrop = (categoryId: string) => {
@@ -91,6 +95,7 @@ export const DragDropActivity: React.FC<DragDropActivityProps> = ({
     
     setAvailableItems(prev => prev.filter(item => item.id !== draggedItem.id));
     setDraggedItem(null);
+    setIsDragging(false);
   };
 
   const handleRemoveItem = (categoryId: string, itemId: string) => {
@@ -143,6 +148,56 @@ export const DragDropActivity: React.FC<DragDropActivityProps> = ({
     setAvailableItems(items);
     setShowResults(false);
     setDraggedItem(null);
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, item: DragDropItem) => {
+    const touch = e.touches[0];
+    setTouchStartPos({ x: touch.clientX, y: touch.clientY });
+    setDragPosition({ x: touch.clientX, y: touch.clientY });
+    setDraggedItem(item);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !draggedItem) return;
+    const touch = e.touches[0];
+    setDragPosition({ x: touch.clientX, y: touch.clientY });
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!draggedItem || !touchStartPos) {
+      setIsDragging(false);
+      return;
+    }
+
+    const touch = e.changedTouches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    // Find the drop zone element
+    let dropZone = element;
+    while (dropZone && !dropZone.classList.contains('drop-zone')) {
+      dropZone = dropZone.parentElement;
+    }
+
+    if (dropZone) {
+      const categoryId = dropZone.getAttribute('data-category-id');
+      if (categoryId) {
+        handleDrop(categoryId);
+      }
+    }
+
+    setTouchStartPos(null);
+    setDraggedItem(null);
+    setIsDragging(false);
+    setDragPosition(null);
+  };
+
+  const cancelDrag = () => {
+    setDraggedItem(null);
+    setIsDragging(false);
+    setTouchStartPos(null);
+    setDragPosition(null);
   };
 
   const isItemCorrect = (item: DragDropItem, categoryId: string) => {
@@ -154,7 +209,7 @@ export const DragDropActivity: React.FC<DragDropActivityProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="max-w-4xl mx-auto p-4 relative">
       <Card className="learning-card">
         <CardHeader>
           <CardTitle className="text-xl">{title}</CardTitle>
@@ -168,10 +223,16 @@ export const DragDropActivity: React.FC<DragDropActivityProps> = ({
               {availableItems.map((item) => (
                 <div
                   key={item.id}
-                  className="drag-item bg-card border border-border rounded-lg px-3 py-2 cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200"
+                  className={`drag-item bg-card border border-border rounded-lg px-3 py-2 cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 select-none ${
+                    draggedItem?.id === item.id && isDragging ? 'opacity-50 scale-95' : ''
+                  }`}
                   draggable
                   onDragStart={() => handleDragStart(item)}
-                  onClick={() => handleDragStart(item)}
+                  onDragEnd={() => setIsDragging(false)}
+                  onTouchStart={(e) => handleTouchStart(e, item)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  onTouchCancel={cancelDrag}
                 >
                   {item.text}
                 </div>
@@ -203,7 +264,10 @@ export const DragDropActivity: React.FC<DragDropActivityProps> = ({
                 {category.name}
               </h3>
                 <div
-                  className="drop-zone min-h-[120px] p-3 space-y-2 border-2 border-dashed border-muted-foreground/30 rounded-lg"
+                  className={`drop-zone min-h-[120px] p-3 space-y-2 border-2 border-dashed rounded-lg transition-all ${
+                    isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/30'
+                  }`}
+                  data-category-id={category.categoryId}
                   onDrop={(e) => {
                     e.preventDefault();
                     handleDrop(category.categoryId);
@@ -219,11 +283,12 @@ export const DragDropActivity: React.FC<DragDropActivityProps> = ({
                     <div
                       key={item.id}
                       className={`
-                        p-2 rounded-lg border cursor-pointer transition-all duration-200
+                        p-2 rounded-lg border cursor-pointer transition-all duration-200 select-none
                         ${isItemCorrect(item, category.categoryId) ? 'bg-success-light border-success' : ''}
                         ${isItemIncorrect(item, category.categoryId) ? 'bg-destructive/10 border-destructive' : 'bg-muted border-border hover:bg-muted/80'}
                       `}
                       onClick={() => !showResults && handleRemoveItem(category.categoryId, item.id)}
+                      onTouchEnd={() => !showResults && handleRemoveItem(category.categoryId, item.id)}
                       title={showResults ? undefined : "I-click para ibalik"}
                     >
                       <div className="flex items-center justify-between">
@@ -261,6 +326,22 @@ export const DragDropActivity: React.FC<DragDropActivityProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Floating Dragged Item Preview */}
+      {isDragging && draggedItem && dragPosition && (
+        <div
+          className="fixed pointer-events-none z-50 bg-primary text-primary-foreground rounded-lg px-4 py-3 shadow-2xl border-2 border-primary-foreground/20 transform -translate-x-1/2 -translate-y-1/2 animate-pulse"
+          style={{
+            left: `${dragPosition.x}px`,
+            top: `${dragPosition.y}px`,
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{draggedItem.text}</span>
+            <span className="text-xs opacity-75">↓</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
