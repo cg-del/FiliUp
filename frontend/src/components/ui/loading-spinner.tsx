@@ -13,15 +13,15 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 }) => {
   const sizeClasses = {
     sm: 'w-32 h-46',
-    md: 'w-40 h-54', 
-    lg: 'w-48 h-62'
+    md: 'w-50 h-64', 
+    lg: 'w-58 h-72'
   };
 
   return (
     <div className={`flex flex-col items-center justify-center space-y-4 ${className}`}>
       <div className={`${sizeClasses[size]} flex items-center justify-center`}>
         <img
-          src="https://res.cloudinary.com/dqv26p8im/image/upload/v1759807728/test_ydlihe.gif"
+          src="https://res.cloudinary.com/danhaqwtq/image/upload/v1761672443/LoadingScreenGIF_d6n75x.gif"
           alt="Loading..."
           className="w-full h-full object-contain"
         />

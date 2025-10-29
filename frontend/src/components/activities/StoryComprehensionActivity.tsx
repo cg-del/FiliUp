@@ -128,6 +128,13 @@ export const StoryComprehensionActivity: React.FC<StoryComprehensionActivityProp
           <CardContent className="space-y-6">
             <div className="bg-muted/50 p-6 rounded-lg">
               <h3 className="font-semibold text-lg mb-4 text-center">Basahin ang Kwento:</h3>
+              <div className="mb-6 flex justify-center">
+                <img 
+                  src="https://res.cloudinary.com/danhaqwtq/image/upload/v1761669881/Untitled_design_8_nvdvrr.png" 
+                  alt="Story illustration"
+                  className="max-w-full h-auto rounded-lg"
+                />
+              </div>
               <div className="text-base leading-relaxed space-y-4">
                 {story.split('\n').map((paragraph, index) => (
                   <p key={index} className="text-justify">

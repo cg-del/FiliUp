@@ -60,6 +60,7 @@ export const StudentDashboard = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPassModal, setShowPassModal] = useState(false);
+  const [showFailModal, setShowFailModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
@@ -232,10 +233,8 @@ export const StudentDashboard = ({
       if (isPass) {
         setShowPassModal(true);
       } else {
-        // Non-pass: return to dashboard as usual
-        await loadDashboardData();
-        setCurrentActivity(null);
-        setActivityContent(null);
+        // Non-pass: show fail modal
+        setShowFailModal(true);
       }
     } catch (err: unknown) {
       console.error('Failed to submit activity:', err);
@@ -246,6 +245,15 @@ export const StudentDashboard = ({
 
   const handleClosePassModal = async () => {
     setShowPassModal(false);
+    await loadDashboardData();
+    // Navigate back to dashboard/clear activity state
+    setCurrentActivity(null);
+    setActivityContent(null);
+    navigate('/student/dashboard', { replace: true });
+  };
+
+  const handleCloseFailModal = async () => {
+    setShowFailModal(false);
     await loadDashboardData();
     // Navigate back to dashboard/clear activity state
     setCurrentActivity(null);
@@ -499,6 +507,23 @@ export const StudentDashboard = ({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Dialog open={showFailModal} onOpenChange={(open) => !open && handleCloseFailModal()}>
+            <DialogContent className="sm:max-w-[480px]">
+              <DialogHeader>
+                <DialogTitle className="text-center">Subukan Muli!</DialogTitle>
+              </DialogHeader>
+              <div className="w-full flex justify-center">
+                <img
+                  src="https://res.cloudinary.com/danhaqwtq/image/upload/v1761670141/Untitled_design_9_ybpowm.png"
+                  alt="Try Again"
+                  className="max-w-full h-auto"
+                />
+              </div>
+              <DialogFooter>
+                <Button onClick={handleCloseFailModal} className="w-full">Bumalik sa Dashboard</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       );
     }
@@ -552,6 +577,23 @@ export const StudentDashboard = ({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Dialog open={showFailModal} onOpenChange={(open) => !open && handleCloseFailModal()}>
+            <DialogContent className="sm:max-w-[480px]">
+              <DialogHeader>
+                <DialogTitle className="text-center">Subukan Muli!</DialogTitle>
+              </DialogHeader>
+              <div className="w-full flex justify-center">
+                <img
+                  src="https://res.cloudinary.com/danhaqwtq/image/upload/v1761670141/Untitled_design_9_ybpowm.png"
+                  alt="Try Again"
+                  className="max-w-full h-auto"
+                />
+              </div>
+              <DialogFooter>
+                <Button onClick={handleCloseFailModal} className="w-full">Bumalik sa Dashboard</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       );
     }
@@ -588,6 +630,23 @@ export const StudentDashboard = ({
               </div>
               <DialogFooter>
                 <Button onClick={handleClosePassModal} className="w-full">Continue</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={showFailModal} onOpenChange={(open) => !open && handleCloseFailModal()}>
+            <DialogContent className="sm:max-w-[480px]">
+              <DialogHeader>
+                <DialogTitle className="text-center">Subukan Muli!</DialogTitle>
+              </DialogHeader>
+              <div className="w-full flex justify-center">
+                <img
+                  src="https://res.cloudinary.com/danhaqwtq/image/upload/v1761670141/Untitled_design_9_ybpowm.png"
+                  alt="Try Again"
+                  className="max-w-full h-auto"
+                />
+              </div>
+              <DialogFooter>
+                <Button onClick={handleCloseFailModal} className="w-full">Bumalik sa Dashboard</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -629,6 +688,23 @@ export const StudentDashboard = ({
               </div>
               <DialogFooter>
                 <Button onClick={handleClosePassModal} className="w-full">Continue</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={showFailModal} onOpenChange={(open) => !open && handleCloseFailModal()}>
+            <DialogContent className="sm:max-w-[480px]">
+              <DialogHeader>
+                <DialogTitle className="text-center">Subukan Muli!</DialogTitle>
+              </DialogHeader>
+              <div className="w-full flex justify-center">
+                <img
+                  src="https://res.cloudinary.com/danhaqwtq/image/upload/v1761670141/Untitled_design_9_ybpowm.png"
+                  alt="Try Again"
+                  className="max-w-full h-auto"
+                />
+              </div>
+              <DialogFooter>
+                <Button onClick={handleCloseFailModal} className="w-full">Bumalik sa Dashboard</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -682,7 +758,7 @@ export const StudentDashboard = ({
                 <div className="space-y-3 text-lg leading-relaxed">
                   {lessonContent.slides[currentSlide].content.map((line, index) => (
                     <div key={index} className={line.trim() === '' ? 'h-2' : ''}>
-                      <div dangerouslySetInnerHTML={{ __html: line }} />
+                      <div className="lesson-description prose prose-lg max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: line }} />
                     </div>
                   ))}
                 </div>
