@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, LogOut } from 'lucide-react';
 
 interface RegistrationCodeDialogProps {
   open: boolean;
@@ -22,7 +22,7 @@ export const RegistrationCodeDialog: React.FC<RegistrationCodeDialogProps> = ({
   open, 
   onOpenChange 
 }) => {
-  const { registerStudent, isLoading } = useAuth();
+  const { registerStudent, logout, isLoading } = useAuth();
   const { toast } = useToast();
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -51,6 +51,16 @@ export const RegistrationCodeDialog: React.FC<RegistrationCodeDialogProps> = ({
         variant: 'destructive',
       });
     }
+  };
+
+  const handleSignOut = () => {
+    logout(() => {
+      onOpenChange(false);
+      toast({
+        title: 'Signed out',
+        description: 'You have been signed out successfully.',
+      });
+    });
   };
 
   return (
@@ -105,6 +115,19 @@ export const RegistrationCodeDialog: React.FC<RegistrationCodeDialogProps> = ({
           >
             {isLoading ? 'Verifying...' : 'Submit Code'}
           </Button>
+
+          <div className="pt-2 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleSignOut}
+              disabled={isLoading}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

@@ -629,6 +629,19 @@ export const teacherAPI = {
     const response = await api.get(url);
     return response.data;
   },
+
+  // Update teacher's own profile
+  updateProfile: async (data: { fullName: string }) => {
+    // Use admin endpoint to update own profile
+    // The backend should allow users to update themselves
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const response = await api.put(`/admin/users/${user.id}`, {
+      fullName: data.fullName,
+      email: user.email,
+      role: user.role?.toUpperCase() || 'TEACHER',
+    });
+    return response.data;
+  },
 };
 
 // Student API
