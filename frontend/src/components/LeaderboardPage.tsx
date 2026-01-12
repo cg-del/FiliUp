@@ -140,7 +140,7 @@ export const LeaderboardPage = () => {
                   <div>
                     <div className="font-semibold">{student.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      {student.lessonsCompleted} lessons completed
+                      {student.lessonsCompleted} lesson{student.lessonsCompleted !== 1 ? 's' : ''} completed
                     </div>
                   </div>
                 </div>

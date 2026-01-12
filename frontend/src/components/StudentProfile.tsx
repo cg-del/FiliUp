@@ -3,14 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Award, BookOpen, TrendingUp, Calendar, Loader2, Eye, EyeOff } from 'lucide-react';
+import { ChevronLeft, User, Award, BookOpen, TrendingUp, Calendar, Loader2, Eye, EyeOff, Edit2 } from 'lucide-react';
 import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentAPI, StudentProfileResponse, authAPI, PasswordResetRequest } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { FloatingLabelInput } from '@/components/ui/floating-label-input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export const StudentProfile = () => {
@@ -27,6 +36,52 @@ export const StudentProfile = () => {
   });
   const [resetLoading, setResetLoading] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [fullName, setFullName] = useState(user?.name || '');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleEditClick = () => {
+    setFullName(user?.name || '');
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!fullName.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Full name cannot be empty',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await studentAPI.updateProfile({ fullName: fullName.trim() });
+      
+      // Update the user in localStorage
+      const updatedUser = { ...user, name: fullName.trim() };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      toast({
+        title: 'Success',
+        description: 'Your profile has been updated successfully.',
+      });
+      
+      setShowEditDialog(false);
+      // Reload to refresh the user context and update the UI
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Failed to update profile:', error);
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.message || 'Failed to update profile. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const handleLogoutClick = () => {
     setShowLogoutDialog(true);
@@ -122,114 +177,74 @@ export const StudentProfile = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border p-4">
-        <div className="max-w-4xl mx-auto">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          <div className="flex items-center justify-between">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="h-9 w-9 rounded-full hover:bg-gray-200 dark:hover:bg-muted"
+            >
+              <ChevronLeft className="h-5 w-5" />
+              <span className="sr-only">Back</span>
+            </Button>
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-gradient-teal-cyan rounded-full flex items-center justify-center">
                 <User className="h-8 w-8 text-white" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-primary">{user?.name}</h1>
-                <p className="text-muted-foreground">{profileData.student.sectionName}</p>
-              </div>
+              <h1 className="text-2xl font-bold text-primary">{user?.name}</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <SimpleThemeToggle />
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>Reset Password</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Reset Your Password</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleResetPassword} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Current Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="currentPassword"
-                          type={showPasswords.current ? "text" : "password"}
-                          value={passwords.currentPassword}
-                          onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
-                          placeholder="Enter current password"
-                          required
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPasswords({...showPasswords, current: !showPasswords.current})}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPasswords.current ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="newPassword">New Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="newPassword"
-                          type={showPasswords.new ? "text" : "password"}
-                          value={passwords.newPassword}
-                          onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                          placeholder="Enter new password"
-                          required
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPasswords({...showPasswords, new: !showPasswords.new})}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPasswords.new ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="confirmPassword"
-                          type={showPasswords.confirm ? "text" : "password"}
-                          value={passwords.confirmPassword}
-                          onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                          placeholder="Confirm new password"
-                          required
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPasswords({...showPasswords, confirm: !showPasswords.confirm})}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPasswords.confirm ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit" disabled={resetLoading} className="btn-bounce">
-                        {resetLoading ? (
-                          <span className="inline-flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</span>
-                        ) : (
-                          'Save Password'
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-              <Button variant="outline" onClick={handleLogoutClick}>
-                Logout
-              </Button>
-            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <SimpleThemeToggle />
+            <Button variant="outline" onClick={handleLogoutClick}>
+              Logout
+            </Button>
           </div>
         </div>
       </header>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Profile Name</DialogTitle>
+            <DialogDescription>
+              Update your full name. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-1 py-4">
+            <FloatingLabelInput
+              id="fullName"
+              label="Full Name"
+              type="text"
+              value={fullName}
+              onValueChange={(value) => {
+                // Capitalize first letter of each word
+                const capitalized = value.replace(/\b\w/g, (char) => char.toUpperCase());
+                setFullName(capitalized);
+              }}
+              disabled={isUpdating}
+              autoCapitalizeWords={true}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowEditDialog(false)}
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateProfile}
+              disabled={isUpdating || !fullName.trim()}
+            >
+              {isUpdating ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Stats Overview */}
@@ -291,18 +306,94 @@ export const StudentProfile = () => {
             <CardTitle>Account Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
               <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Full Name</div>
-                <div className="font-semibold">{profileData.student.name}</div>
+                <div className="text-sm font-medium text-muted-foreground mb-1.5">Full Name</div>
+                <div className="font-semibold flex items-center gap-2 h-[28px] mb-8">
+                  {profileData.student.name}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground -ml-1"
+                    onClick={handleEditClick}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground mb-1.5">Email</div>
+                  <div className="font-semibold">{profileData.student.email}</div>
+                </div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Email</div>
-                <div className="font-semibold">{profileData.student.email}</div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Section</div>
-                <div className="font-semibold">{profileData.student.sectionName}</div>
+                <div className="flex flex-col h-full">
+                  <div className="mb-8">
+                    <div className="text-sm font-medium text-muted-foreground mb-1.5">Section</div>
+                    <div className="font-semibold">{profileData.student.sectionName}</div>
+                  </div>
+                  <div className="mt-auto">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          className="w-full sm:w-auto"
+                        >
+                          Reset Password
+                        </Button>
+                      </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Reset Your Password</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleResetPassword} className="mt-6 space-y-4">
+                        <FloatingLabelInput
+                          id="currentPassword"
+                          label="Current Password"
+                          type={showPasswords.current ? "text" : "password"}
+                          value={passwords.currentPassword}
+                          onValueChange={(value) => setPasswords({ ...passwords, currentPassword: value })}
+                          hasToggle
+                          onToggleVisibility={() => setShowPasswords(prev => ({...prev, current: !prev.current}))}
+                          showPassword={showPasswords.current}
+                          required
+                        />
+                        <FloatingLabelInput
+                          id="newPassword"
+                          label="New Password"
+                          type={showPasswords.new ? "text" : "password"}
+                          value={passwords.newPassword}
+                          onValueChange={(value) => setPasswords({ ...passwords, newPassword: value })}
+                          hasToggle
+                          onToggleVisibility={() => setShowPasswords(prev => ({...prev, new: !prev.new}))}
+                          showPassword={showPasswords.new}
+                          required
+                        />
+                        <FloatingLabelInput
+                          id="confirmPassword"
+                          label="Confirm New Password"
+                          type={showPasswords.confirm ? "text" : "password"}
+                          value={passwords.confirmPassword}
+                          onValueChange={(value) => setPasswords({ ...passwords, confirmPassword: value })}
+                          hasToggle
+                          onToggleVisibility={() => setShowPasswords(prev => ({...prev, confirm: !prev.confirm}))}
+                          showPassword={showPasswords.confirm}
+                          required
+                        />
+                        <DialogFooter>
+                          <Button type="submit" disabled={resetLoading} className="btn-bounce">
+                            {resetLoading ? (
+                              <span className="inline-flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</span>
+                            ) : (
+                              'Update Password'
+                            )}
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>

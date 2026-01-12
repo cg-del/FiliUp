@@ -93,9 +93,8 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
 
   return (
     <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
-      <div className="px-6 py-4 border-b border-border">
-        <h3 className="text-lg font-semibold text-foreground">Class Leaderboard</h3>
-        <p className="text-sm text-muted-foreground mt-1">Rankings based on overall performance</p>
+      <div className="px-6 py-3 border-b border-border">
+        <p className="text-sm text-muted-foreground">Rankings based on overall performance</p>
       </div>
 
       <div className="overflow-x-auto">
@@ -226,7 +225,9 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
                     <div className="text-sm font-medium text-foreground">
                       {student.lessonsCompleted}
                     </div>
-                    <div className="text-xs text-muted-foreground">lessons</div>
+                    <div className="text-xs text-muted-foreground">
+                      {student.lessonsCompleted === 1 ? 'lesson' : 'lessons'}
+                    </div>
                   </td>
                 )}
               

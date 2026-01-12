@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Edit2 } from 'lucide-react';
+import { ChevronLeft, User, Edit2 } from 'lucide-react';
 import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { PasswordResetDialog } from '@/components/PasswordResetDialog';
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FloatingLabelInput } from '@/components/ui/floating-label-input';
 import { teacherAPI } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -87,23 +88,29 @@ export const TeacherProfile: React.FC = () => {
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border p-4">
         <div className="max-w-4xl mx-auto">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-teal-cyan rounded-full flex items-center justify-center">
-                <User className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-primary">{user?.name}</h1>
-                <p className="text-muted-foreground">Teacher</p>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => navigate(-1)}
+                className="h-9 w-9 rounded-full hover:bg-gray-200 dark:hover:bg-muted"
+              >
+                <ChevronLeft className="h-5 w-5" />
+                <span className="sr-only">Back</span>
+              </Button>
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-teal-cyan rounded-full flex items-center justify-center">
+                  <User className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-primary">{user?.name}</h1>
+                  <p className="text-muted-foreground">Teacher</p>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <SimpleThemeToggle />
-              <Button onClick={() => setShowReset(true)}>Reset Password</Button>
               <Button variant="outline" onClick={handleLogoutClick}>Logout</Button>
             </div>
           </div>
@@ -116,16 +123,28 @@ export const TeacherProfile: React.FC = () => {
             <CardTitle>Account Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-end mb-4">
-              <Button variant="outline" size="sm" onClick={handleEditClick}>
-                <Edit2 className="h-4 w-4 mr-2" />
-                Edit Profile
-              </Button>
-            </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <div className="text-sm font-medium text-muted-foreground mb-1">Full Name</div>
-                <div className="font-semibold">{user?.name}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">{user?.name}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground -mr-2"
+                    onClick={handleEditClick}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="mt-6 w-full sm:w-auto"
+                  onClick={() => setShowReset(true)}
+                >
+                  Reset Password
+                </Button>
               </div>
               <div>
                 <div className="text-sm font-medium text-muted-foreground mb-1">Email</div>
@@ -146,22 +165,25 @@ export const TeacherProfile: React.FC = () => {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogTitle>Edit Profile Name</DialogTitle>
             <DialogDescription>
               Update your full name. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
-                disabled={isUpdating}
-              />
-            </div>
+          <div className="px-1 py-4">
+            <FloatingLabelInput
+              id="fullName"
+              label="Full Name"
+              type="text"
+              value={fullName}
+              onValueChange={(value) => {
+                // Capitalize first letter of each word
+                const capitalized = value.replace(/\b\w/g, (char) => char.toUpperCase());
+                setFullName(capitalized);
+              }}
+              disabled={isUpdating}
+              autoCapitalizeWords={true}
+            />
           </div>
           <DialogFooter>
             <Button

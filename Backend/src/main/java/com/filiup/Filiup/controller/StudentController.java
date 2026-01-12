@@ -114,6 +114,19 @@ public class StudentController {
         UUID studentId = extractStudentId(authentication);
         return ResponseEntity.ok(studentService.getStudentProfile(studentId));
     }
+    
+    @PutMapping("/profile")
+    public ResponseEntity<Map<String, String>> updateProfile(
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        
+        UUID studentId = extractStudentId(authentication);
+        String fullName = request.get("fullName");
+        
+        studentService.updateProfile(studentId, fullName);
+        
+        return ResponseEntity.ok(Map.of("message", "Profile updated successfully"));
+    }
 
     private UUID extractStudentId(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();

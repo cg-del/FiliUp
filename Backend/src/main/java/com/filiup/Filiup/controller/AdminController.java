@@ -57,16 +57,12 @@ public class AdminController {
             Sort sortObj = Sort.by(direction, sortField);
             Pageable pageable = PageRequest.of(page, size, sortObj);
             
-            System.out.println("Sorting users by: " + sortField + " " + direction);
             if (search != null && !search.trim().isEmpty()) {
-                System.out.println("Searching for: " + search.trim());
                 return ResponseEntity.ok(adminService.searchUsers(search.trim(), pageable, role));
             }
             return ResponseEntity.ok(adminService.getAllUsers(pageable, role));
             
         } catch (Exception e) {
-            System.err.println("Error processing sort parameter: " + sort);
-            e.printStackTrace();
             // Fallback to default sorting
             Pageable defaultPageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
             return ResponseEntity.ok(adminService.getAllUsers(defaultPageable, role));

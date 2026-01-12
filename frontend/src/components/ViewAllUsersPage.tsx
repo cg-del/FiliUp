@@ -15,7 +15,8 @@ import {
   Loader2,
   UserCheck,
   Check,
-  X
+  X,
+  Plus
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -51,6 +52,7 @@ interface UserData {
   role: UserRole;
   password?: string;
   sectionId?: string;
+  sectionName?: string;
   isActive: boolean;
   createdAt?: string;
   firstLogin?: boolean;
@@ -220,23 +222,28 @@ export const ViewAllUsersPage = () => {
       {/* Header */}
       <header className="bg-card border-b border-border p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">User Management</h1>
-            <p className="text-muted-foreground">View and manage all users in the system</p>
-          </div>
           <div className="flex items-center space-x-3">
             <Button 
-              variant="outline" 
+              variant="ghost" 
+              size="icon"
               onClick={() => window.history.back()}
+              className="h-9 w-9 rounded-full hover:bg-gray-200 dark:hover:bg-muted"
             >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
+              <ChevronLeft className="h-5 w-5" />
+              <span className="sr-only">Back</span>
             </Button>
+            <img 
+              src="/filiLogo.png" 
+              alt="FiliUp Logo"
+              className="h-14 w-auto"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-primary">User Management</h1>
+              <p className="text-muted-foreground">View and manage all users in the system</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
             <SimpleThemeToggle />
-            <Button variant="default" onClick={() => setShowAddUser(true)}>
-              <Users className="h-4 w-4 mr-2" />
-              Add User
-            </Button>
           </div>
         </div>
       </header>
@@ -259,17 +266,29 @@ export const ViewAllUsersPage = () => {
             </Select>
           </div>
 
-          <form onSubmit={handleSearch} className="flex w-full md:w-auto">
-            <Input
-              placeholder="Search by name or email"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full md:w-64"
-            />
-            <Button type="submit" variant="secondary" className="ml-2">
-              <Search className="h-4 w-4" />
-            </Button>
-          </form>
+          <div className="flex w-full md:w-auto space-x-2">
+            <form onSubmit={handleSearch} className="flex w-full">
+              <Input
+                placeholder="Search by name or email"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full md:w-64"
+              />
+              <Button type="submit" variant="secondary" className="ml-2">
+                <Search className="h-4 w-4" />
+              </Button>
+              <Button 
+                type="button" 
+                variant="default" 
+                size="icon"
+                onClick={() => setShowAddUser(true)}
+                title="Add User"
+                className="ml-2"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </form>
+          </div>
         </div>
 
         {/* Error Message */}
@@ -315,11 +334,16 @@ export const ViewAllUsersPage = () => {
                       <div className="text-sm text-muted-foreground mb-1">
                         {userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'N/A'}
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex items-center space-x-2">
                         {userData.firstLogin && userData.role === 'TEACHER' && (
                           <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
                             First Login Pending
                           </Badge>
+                        )}
+                        {userData.role === 'STUDENT' && userData.sectionName && (
+                          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100">
+                            {userData.sectionName}
+                          </span>
                         )}
                         <Badge variant="outline">
                           {userData.role.toLowerCase()}

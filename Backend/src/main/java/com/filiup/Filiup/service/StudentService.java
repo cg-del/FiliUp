@@ -568,4 +568,17 @@ public class StudentService {
             return (daysDiff / 30) + " months ago";
         }
     }
+    
+    @Transactional
+    public void updateProfile(UUID studentId, String fullName) {
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+                
+        if (fullName != null && !fullName.trim().isEmpty()) {
+            student.setFullName(fullName.trim());
+            userRepository.save(student);
+        } else {
+            throw new IllegalArgumentException("Full name cannot be empty");
+        }
+    }
 }

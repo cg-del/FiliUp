@@ -19,6 +19,7 @@ public class UserResponse {
     private String fullName;
     private UserRole role;
     private UUID sectionId;
+    private String sectionName;
     private Boolean isActive;
     private Boolean firstLogin;
     private LocalDateTime createdAt;

@@ -593,7 +593,7 @@ export const ActivityDialog: React.FC<ActivityDialogProps> = ({
               <Label htmlFor="title">Activity Title</Label>
               <Input
                 id="title"
-                placeholder={`e.g., ${getActivityTypeIcon(formData.activityType)} ${formData.activityType.replace('_', ' ')} - Topic Name`}
+                placeholder={`e.g., ${getActivityTypeIcon(formData.activityType)} Topic Name`}
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 className={errors.title ? 'border-red-500' : ''}
@@ -607,7 +607,7 @@ export const ActivityDialog: React.FC<ActivityDialogProps> = ({
               <Label htmlFor="instructions">Instructions</Label>
               <Textarea
                 id="instructions"
-                placeholder="Provide clear instructions for students..."
+                placeholder="Provide clear instructions for students."
                 value={formData.instructions}
                 onChange={(e) => handleInputChange('instructions', e.target.value)}
                 className={errors.instructions ? 'border-red-500' : ''}

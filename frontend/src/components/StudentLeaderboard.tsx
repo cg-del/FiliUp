@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Trophy, Medal, Award, User } from 'lucide-react';
+import { ChevronLeft, Trophy, Medal, Award, User } from 'lucide-react';
 import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { studentAPI, SectionLeaderboardResponse } from '@/lib/api';
@@ -84,18 +84,27 @@ export const StudentLeaderboard = () => {
       {/* Navigation Header */}
       <header className="bg-card border-b border-border p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-            <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
-          </div>
           <div className="flex items-center space-x-3">
             <Button 
-              variant="outline" 
-              onClick={() => navigate('/student/dashboard')}
+              variant="ghost" 
+              size="icon"
+              onClick={() => window.history.back()}
+              className="h-9 w-9 rounded-full hover:bg-gray-200 dark:hover:bg-muted"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Dashboard
+              <ChevronLeft className="h-5 w-5" />
+              <span className="sr-only">Back</span>
             </Button>
+            <img 
+              src="/filiLogo.png" 
+              alt="FiliUp Logo"
+              className="h-14 w-auto"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-primary">Leaderboard</h1>
+              <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
             <Button 
               variant="outline" 
               onClick={() => navigate('/student/profile')}
@@ -118,8 +127,8 @@ export const StudentLeaderboard = () => {
             <div className="flex items-center space-x-3">
               <Trophy className="h-10 w-10" />
               <div>
-                <h2 className="text-3xl font-bold">Leaderboard</h2>
-                <p className="text-blue-100">{leaderboardData.sectionName} - {leaderboardData.gradeLevel}</p>
+                <h2 className="text-3xl font-bold">{leaderboardData.sectionName}</h2>
+                <p className="text-blue-100 text-xl">{leaderboardData.gradeLevel}</p>
               </div>
             </div>
             {currentUserRank && (
@@ -170,7 +179,7 @@ export const StudentLeaderboard = () => {
                 key={student.id} 
                 className={`flex flex-col items-center ${getPositionClass(student.rank)}`}
               >
-                <Card className={`learning-card w-full ${isFirst ? 'ring-2 ring-warning' : ''} ${student.id === user?.id ? 'ring-2 ring-primary' : ''}`}>
+                <Card className={`learning-card w-full ${student.rank <= 3 ? 'ring-2 ring-warning' : ''} ${student.id === user?.id ? 'ring-2 ring-primary' : ''}`}>
                   <CardContent className="p-4 text-center">
                     <div className={`w-16 h-16 mx-auto mb-3 rounded-full ${getRankBadge(student.rank)} flex items-center justify-center`}>
                       {getRankIcon(student.rank)}
@@ -223,7 +232,7 @@ export const StudentLeaderboard = () => {
                       )}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {student.lessonsCompleted} lessons completed
+                      {student.lessonsCompleted} lesson{student.lessonsCompleted !== 1 ? 's' : ''} completed
                     </div>
                   </div>
                 </div>

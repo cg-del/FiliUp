@@ -11,14 +11,17 @@ import {
   GripVertical, 
   FileText, 
   Activity,
-  ArrowLeft,
-  Settings
+  ChevronLeft,
+  Settings,
+  LayoutGrid
 } from 'lucide-react';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { PhaseDialog } from './PhaseDialog';
 import { LessonDialog } from './LessonDialog';
 import { ActivityDialog } from './ActivityDialog';
 import { adminAPI } from '@/lib/api';
+// Using standard img tag instead of Next.js Image
 
 interface Phase {
   id: string;
@@ -345,29 +348,34 @@ export const ContentManagement = ({ onBack }: { onBack: () => void }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <div className="container mx-auto p-4">
+      <div className="flex flex-col space-y-6">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onBack}
+              className="h-9 w-9 rounded-full hover:bg-gray-200 dark:hover:bg-muted"
+            >
+              <ChevronLeft className="h-5 w-5" />
+              <span className="sr-only">Back</span>
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-primary">Content Management</h1>
-              <p className="text-muted-foreground">Create and manage phases, lessons, and activities</p>
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/filiLogo.png" 
+                alt="Fili Logo"
+                className="h-14 w-auto"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-primary">Content Management</h1>
+                <p className="text-muted-foreground">Manage and organize your learning content</p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <Badge variant="outline" className="px-3 py-1">
-              {user?.name} - Admin
-            </Badge>
-          </div>
+          <SimpleThemeToggle />
         </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="phases" className="flex items-center space-x-2">
@@ -489,7 +497,7 @@ export const ContentManagement = ({ onBack }: { onBack: () => void }) => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                       
+                        
                         <Button variant="ghost" size="sm" onClick={() => handleEditLesson(lesson)}>
                           <Edit className="h-4 w-4" />
                         </Button>

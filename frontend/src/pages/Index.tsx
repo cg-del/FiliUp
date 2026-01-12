@@ -25,14 +25,6 @@ const Index = () => {
     return (
       <div>
         <LandingPage />
-        <div className="fixed bottom-6 right-6 z-50">
-          <button
-            onClick={() => setShowLogin(true)}
-            className="bg-gradient-primary text-white px-6 py-3 rounded-full shadow-primary hover:shadow-lg hover:scale-105 transition-all duration-300 font-medium"
-          >
-            Mag-login
-          </button>
-        </div>
       </div>
     );
   }

@@ -805,9 +805,16 @@ export const StudentDashboard = ({
       {/* Header */}
       <header className="bg-card border-b border-border p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-            <p className="text-muted-foreground">Welcome, {dashboardData.student.name}! 👋</p>
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/filiLogo.png" 
+              alt="FiliUp Logo"
+              className="h-14 w-auto"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-primary">Dashboard</h1>
+              <p className="text-muted-foreground">Welcome, {dashboardData.student.name}! 👋</p>
+            </div>
           </div>
           {/* Desktop actions */}
           <div className="hidden md:flex items-center space-x-3">

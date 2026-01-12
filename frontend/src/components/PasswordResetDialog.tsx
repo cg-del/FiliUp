@@ -8,12 +8,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { authAPI } from '@/lib/api';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Eye, EyeOff } from 'lucide-react';
+import { FloatingLabelInput } from '@/components/ui/floating-label-input';
 
 interface PasswordResetDialogProps {
   open: boolean;
@@ -111,71 +109,42 @@ export const PasswordResetDialog = ({
           <DialogTitle>Reset Your Password</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showPasswords.current ? "text" : "password"}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter current password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPasswords({...showPasswords, current: !showPasswords.current})}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPasswords.current ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <div className="relative">
-                <Input
-                  id="newPassword"
-                  type={showPasswords.new ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPasswords({...showPasswords, new: !showPasswords.new})}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPasswords.new ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showPasswords.confirm ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPasswords({...showPasswords, confirm: !showPasswords.confirm})}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPasswords.confirm ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-          </div>
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <FloatingLabelInput
+            id="currentPassword"
+            label="Current Password"
+            type={showPasswords.current ? "text" : "password"}
+            value={currentPassword}
+            onValueChange={setCurrentPassword}
+            hasToggle
+            onToggleVisibility={() => setShowPasswords(prev => ({...prev, current: !prev.current}))}
+            showPassword={showPasswords.current}
+            required
+          />
+          
+          <FloatingLabelInput
+            id="newPassword"
+            label="New Password"
+            type={showPasswords.new ? "text" : "password"}
+            value={newPassword}
+            onValueChange={setNewPassword}
+            hasToggle
+            onToggleVisibility={() => setShowPasswords(prev => ({...prev, new: !prev.new}))}
+            showPassword={showPasswords.new}
+            required
+          />
+          
+          <FloatingLabelInput
+            id="confirmPassword"
+            label="Confirm New Password"
+            type={showPasswords.confirm ? "text" : "password"}
+            value={confirmPassword}
+            onValueChange={setConfirmPassword}
+            hasToggle
+            onToggleVisibility={() => setShowPasswords(prev => ({...prev, confirm: !prev.confirm}))}
+            showPassword={showPasswords.confirm}
+            required
+          />
           
           <DialogFooter>
             <Button type="submit" disabled={submitting}>

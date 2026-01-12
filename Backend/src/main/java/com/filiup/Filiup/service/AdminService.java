@@ -124,6 +124,10 @@ public class AdminService {
         
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            // If password is changed for a teacher or student, force them to reset it on next login
+            if (user.getRole() == UserRole.TEACHER || user.getRole() == UserRole.STUDENT) {
+                user.setFirstLogin(true);
+            }
         }
 
         if (request.getSection() != null) {
@@ -161,6 +165,7 @@ public class AdminService {
                 .fullName(user.getFullName())
                 .role(user.getRole())
                 .sectionId(user.getSection() != null ? user.getSection().getId() : null)
+                .sectionName(user.getSection() != null ? user.getSection().getName() : null)
                 .isActive(user.getIsActive())
                 .firstLogin(user.getFirstLogin())
                 .createdAt(user.getCreatedAt())

@@ -104,9 +104,16 @@ export const TeacherDashboard = () => {
       {/* Header */}
       <header className="bg-card border-b border-border p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">Teacher Dashboard</h1>
-            <p className="text-muted-foreground">Welcome, {user?.name}! 👩‍🏫</p>
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/filiLogo.png" 
+              alt="FiliUp Logo"
+              className="h-14 w-auto"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-primary">Dashboard</h1>
+              <p className="text-muted-foreground">Welcome, {user?.name}! 👩‍🏫</p>
+            </div>
           </div>
           {/* Desktop actions */}
           <div className="hidden md:flex items-center space-x-3">
@@ -199,7 +206,7 @@ export const TeacherDashboard = () => {
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold">{section.name}</h3>
                       <Badge variant="secondary">
-                        {section.activeStudents}/{section.totalStudents} active
+                        {section.totalStudents === 1 ? '1 student' : `${section.totalStudents} students`}
                       </Badge>
                     </div>
                     

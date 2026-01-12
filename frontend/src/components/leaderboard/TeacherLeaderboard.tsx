@@ -4,7 +4,7 @@ import { teacherAPI, SectionLeaderboardResponse, SectionResponse } from '../../l
 import LeaderboardTable from './LeaderboardTable';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, User } from 'lucide-react';
+import { ChevronLeft, User } from 'lucide-react';
 import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { CenteredLoading, InlineLoading } from '@/components/ui/loading-spinner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -102,12 +102,12 @@ const TeacherLeaderboard: React.FC = () => {
     let csvContent = '';
     
     if (viewMode === 'single' && leaderboardData) {
-      csvContent = 'Rank,Student Name,Total Score,Average Percentage,Completed Activities,Completed Lessons,Badge\n';
+      csvContent = 'Rank,Student Name,Total Score,Average Percentage,Completed Activities,Completed Lesson(s),Badge\n';
       leaderboardData.students.forEach(student => {
         csvContent += `${student.rank},"${student.name}",${student.totalScore},${student.averageScore},${student.activitiesCompleted},${student.lessonsCompleted},""\n`;
       });
     } else if (viewMode === 'all' && allSectionsData) {
-      csvContent = 'Section,Rank,Student Name,Total Score,Average Percentage,Completed Activities,Completed Lessons,Badge\n';
+      csvContent = 'Section,Rank,Student Name,Total Score,Average Percentage,Completed Activities,Completed Lesson(s),Badge\n';
       allSectionsData.forEach(section => {
         section.students.forEach(student => {
           csvContent += `"${section.sectionName}",${student.rank},"${student.name}",${student.totalScore},${student.averageScore},${student.activitiesCompleted},${student.lessonsCompleted},""\n`;
@@ -131,13 +131,13 @@ const TeacherLeaderboard: React.FC = () => {
         <header className="bg-card border-b border-border p-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-              <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
+              <h1 className="text-2xl font-bold text-primary">Leaderboards</h1>
+              <p className="text-muted-foreground">Welcome, {user?.name}! 👩‍🏫</p>
             </div>
             {/* Desktop actions */}
             <div className="hidden md:flex items-center space-x-3">
               <Button variant="outline" onClick={() => navigate('/teacher/dashboard')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ChevronLeft className="h-4 w-4 mr-2" />
                 Dashboard
               </Button>
               <Button variant="outline" onClick={() => navigate('/teacher/profile')}>
@@ -191,48 +191,46 @@ const TeacherLeaderboard: React.FC = () => {
       {/* Navigation Header */}
       <header className="bg-card border-b border-border p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-            <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
-          </div>
-          {/* Desktop actions */}
-          <div className="hidden md:flex items-center space-x-3">
-            <Button variant="outline" onClick={() => navigate('/')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Dashboard
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="h-9 w-9 rounded-full hover:bg-gray-200 dark:hover:bg-muted"
+            >
+              <ChevronLeft className="h-5 w-5" />
+              <span className="sr-only">Back</span>
             </Button>
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/filiLogo.png" 
+                alt="FiliUp Logo"
+                className="h-14 w-auto"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-primary">Leaderboards</h1>
+                <p className="text-muted-foreground">Welcome, {user?.name}! 👩‍🏫</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => navigate('/teacher/profile')}>
               <User className="h-4 w-4 mr-2" />
               Profile
             </Button>
             <SimpleThemeToggle />
-            <Button variant="ghost" onClick={handleLogoutClick}>Logout</Button>
-          </div>
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <Button variant="outline" size="sm" onClick={() => setMobileMenuOpen((o) => !o)}>☰</Button>
+            <Button variant="ghost" onClick={handleLogoutClick}>
+              Logout
+            </Button>
           </div>
         </div>
-        {/* Mobile menu panel */}
-        {mobileMenuOpen && (
-          <div className="md:hidden mt-3 max-w-7xl mx-auto">
-            <div className="flex flex-col gap-2">
-              <Button variant="outline" onClick={() => navigate('/')} className="w-full text-left">Dashboard</Button>
-              <Button variant="outline" onClick={() => navigate('/teacher/profile')} className="w-full text-left">Profile</Button>
-              <div className="flex justify-center py-2">
-                <SimpleThemeToggle />
-              </div>
-              <Button variant="ghost" onClick={handleLogoutClick} className="w-full text-left">Logout</Button>
-            </div>
-          </div>
-        )}
       </header>
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Class Leaderboards</h1>
+          <h1 className="text-xl font-bold text-foreground">Class Performance</h1>
           <p className="text-muted-foreground mt-1">Monitor student performance and progress</p>
         </div>
         
@@ -288,7 +286,7 @@ const TeacherLeaderboard: React.FC = () => {
             >
               {sections.map((section) => (
                 <option key={section.id} value={section.id}>
-                  {section.name} ({section.gradeLevel}) - {section.studentCount} students
+                  {section.name} ({section.gradeLevel}) - {section.studentCount} {section.studentCount === 1 ? 'student' : 'students'}
                 </option>
               ))}
             </select>

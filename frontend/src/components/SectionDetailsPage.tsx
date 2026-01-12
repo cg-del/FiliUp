@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  ArrowLeft, 
+  ChevronLeft, 
   Users, 
   Trophy, 
   BookOpen, 
@@ -15,21 +15,26 @@ import {
   BarChart3,
   Download
 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { teacherAPI, SectionLeaderboardResponse, StudentRankingResponse } from '@/lib/api';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 
 export const SectionDetailsPage = () => {
   const { sectionId } = useParams<{ sectionId: string }>();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [sectionData, setSectionData] = useState<SectionLeaderboardResponse | null>(null);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutDialog(false);
     logout();
-    // Use requestAnimationFrame to ensure state updates are processed before navigation
-    requestAnimationFrame(() => {
-      navigate('/login');
-    });
+    navigate('/login', { replace: true });
   };
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,41 +106,10 @@ export const SectionDetailsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        {/* Navigation Header */}
-        <header className="bg-card border-b border-border p-4">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-              <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/teacher/dashboard')}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Dashboard
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/teacher/profile')}
-              >
-                <User className="h-4 w-4 mr-2" />
-                Profile
-              </Button>
-              <Button variant="ghost" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>Loading section details...</p>
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading section details...</p>
         </div>
       </div>
     );
@@ -146,36 +120,47 @@ export const SectionDetailsPage = () => {
       <div className="min-h-screen bg-background">
         {/* Navigation Header */}
         <header className="bg-card border-b border-border p-4">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-              <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
-            </div>
-            <div className="flex items-center space-x-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-4">
               <Button 
-                variant="outline" 
-                onClick={() => navigate('/teacher/dashboard')}
+                variant="ghost" 
+                size="icon"
+                onClick={() => navigate(-1)}
+                className="h-9 w-9 rounded-full hover:bg-gray-200 dark:hover:bg-muted"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Dashboard
+                <ChevronLeft className="h-5 w-5" />
+                <span className="sr-only">Back</span>
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/teacher/profile')}
-              >
+              <div className="flex items-center space-x-3">
+                <img 
+                  src="/filiLogo.png" 
+                  alt="FiliUp Logo"
+                  className="h-14 w-auto"
+                />
+                <div>
+                  <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
+                  <p className="text-muted-foreground">Welcome, {user?.name}!</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <SimpleThemeToggle />
+              <Button variant="outline" onClick={() => navigate('/teacher/profile')}>
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </Button>
-              <Button variant="ghost" onClick={handleLogout}>
+              <Button variant="ghost" onClick={handleLogoutClick}>
                 Logout
               </Button>
             </div>
           </div>
         </header>
 
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <p className="text-destructive mb-4">{error || 'Section not found'}</p>
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="bg-card rounded-lg border border-border p-6 text-center">
+            <div className="text-destructive text-lg font-medium mb-4">
+              {error || 'Section not found'}
+            </div>
             <Button onClick={() => navigate('/teacher/dashboard')}>
               Back to Dashboard
             </Button>
@@ -191,27 +176,36 @@ export const SectionDetailsPage = () => {
     <div className="min-h-screen bg-background">
       {/* Navigation Header */}
       <header className="bg-card border-b border-border p-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
-            <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
-          </div>
-          <div className="flex items-center space-x-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-4">
             <Button 
-              variant="outline" 
-              onClick={() => navigate('/teacher/dashboard')}
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate(-1)}
+              className="h-9 w-9 rounded-full hover:bg-gray-200 dark:hover:bg-muted"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Dashboard
+              <ChevronLeft className="h-5 w-5" />
+              <span className="sr-only">Back</span>
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/teacher/profile')}
-            >
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/filiLogo.png" 
+                alt="FiliUp Logo"
+                className="h-14 w-auto"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-primary">FiliUp</h1>
+                <p className="text-muted-foreground">Welcome, {user?.name}! 👋</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <SimpleThemeToggle />
+            <Button variant="outline" onClick={() => navigate('/teacher/profile')}>
               <User className="h-4 w-4 mr-2" />
               Profile
             </Button>
-            <Button variant="ghost" onClick={handleLogout}>
+            <Button variant="ghost" onClick={handleLogoutClick}>
               Logout
             </Button>
           </div>
@@ -224,7 +218,7 @@ export const SectionDetailsPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-bold">{sectionData.sectionName}</h2>
-              <p className="text-blue-100"> {sectionData.gradeLevel} • {stats.totalStudents} Students</p>
+              <p className="text-blue-100"> {sectionData.gradeLevel} • {stats.totalStudents} {stats.totalStudents === 1 ? 'Student' : 'Students'}</p>
             </div>
             <div className="flex space-x-3">
               <Button 
@@ -246,52 +240,62 @@ export const SectionDetailsPage = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
         {/* Section Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Users className="h-8 w-8 text-blue-500" />
-                <div>
-                  <div className="text-2xl font-bold">{stats.totalStudents}</div>
-                  <div className="text-sm text-muted-foreground">Total Students</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <Card className="h-full">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="p-2 md:p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                  <Users className="h-5 w-5 md:h-6 md:w-6 text-blue-500" />
+                </div>
+                <div className="min-w-0 space-y-2">
+                  <div className="text-lg md:text-2xl font-bold leading-none">{stats.totalStudents}</div>
+                  <div className="text-xs md:text-sm text-muted-foreground leading-tight">
+                    {stats.totalStudents === 1 ? 'Student' : 'Students'}
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <BarChart3 className="h-8 w-8 text-green-500" />
-                <div>
-                  <div className="text-2xl font-bold">{stats.averageScore}</div>
-                  <div className="text-sm text-muted-foreground">Average Score</div>
+          <Card className="h-full">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="p-2 md:p-2.5 rounded-lg bg-green-50 dark:bg-green-900/20">
+                  <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-green-500" />
+                </div>
+                <div className="min-w-0 space-y-2">
+                  <div className="text-lg md:text-2xl font-bold leading-none">{stats.averageScore}</div>
+                  <div className="text-xs md:text-sm text-muted-foreground leading-tight">Avg Score</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Trophy className="h-8 w-8 text-yellow-500" />
-                <div>
-                  <div className="text-2xl font-bold">{stats.highestScore}</div>
-                  <div className="text-sm text-muted-foreground">Highest Score</div>
+          <Card className="h-full">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="p-2 md:p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20">
+                  <Trophy className="h-5 w-5 md:h-6 md:w-6 text-amber-500" />
+                </div>
+                <div className="min-w-0 space-y-2">
+                  <div className="text-lg md:text-2xl font-bold leading-none">{stats.highestScore}</div>
+                  <div className="text-xs md:text-sm text-muted-foreground leading-tight">Top Score</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-8 w-8 text-purple-500" />
-                <div>
-                  <div className="text-2xl font-bold">{stats.averagePercentage}%</div>
-                  <div className="text-sm text-muted-foreground">Average Percentage</div>
+          <Card className="h-full">
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="p-2 md:p-2.5 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                  <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-purple-500" />
+                </div>
+                <div className="min-w-0 space-y-2">
+                  <div className="text-lg md:text-2xl font-bold leading-none">{stats.averagePercentage}%</div>
+                  <div className="text-xs md:text-sm text-muted-foreground leading-tight">Avg %</div>
                 </div>
               </div>
             </CardContent>
@@ -303,7 +307,7 @@ export const SectionDetailsPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Users className="h-5 w-5" />
-              <span>Students ({stats.totalStudents})</span>
+              <span>{stats.totalStudents === 1 ? 'Student' : 'Students'} ({stats.totalStudents})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -439,6 +443,27 @@ export const SectionDetailsPage = () => {
           </CardContent>
         </Card> */}
       </div>
+      
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You will need to login again to access your profile.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmLogout} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

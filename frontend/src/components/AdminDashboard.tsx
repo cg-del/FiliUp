@@ -108,9 +108,16 @@ export const AdminDashboard = () => {
       {/* Header */}
       <header className="bg-card border-b border-border p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-primary">Admin Dashboard</h1>
-            <p className="text-muted-foreground">System Overview & Management, {user?.name} 🛡️</p>
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/filiLogo.png" 
+              alt="FiliUp Logo"
+              className="h-14 w-auto"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-primary">Admin Dashboard</h1>
+              <p className="text-muted-foreground">System Overview & Management, {user?.name} 🛡️</p>
+            </div>
           </div>
           {/* Desktop actions */}
           <div className="hidden md:flex items-center space-x-3">
@@ -142,28 +149,6 @@ export const AdminDashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* System Stats
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {systemStatsDisplay.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={index} className="learning-card">
-                <CardContent className="flex items-center p-4">
-                  <div className="p-2 rounded-lg bg-gradient-primary mr-3">
-                    <Icon className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <div className="text-xs text-muted-foreground">
-                      <span>{stat.label}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div> */}
-
         <div className="grid lg:grid-cols-3 gap-8">
           {/* User Management */}
           <div className="lg:col-span-2 space-y-4">
@@ -277,11 +262,8 @@ export const AdminDashboard = () => {
             <h2 className="text-2xl font-bold">Management Tools</h2>
             {/* Management Tools */}
             <Card className="learning-card">
-              <CardHeader>
-                <CardTitle>Management Tools</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
+              <CardContent className="p-4">
+                <div className="grid grid-cols-1 gap-4">
                 
                   <Button 
                     variant="outline" 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -9,8 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FloatingLabelInput } from '@/components/ui/floating-label-input';
 import {
   Select,
   SelectContent,
@@ -68,6 +68,7 @@ export const AddUserDialog = ({
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   // Update form data when userToEdit changes or dialog opens
   useEffect(() => {
@@ -156,15 +157,14 @@ export const AddUserDialog = ({
         onOpenChange(false);
         if (onUserAdded) onUserAdded();
       } else {
-        // Create new user - ensure role is valid
+        // Create new user
         const payload: CreateUserRequest = {
           email: formData.email,
           fullName: formData.name,
           role: role,
           password: Math.random().toString(36).slice(-8), // Generate a random password
-          section: userToEdit?.sectionId?.trim() || null
+          section: null
         };
-
 
         await adminAPI.createUser(payload);
 
@@ -180,12 +180,10 @@ export const AddUserDialog = ({
           role: 'TEACHER',
         });
 
-        // Close dialog and refresh user list
         onOpenChange(false);
         if (onUserAdded) onUserAdded();
       }
     } catch (err: any) {
-      console.error('Error processing user:', err);
       const errorMessage = err.response?.data?.message || err.message || 'An error occurred';
       setError(errorMessage);
       toast({
@@ -198,6 +196,53 @@ export const AddUserDialog = ({
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!userToEdit) return;
+
+    setIsResetting(true);
+    try {
+      let defaultPassword = '';
+      if (userToEdit.role === 'TEACHER') {
+        defaultPassword = 'Teacher123';
+      } else if (userToEdit.role === 'STUDENT') {
+        defaultPassword = 'Student123';
+      } else {
+        // Do not allow password reset for other roles like ADMIN
+        toast({
+          title: 'Info',
+          description: 'Password reset is not applicable for this role.',
+          variant: 'default',
+        });
+        setIsResetting(false);
+        return;
+      }
+
+      // The backend expects the full user object, so we spread the existing user data
+      const updatedUser = {
+        ...userToEdit,
+        fullName: userToEdit.fullName,
+        email: userToEdit.email,
+        role: userToEdit.role,
+        password: defaultPassword,
+      };
+
+      await adminAPI.updateUser(userToEdit.id, updatedUser);
+      toast({
+        title: 'Success',
+        description: `Password has been reset.`,
+        variant: 'default',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to reset password',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -206,32 +251,34 @@ export const AddUserDialog = ({
           <DialogDescription>
             {userToEdit
               ? 'Update user details.'
-              : 'Add a new user to the system. An email will be sent to the user with instructions to set their password.'}
+              : 'An email will be sent to the user with instructions to set their password.'}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Full Name *</Label>
-              <Input
-                id="name"
-                placeholder="Juan Dela Cruz"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
+          <div className="space-y-4 py-4 px-1">
+            <FloatingLabelInput
+              id="name"
+              label="Full Name *"
+              type="text"
+              value={formData.name}
+              onValueChange={(value) => {
+                // Capitalize first letter of each word
+                const capitalized = value.replace(/\b\w/g, (char) => char.toUpperCase());
+                setFormData({ ...formData, name: capitalized });
+              }}
+              autoCapitalizeWords={true}
+              required
+            />
 
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="juan@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
+            <FloatingLabelInput
+              id="email"
+              label="Email *"
+              type="email"
+              value={formData.email}
+              onValueChange={(value) => setFormData({ ...formData, email: value })}
+              required
+            />
 
             <div className="grid gap-2">
               <Label htmlFor="role">
@@ -241,7 +288,7 @@ export const AddUserDialog = ({
               <Select 
                 value={formData.role}
                 onValueChange={(value: UserRole) => setFormData({...formData, role: value})}
-                disabled={false} // Enable role selection for all users
+                disabled={false}
                 required
               >
                 <SelectTrigger id="role">
@@ -254,26 +301,40 @@ export const AddUserDialog = ({
                 </SelectContent>
               </Select>
             </div>
-            
-            {error && (
-              <div className="text-sm text-destructive p-2 bg-destructive/10 rounded-md">
-                {error}
-              </div>
-            )}
           </div>
-
+          
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {userToEdit ? 'Updating...' : 'Creating...'}
-                </>
-              ) : userToEdit ? 'Update User' : 'Create User'}
-            </Button>
+            <div className="flex justify-between w-full">
+              <div>
+                {userToEdit && (userToEdit.role === 'TEACHER' || userToEdit.role === 'STUDENT') && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleResetPassword}
+                    disabled={isResetting || submitting}
+                  >
+                    {isResetting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Key className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {userToEdit ? 'Updating...' : 'Creating...'}
+                    </>
+                  ) : userToEdit ? 'Update User' : 'Create User'}
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

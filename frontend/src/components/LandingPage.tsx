@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
-import { Menu, X, BookOpen, Users, Target, Trophy, ChevronDown, CheckCircle, TrendingUp, Share2, Facebook, Twitter, Linkedin, Instagram, Star, Send, ChevronLeft, ChevronRight, PlayCircle, Plus, Minus, ArrowRight } from 'lucide-react';
+import { Menu, X, BookOpen, Users, Target, Trophy, ChevronDown, CheckCircle, TrendingUp, Share2, Facebook, Twitter, Linkedin, Instagram, Star, Send, ChevronLeft, ChevronRight, PlayCircle, Plus, Minus, ArrowRight, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
+import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 
 // Navigation items
 const navigation = [
@@ -64,7 +65,7 @@ const faqs = [
   },
   {
     question: 'Is FiliUp free to use?',
-    answer: 'Basic features are free for everyone. We also have premium features for teachers who want more advanced tools.',
+    answer: 'FiliUp is completely free to use! There are no hidden fees or premium features as all our educational content and features are available to everyone at no cost.',
   },
 ];
 
@@ -112,14 +113,43 @@ export const LandingPage = () => {
   const [expandedFAQ, setExpandedFAQ] = useState(null);
   const [visibleSections, setVisibleSections] = useState({});
 
-  // Handle scroll for header
+  // Store the scroll position when opening the menu
+  const scrollY = useRef(0);
+
+  // Handle scroll for header and mobile menu
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
+    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Handle body scroll lock when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      // Save the current scroll position
+      scrollY.current = window.scrollY;
+      
+      // Lock the body scroll without changing the scroll position
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY.current}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Restore the scroll position when menu is closed
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY.current);
+      };
+    }
+  }, [mobileMenuOpen]);
 
   // Auto-rotate feature carousel
   useEffect(() => {
@@ -154,10 +184,11 @@ export const LandingPage = () => {
         <nav className="flex items-center justify-between p-4 lg:px-8 max-w-7xl mx-auto">
           <div className="flex lg:flex-1">
             <a href="#" className="flex items-center group">
-              <div className="h-12 w-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-                <BookOpen className="h-7 w-7 text-white" />
-              </div>
-              <span className="ml-3 text-2xl font-extrabold text-primary group-hover:text-primary/80 transition-colors">FiliUp</span>
+              <img 
+                src="/filiLogo.png" 
+                alt="FiliUp Logo" 
+                className="h-16 w-auto" 
+              />
             </a>
           </div>
           <div className="flex lg:hidden">
@@ -182,9 +213,9 @@ export const LandingPage = () => {
               </a>
             ))}
           </div>
-          <div className="hidden lg:flex lg:flex-1 lg:justify-end gap-x-6">
+          <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-x-4">
             <Link to="/login">
-              <Button variant="ghost" className="text-muted-foreground hover:white">
+              <Button variant="ghost" className="text-muted-foreground hover:bg-muted">
                 Login
               </Button>
             </Link>
@@ -193,12 +224,20 @@ export const LandingPage = () => {
                 Register
               </Button>
             </Link>
+            <SimpleThemeToggle />
           </div>
         </nav>
         {mobileMenuOpen && (
-          <div className="lg:hidden">
-            <div className="fixed inset-0 z-50 bg-gray-900/70 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-            <div className="fixed inset-y-0 right-0 z-50 w-80 bg-card px-6 py-6 shadow-xl">
+          <div className="lg:hidden fixed inset-0 z-50">
+            <div 
+              className="fixed inset-0 bg-gray-900/70 backdrop-blur-sm" 
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            />
+            <div 
+              className="fixed inset-y-0 right-0 w-80 bg-background px-6 py-6 shadow-xl overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between">
                 <span className="text-xl font-bold text-primary">FiliUp</span>
                 <button onClick={() => setMobileMenuOpen(false)} className="p-2 rounded-lg text-muted-foreground hover:bg-muted">
@@ -217,16 +256,22 @@ export const LandingPage = () => {
                     {item.name}
                   </a>
                 ))}
-                <Link to="/login" className="w-full">
-                  <Button variant="ghost" className="w-full justify-start">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/register" className="w-full">
-                  <Button variant="hero" className="w-full">
-                    Register
-                  </Button>
-                </Link>
+                <div className="pt-4 border-t border-border">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm font-medium text-muted-foreground">Theme</span>
+                    <SimpleThemeToggle />
+                  </div>
+                  <Link to="/login" className="block w-full mt-2">
+                    <Button variant="outline" className="w-full">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link to="/register" className="block w-full mt-3">
+                    <Button variant="hero" className="w-full">
+                      Register
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -306,7 +351,6 @@ export const LandingPage = () => {
         <section id="features" className="bg-card py-20 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="max-w-2xl mx-auto text-center">
-              <h2 className="text-base font-semibold text-primary">Powerful Tools</h2>
               <p className="mt-2 text-4xl font-extrabold text-foreground sm:text-5xl">
                 FiliUp Features
               </p>
@@ -353,12 +397,10 @@ export const LandingPage = () => {
           </div>
         </section>
 
-
         {/* Learning Phases Section */}
         <section id="levels" className="bg-muted/30 py-20 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-base font-semibold text-primary">Learning Path</h2>
               <p className="mt-2 text-3xl font-extrabold text-foreground sm:text-4xl">
                 Learning Phases
               </p>
@@ -376,7 +418,7 @@ export const LandingPage = () => {
                 },
                 {
                   phase: 'Phase 2', 
-                  title: 'Synonyms adn Antonyms (Kasingkahulugan at Kasalungat)',
+                  title: 'Synonyms and Antonyms (Kasingkahulugan at Kasalungat)',
                   description: 'Identify words with similar and opposite meanings',
                   color: 'bg-gradient-warm',
                 },
@@ -396,12 +438,104 @@ export const LandingPage = () => {
                       <h3 className="text-2xl font-bold mb-2">{phase.title}</h3>
                       <p className="text-muted-foreground">{phase.description}</p>
                     </div>
-                    <Button variant="outline" className="btn-bounce">
-                      Start
-                    </Button>
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Activities Section */}
+        <section id="activities" className="py-20 sm:py-32 bg-card">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <p className="mt-2 text-4xl font-extrabold text-foreground sm:text-5xl">
+                Interactive Activities
+              </p>
+              <p className="mt-6 text-lg text-muted-foreground">
+                Engaging exercises designed to make learning Filipino fun and effective
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[
+                {
+                  title: 'Multiple Choice',
+                  description: 'Test your knowledge with our interactive multiple-choice questions',
+                  icon: <CheckCircle className="h-10 w-10 text-emerald-500" />
+                },
+                {
+                  title: 'Drag & Drop',
+                  description: 'Match words and concepts with their correct categories',
+                  icon: <Share2 className="h-10 w-10 text-blue-400" />
+                },
+                {
+                  title: 'Matching Pairs',
+                  description: 'Connect related terms and concepts together',
+                  icon: <Link2 className="h-10 w-10 text-purple-400" />
+                },
+                {
+                  title: 'Story Comprehension',
+                  description: 'Read short stories and answer questions to test understanding',
+                  icon: <BookOpen className="h-10 w-10 text-amber-400" />
+                }
+              ].map((activity, index) => (
+                <Card key={index} className="h-full transition-all duration-300 hover:scale-105 border border-border bg-card/50 hover:bg-card">
+                  <CardContent className="p-6 h-full flex flex-col">
+                    <div className="mb-4">
+                      {activity.icon}
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground mb-2">{activity.title}</h3>
+                    <p className="text-muted-foreground flex-grow">{activity.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* About Section */}
+        <section id="about" className="py-20 sm:py-32 bg-muted/30">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="lg:grid lg:grid-cols-2 lg:gap-16 items-center">
+              <div className="mb-12 lg:mb-0">
+                <img
+                  src="https://images.pexels.com/photos/5621944/pexels-photo-5621944.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+                  alt="Students learning Filipino"
+                  className="rounded-2xl shadow-xl w-full h-auto"
+                />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-primary mb-4">ABOUT FILIUP</p>
+                <h2 className="text-4xl font-extrabold text-foreground mb-6">
+                  Empowering Filipino Language Learning
+                </h2>
+                <p className="text-lg text-muted-foreground mb-6">
+                  FiliUp is dedicated to making Filipino language learning accessible, engaging, and effective for students of all ages. Our platform combines modern educational technology with proven teaching methodologies.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-start">
+                    <CheckCircle className="h-6 w-6 text-emerald-500 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-foreground">Interactive Learning</h4>
+                      <p className="text-muted-foreground">Engaging activities that make learning fun and memorable</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <CheckCircle className="h-6 w-6 text-emerald-500 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-foreground">Structured Curriculum</h4>
+                      <p className="text-muted-foreground">Progressive learning path from basic to advanced concepts</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <CheckCircle className="h-6 w-6 text-emerald-500 mt-1 mr-3 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-foreground">For Everyone</h4>
+                      <p className="text-muted-foreground">Suitable for students, teachers, and lifelong learners</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -410,7 +544,6 @@ export const LandingPage = () => {
         <section id="faqs" className="bg-white py-20 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="text-center">
-              <h2 className="text-base font-semibold text-emerald-600">Questions</h2>
               <p className="mt-2 text-4xl font-extrabold text-gray-900 sm:text-5xl">
                 Frequently Asked Questions
               </p>
@@ -482,36 +615,29 @@ export const LandingPage = () => {
 
       {/* Footer */}
       <footer className="bg-card border-t border-border">
-        <div className="mx-auto max-w-7xl px-6 pb-8 pt-16 sm:pt-24 lg:px-8 lg:pt-32">
-          <div className="xl:grid xl:grid-cols-3 xl:gap-8">
-            <div className="space-y-8">
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+          <div className="xl:grid xl:grid-cols-3 xl:gap-4">
+            <div className="space-y-4">
               <div className="flex items-center">
-                <div className="h-12 w-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg">
-                  <BookOpen className="h-7 w-7 text-white" />
-                </div>
-                <span className="ml-3 text-2xl font-bold text-primary">FiliUp</span>
+                <img 
+                  src="/filiLogo.png" 
+                  alt="FiliUp Logo" 
+                  className="h-16 w-auto" 
+                />
               </div>
-              <p className="text-sm leading-6 text-muted-foreground">
+              <p className="text-sm leading-5 text-muted-foreground">
                 Empowering students to learn Filipino through interactive and engaging activities.
               </p>
-              <div className="flex space-x-6">
-                <Facebook className="h-6 w-6 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
-                <Twitter className="h-6 w-6 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
-                <Instagram className="h-6 w-6 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
+              <div className="flex space-x-4">
+                <Facebook className="h-5 w-5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
+                <Twitter className="h-5 w-5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
+                <Instagram className="h-5 w-5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
               </div>
             </div>
-            <div className="mt-16 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Platform</h3>
-                <ul className="mt-6 space-y-4">
-                  <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Features</a></li>
-                  <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Learning Phases</a></li>
-                  <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Activities</a></li>
-                </ul>
-              </div>
-              <div>
+            <div className="mt-8 flex justify-end xl:col-span-2 xl:mt-0">
+              <div className="text-right">
                 <h3 className="text-sm font-semibold text-foreground">Support</h3>
-                <ul className="mt-6 space-y-4">
+                <ul className="mt-3 space-y-2">
                   <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Help Center</a></li>
                   <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact Us</a></li>
                   <li><a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy</a></li>
@@ -519,8 +645,8 @@ export const LandingPage = () => {
               </div>
             </div>
           </div>
-          <div className="mt-16 border-t border-border pt-8">
-            <p className="text-xs text-muted-foreground text-center">© 2024 FiliUp. All rights reserved.</p>
+          <div className="mt-8 border-t border-border pt-6">
+            <p className="text-xs text-muted-foreground text-center">© 2025 FiliUp. All rights reserved.</p>
           </div>
         </div>
       </footer>

@@ -9,6 +9,7 @@ import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { LoadingSpinner, CenteredLoading } from '@/components/ui/loading-spinner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { FloatingLabelInput } from '@/components/ui/floating-label-input';
 
 export const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -82,9 +83,8 @@ export const LoginForm = () => {
 
           <div className="relative z-10 text-center text-white max-w-md">
             <div className="mb-8">
- 
-              <h1 className="text-4xl font-bold mb-4">FiliUp</h1>
-              <p className="text-xl text-white/90 mb-8">"Welcome! I'm excited to help you learn Filipino!"</p>
+              <h1 className="text-4xl font-bold mb-4">Hi! I'm Joy!</h1>
+              <p className="text-xl text-white/90 mb-8">I'm excited to help you learn Filipino!</p>
 
               {/* Child-friendly illustration */}
               <div className="mb-8 flex justify-center">
@@ -105,21 +105,20 @@ export const LoginForm = () => {
         <div className="flex items-center justify-center p-8 bg-background">
           <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <div className="flex items-center justify-center mb-4">
-            <div className="h-16 w-16 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg">
-              <span className="text-2xl font-bold text-white">F</span>
-            </div>
+          <div className="flex items-center justify-center space-x-4 mb-2">
+            <img 
+              src="/filiLogo.png" 
+              alt="FiliUp Logo"
+              className="h-12 w-auto"
+            />
+            <h1 className="text-3xl font-bold text-primary">FiliUp</h1>
           </div>
-          <h1 className="text-3xl font-bold mb-2 text-primary">FiliUp</h1>
           <p className="text-muted-foreground">Learn Filipino with joy!</p>
         </div>
 
         <Card className="learning-card border border-border bg-card">
           <CardHeader>
             <CardTitle>Login to your account</CardTitle>
-            <CardDescription>
-              Choose your user type below or login with your email
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -131,33 +130,33 @@ export const LoginForm = () => {
                 </Alert>
               )}
               
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
+              <div className="space-y-6">
+                <FloatingLabelInput
                   id="email"
+                  label="Email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  onValueChange={setEmail}
+                  autoComplete="email"
                   required
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                
                 <div className="relative">
-                  <Input
+                  <FloatingLabelInput
                     id="password"
+                    label="Password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    onValueChange={setPassword}
+                    autoComplete="current-password"
                     required
+                    hasToggle
                   />
                   <button
                     type="button"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </button>

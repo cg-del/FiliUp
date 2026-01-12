@@ -632,13 +632,9 @@ export const teacherAPI = {
 
   // Update teacher's own profile
   updateProfile: async (data: { fullName: string }) => {
-    // Use admin endpoint to update own profile
-    // The backend should allow users to update themselves
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const response = await api.put(`/admin/users/${user.id}`, {
-      fullName: data.fullName,
-      email: user.email,
-      role: user.role?.toUpperCase() || 'TEACHER',
+      name: data.fullName,
     });
     return response.data;
   },
@@ -708,6 +704,11 @@ export const studentAPI = {
   // Profile API
   getProfile: async (): Promise<StudentProfileResponse> => {
     const response = await api.get('/student/profile');
+    return response.data;
+  },
+
+  updateProfile: async (data: { fullName: string }): Promise<{ success: boolean }> => {
+    const response = await api.put('/student/profile', data);
     return response.data;
   },
 };
