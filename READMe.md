@@ -28,8 +28,8 @@ The FiliUp project aims to design, develop, and implement a Filipino fundamental
 
 ## Deployment
 
-- **Frontend**: Deployed on Vercel
-- **Backend**: Deployed on Google Cloud (Cloud Run)
+- **Frontend**: Vercel
+- **Backend**: Google Cloud (Cloud Run)
 
 ---
 
