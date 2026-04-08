@@ -1,6 +1,6 @@
 # About FiliUp
 
-FiliUp is a gamified e-learning platform designed to improve Filipino language comprehension among Grade 3 students at CIT-U. It combines interactive, culturally relevant content with adaptive learning strategies to engage students, support teachers, and involve parents in the learning process.
+The FiliUp project aims to design, develop, and implement a Filipino fundamental e-learning platform that strengthens Filipino language comprehension skills among Grade 3 students at Cebu Institute of Technology - University (CIT-U). The platform provides structured modules on grammar fundamentals and comprehension activities, supported by interactive lessons and gamified features to boost student motivation and participation. It also equips teachers with class management, progress tracking, and automated assessment tools to enhance instructional efficiency.
 
 ## Technology Stack
 
